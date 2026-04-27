@@ -94,12 +94,20 @@ FP32 baseline과 candidate output의 detection 개수가 크게 달라지는 경
 - `confidence`는 `0.0` 이상 `1.0` 이하의 숫자여야 합니다.
 - `detections`는 빈 배열일 수 있습니다.
 
+## Examples 구조
+
+예제 fixture는 CLI 사용 흐름에 맞게 나뉘어 있습니다.
+
+- `examples/single`: 단일 `analyze`와 `compare` 명령용 fixture
+- `examples/fp32`: `batch-compare` baseline용 FP32 fixture
+- `examples/int8`: `batch-compare` candidate용 INT8 fixture
+
 ## CLI 사용 예시
 
 단일 output을 분석합니다.
 
 ```bash
-python -m inferedge_aiguard.cli analyze --input examples/fp32_normal.json
+python -m inferedge_aiguard.cli analyze --input examples/single/fp32_normal.json
 ```
 
 단일 output 분석은 하나의 JSON에 대해 bbox collapse와 confidence saturation 같은 output-level failure signal을 확인합니다.
@@ -108,14 +116,14 @@ FP32 baseline과 INT8 또는 FP16 candidate output을 비교합니다.
 
 ```bash
 python -m inferedge_aiguard.cli compare \
-  --base examples/fp32_normal.json \
-  --candidate examples/int8_count_mismatch.json
+  --base examples/single/fp32_normal.json \
+  --candidate examples/single/int8_count_mismatch.json
 ```
 
 여러 output JSON을 한 번에 분석합니다.
 
 ```bash
-python -m inferedge_aiguard.cli batch-analyze --input-dir examples
+python -m inferedge_aiguard.cli batch-analyze --input-dir examples/single
 ```
 
 batch output 분석은 디렉토리 안의 `*.json` 파일을 파일명 기준으로 정렬해 각각 분석한 뒤, 실험 세트 전체에서 failure signal이 얼마나 자주 나타났는지 집계합니다. 이 기능도 ground truth 평가가 아니라 output-level failure signal 집계입니다.
@@ -154,14 +162,14 @@ CLI 결과를 JSON 또는 Markdown 파일로 저장할 수 있습니다.
 
 ```bash
 python -m inferedge_aiguard.cli analyze \
-  --input examples/fp32_normal.json \
+  --input examples/single/fp32_normal.json \
   --save-json reports/analyze_normal.json \
   --save-md reports/analyze_normal.md
 ```
 
 ```bash
 python -m inferedge_aiguard.cli batch-analyze \
-  --input-dir examples \
+  --input-dir examples/single \
   --save-json reports/batch_analyze.json \
   --save-md reports/batch_analyze.md
 ```

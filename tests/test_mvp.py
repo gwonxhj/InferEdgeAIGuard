@@ -11,14 +11,18 @@ from inferedge_aiguard.schema import load_output_json
 
 
 ROOT = Path(__file__).resolve().parents[1]
+EXAMPLES = ROOT / "examples"
+SINGLE_EXAMPLES = EXAMPLES / "single"
+FP32_EXAMPLES = EXAMPLES / "fp32"
+INT8_EXAMPLES = EXAMPLES / "int8"
 
 
 def load_example(name: str) -> dict:
-    return load_output_json(ROOT / "examples" / name)
+    return load_output_json(SINGLE_EXAMPLES / name)
 
 
 def copy_example(name: str, destination: Path) -> None:
-    copyfile(ROOT / "examples" / name, destination)
+    copyfile(SINGLE_EXAMPLES / name, destination)
 
 
 def test_normal_case_has_no_false_positive():
@@ -76,7 +80,7 @@ def test_cli_analyze_runs():
             "inferedge_aiguard.cli",
             "analyze",
             "--input",
-            str(ROOT / "examples" / "fp32_normal.json"),
+            str(SINGLE_EXAMPLES / "fp32_normal.json"),
         ],
         cwd=ROOT,
         check=True,
@@ -95,7 +99,7 @@ def test_cli_analyze_bbox_collapse_shows_numeric_context():
             "inferedge_aiguard.cli",
             "analyze",
             "--input",
-            str(ROOT / "examples" / "int8_bbox_collapse.json"),
+            str(SINGLE_EXAMPLES / "int8_bbox_collapse.json"),
         ],
         cwd=ROOT,
         check=True,
@@ -114,9 +118,9 @@ def test_cli_compare_runs():
             "inferedge_aiguard.cli",
             "compare",
             "--base",
-            str(ROOT / "examples" / "fp32_normal.json"),
+            str(SINGLE_EXAMPLES / "fp32_normal.json"),
             "--candidate",
-            str(ROOT / "examples" / "int8_count_mismatch.json"),
+            str(SINGLE_EXAMPLES / "int8_count_mismatch.json"),
         ],
         cwd=ROOT,
         check=True,
@@ -129,8 +133,8 @@ def test_cli_compare_runs():
 
 
 def test_analyze_directory_summarizes_examples():
-    summary = analyze_directory(ROOT / "examples")
-    json_count = len(list((ROOT / "examples").glob("*.json")))
+    summary = analyze_directory(SINGLE_EXAMPLES)
+    json_count = len(list(SINGLE_EXAMPLES.glob("*.json")))
 
     assert summary["mode"] == "batch_analyze"
     assert summary["sample_count"] == json_count
@@ -153,7 +157,7 @@ def test_cli_batch_analyze_runs():
             "inferedge_aiguard.cli",
             "batch-analyze",
             "--input-dir",
-            str(ROOT / "examples"),
+            str(SINGLE_EXAMPLES),
         ],
         cwd=ROOT,
         check=True,
@@ -249,6 +253,40 @@ def test_compare_directories_zero_pairs(tmp_path):
     assert summary["unmatched_candidate_files"] == ["candidate_only.json"]
 
 
+def test_compare_directories_examples_pair_fixtures():
+    summary = compare_directories(FP32_EXAMPLES, INT8_EXAMPLES)
+
+    assert summary["pair_count"] == 3
+    assert summary["failure_rate"] > 0
+    assert (
+        "detection_count_mismatch" in summary["failure_type_counts"]
+        or "bbox_collapse" in summary["failure_type_counts"]
+        or "confidence_saturation" in summary["failure_type_counts"]
+    )
+
+
+def test_cli_batch_compare_examples_runs():
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "batch-compare",
+            "--base-dir",
+            str(FP32_EXAMPLES),
+            "--candidate-dir",
+            str(INT8_EXAMPLES),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert "pair_count" in result.stdout
+    assert "failure_rate" in result.stdout
+
+
 def test_cli_analyze_save_json(tmp_path):
     output_path = tmp_path / "reports" / "analyze_normal.json"
 
@@ -259,7 +297,7 @@ def test_cli_analyze_save_json(tmp_path):
             "inferedge_aiguard.cli",
             "analyze",
             "--input",
-            str(ROOT / "examples" / "fp32_normal.json"),
+            str(SINGLE_EXAMPLES / "fp32_normal.json"),
             "--save-json",
             str(output_path),
         ],
@@ -285,7 +323,7 @@ def test_cli_analyze_save_markdown(tmp_path):
             "inferedge_aiguard.cli",
             "analyze",
             "--input",
-            str(ROOT / "examples" / "fp32_normal.json"),
+            str(SINGLE_EXAMPLES / "fp32_normal.json"),
             "--save-md",
             str(output_path),
         ],
@@ -313,7 +351,7 @@ def test_cli_batch_analyze_save_json(tmp_path):
             "inferedge_aiguard.cli",
             "batch-analyze",
             "--input-dir",
-            str(ROOT / "examples"),
+            str(SINGLE_EXAMPLES),
             "--save-json",
             str(output_path),
         ],

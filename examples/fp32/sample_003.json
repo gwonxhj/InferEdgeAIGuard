@@ -1,0 +1,17 @@
+{
+  "model": "yolov8n",
+  "precision": "fp32",
+  "image_id": "sample_003",
+  "detections": [
+    {
+      "class_id": 0,
+      "confidence": 0.88,
+      "bbox": [18.0, 30.0, 100.0, 72.0]
+    },
+    {
+      "class_id": 4,
+      "confidence": 0.69,
+      "bbox": [170.0, 90.0, 42.0, 38.0]
+    }
+  ]
+}

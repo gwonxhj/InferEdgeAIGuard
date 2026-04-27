@@ -1,0 +1,12 @@
+{
+  "model": "yolov8n",
+  "precision": "int8",
+  "image_id": "sample_002",
+  "detections": [
+    {
+      "class_id": 0,
+      "confidence": 0.87,
+      "bbox": [16.0, 22.0, 118.0, 82.0]
+    }
+  ]
+}
