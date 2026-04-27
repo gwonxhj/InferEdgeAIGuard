@@ -166,3 +166,4 @@ python -m inferedge_aiguard.cli reason --input results/jetson/compare_fp32_fp16.
 - INT8은 calibration/accuracy 이슈가 커서 FP16 validation 이후 진행한다.
 - 실제 결과 파일이 준비되면 `reports/jetson`을 생성하고 `docs/jetson_validation_report.md`로 확장한다.
 - 실제 FP32/FP16 validation report: [docs/jetson_validation_report.md](jetson_validation_report.md)
+- 실제 FP16 repeated-run history evidence도 [docs/jetson_validation_report.md](jetson_validation_report.md)에 추가되었다.

@@ -161,6 +161,8 @@ InferEdgeAIGuard includes a fixture-based validation report that demonstrates ho
 
 Fixture-based validation report is available now, and Jetson real-device validation is planned in [docs/jetson_validation_plan.md](docs/jetson_validation_plan.md). 초기 Jetson FP32/FP16 evidence는 [docs/jetson_validation_report.md](docs/jetson_validation_report.md)에 정리되어 있습니다.
 
+Jetson run history reasoning evidence도 추가되어, AIGuard가 repeated FP16 run에서 accuracy logging이 일관되지 않은 문제를 `partial_accuracy_missing`으로 감지할 수 있음을 보여줍니다.
+
 ## Output JSON Schema
 
 YOLO output-level detector는 다음 형식을 기준으로 합니다.
