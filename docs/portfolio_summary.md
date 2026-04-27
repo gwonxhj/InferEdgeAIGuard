@@ -158,3 +158,7 @@ InferEdgeAIGuard는 다음을 직접 수행하지 않습니다.
 - 향후 API/SaaS로 확장할 경우 unified `reason` entrypoint를 backend endpoint로 연결
 
 현재 단계에서 InferEdgeAIGuard는 "Edge inference result를 측정하는 도구"가 아니라, 측정 결과를 검토하고 의심 신호를 설명하는 validation reasoning layer로 포지셔닝됩니다.
+
+## 10. One-line Interview Pitch
+
+InferEdgeAIGuard는 Jetson 기반 Edge AI inference 결과를 단순 측정에서 끝내지 않고, 결과의 신뢰성 문제를 rule-based reasoning으로 감지하고 설명하는 validation layer입니다.

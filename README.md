@@ -1,17 +1,17 @@
 # InferEdgeAIGuard
 
+InferEdgeAIGuard is an Edge AI inference validation reasoning layer that detects suspicious inference results from latency, accuracy, runtime provenance, output patterns, and repeated-run history.
+
 InferEdgeAIGuard는 Edge AI inference 결과를 신뢰하기 전에 latency, accuracy, runtime provenance, output pattern, repeated-run history를 기반으로 anomaly와 suspected cause를 설명하는 validation reasoning layer입니다.
 
 InferEdge ecosystem에서 역할은 다음처럼 나뉩니다.
 
-- InferEdgeLab: measurement + comparison
-- InferEdgeAIGuard: anomaly reasoning + explanation + suspected cause + recommendation
+- InferEdgeLab = measurement + comparison
+- InferEdgeAIGuard = anomaly reasoning + explanation + suspected cause
 
 전체 흐름은 다음을 기준으로 합니다.
 
-```text
-Forge -> Runtime -> Lab -> AIGuard
-```
+`Forge -> Runtime -> Lab -> AIGuard`
 
 - Forge: deployment artifact 생성
 - Runtime: edge device inference 실행
@@ -20,9 +20,20 @@ Forge -> Runtime -> Lab -> AIGuard
 
 AIGuard는 Lab 결과를 덮어쓰지 않습니다. Lab이 측정하고 비교한 JSON 결과 위에 "이 결과를 믿어도 되는가?", "어떤 anomaly signal이 있는가?", "어떤 원인을 의심해야 하는가?"를 덧붙이는 계층입니다.
 
-## What AIGuard Analyzes
+## Why This Exists
 
-### A. Output-level failure detection
+Edge AI에서는 latency 숫자가 좋아 보여도 validation evidence가 충분하지 않을 수 있습니다.
+
+- latency가 개선된 것처럼 보여도 accuracy가 기록되지 않았을 수 있습니다.
+- FP16/INT8 candidate인데 FP32 대비 기대한 speedup이 없을 수 있습니다.
+- 반복 실행 history에서 일부 run만 accuracy가 기록될 수 있습니다.
+- 이런 문제는 단순 benchmark 숫자만 보면 놓치기 쉽습니다.
+
+AIGuard는 inference result를 그대로 믿지 않고, result-level evidence에서 의심 신호와 suspected cause를 설명합니다.
+
+## Current Capabilities
+
+### Output-level failure detection
 
 YOLO detection output JSON을 직접 분석합니다.
 
@@ -31,7 +42,7 @@ YOLO detection output JSON을 직접 분석합니다.
 - detection count mismatch
 - 단일 output, FP32/candidate pair, batch directory 분석 지원
 
-### B. Lab compare result reasoning
+### Compare result reasoning
 
 `reason-compare` 또는 unified `reason` 명령으로 Lab compare result JSON을 분석합니다.
 
@@ -40,7 +51,7 @@ YOLO detection output JSON을 직접 분석합니다.
 - shape/run_config mismatch
 - cross-precision large latency delta
 
-### C. Lab structured result reasoning
+### Structured result reasoning
 
 `reason-result` 또는 unified `reason` 명령으로 단일 Lab structured result JSON을 분석합니다.
 
@@ -51,7 +62,7 @@ YOLO detection output JSON을 직접 분석합니다.
 - missing `resolved_input_shapes`
 - quantized result without accuracy
 
-### D. Run history reasoning
+### Run history reasoning
 
 `reason-history` 또는 unified `reason` 명령으로 repeated Lab structured result list JSON을 분석합니다.
 
@@ -73,6 +84,15 @@ YOLO detection output JSON을 직접 분석합니다.
 | `reason-result` | Lab structured result JSON | Single result reasoning |
 | `reason-history` | Lab structured result list JSON | Multi-run stability reasoning |
 | `reason` | Compare/result/history JSON | Unified auto-routing reasoning |
+
+## Quick Smoke Commands
+
+- `python -m inferedge_aiguard.cli reason --input examples/lab_compat/lab_compare_realistic.json`
+  - Expected: `accuracy_missing_warning`, `likely_quantization_effect`
+- `python -m inferedge_aiguard.cli reason --input real_device/jetson/compare_fp32_fp16.json`
+  - Expected: `insufficient_precision_speedup`
+- `python -m inferedge_aiguard.cli reason --input real_device/jetson/history/yolov8n_fp16_history.json`
+  - Expected: `partial_accuracy_missing`
 
 ## Unified Reason CLI
 
@@ -151,10 +171,19 @@ python -m inferedge_aiguard.cli reason --input examples/lab_compat/lab_history_r
 
 InferEdgeAIGuard includes a fixture-based validation report that demonstrates how the reasoning layer detects suspicious compare results, structured result issues, and repeated-run instability.
 
+| Evidence | Path | Purpose |
+|---|---|---|
+| Fixture validation report | `docs/validation_report.md` | Lab-like fixture 기반 reasoning 검증 |
+| Jetson validation report | `docs/jetson_validation_report.md` | Real-device evidence |
+| Portfolio summary | `docs/portfolio_summary.md` | 면접/포트폴리오 설명용 |
+| Jetson compare evidence | `real_device/jetson/compare_fp32_fp16.json` | FP32 vs FP16 speedup 검증 |
+| Jetson history evidence | `real_device/jetson/history/yolov8n_fp16_history.json` | repeated-run logging consistency 검증 |
+
 - Portfolio summary: [docs/portfolio_summary.md](docs/portfolio_summary.md)
 - Validation report: [docs/validation_report.md](docs/validation_report.md)
 - Jetson validation plan: [docs/jetson_validation_plan.md](docs/jetson_validation_plan.md)
 - Jetson validation report: [docs/jetson_validation_report.md](docs/jetson_validation_report.md)
+- GitHub publication notes: [docs/github_publication_notes.md](docs/github_publication_notes.md)
 - Saved evidence reports: `reports/validation/`
 - Real-device Jetson reports: `reports/jetson/`
 - Real-device Jetson inputs: `real_device/jetson/`
@@ -215,17 +244,19 @@ YOLO output-level detector는 다음 형식을 기준으로 합니다.
 
 InferEdgeAIGuard는 ground truth 정답을 직접 판단하기보다, result-level signal을 통해 "검증자가 더 살펴봐야 할 inference result"를 빠르게 좁히는 연구형 도구입니다.
 
-## What This Project Does Not Do
+## Limitations
 
-InferEdgeAIGuard는 result-based validation reasoning layer입니다. 다음을 직접 구현하지 않습니다.
+InferEdgeAIGuard는 result-based validation reasoning layer입니다.
 
+- heuristic/rule-based reasoning이며, actual root cause를 확정하지 않고 suspected cause를 제공합니다.
 - 모델 내부 구조 분석
 - weight/graph 분석 중심 진단
 - ground truth accuracy 평가기
 - TensorRT/Jetson 실행기
 - 모델 변환기
 - ML 학습 또는 calibration 자동화
-- SaaS 제품 구현
+- controlled repeated-run 실험은 추가 예정
+- SaaS/API는 future work
 
 즉, AIGuard는 실행기나 변환기가 아니라 Lab/Runtime이 남긴 결과를 해석하는 reasoning layer입니다.
 
