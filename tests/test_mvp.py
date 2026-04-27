@@ -23,17 +23,25 @@ def test_normal_case_has_no_false_positive():
 
 def test_bbox_collapse_detected():
     summary = summarize_failures(load_example("int8_bbox_collapse.json"))
+    failure = summary["failures"][0]
 
     assert summary["has_failure"] is True
-    assert summary["failures"][0]["failure_type"] == "bbox_collapse"
-    assert summary["failures"][0]["affected_count"] == 1
+    assert failure["failure_type"] == "bbox_collapse"
+    assert failure["affected_count"] == 1
+    assert failure["total_count"] == 2
+    assert failure["collapse_ratio"] == 0.5
+    assert failure["threshold"] == 1e-6
 
 
 def test_confidence_saturation_detected():
     summary = summarize_failures(load_example("int8_conf_saturation.json"))
+    failure = summary["failures"][0]
 
     assert summary["has_failure"] is True
-    assert summary["failures"][0]["failure_type"] == "confidence_saturation"
+    assert failure["failure_type"] == "confidence_saturation"
+    assert failure["total_count"] == 5
+    assert failure["saturation_ratio"] == 1.0
+    assert failure["ratio_threshold"] == 0.8
 
 
 def test_detection_count_mismatch_detected():
@@ -41,11 +49,16 @@ def test_detection_count_mismatch_detected():
         load_example("fp32_normal.json"),
         load_example("int8_count_mismatch.json"),
     )
+    failure = summary["failures"][0]
 
     assert summary["has_failure"] is True
     assert summary["base_count"] == 3
     assert summary["candidate_count"] == 1
-    assert summary["failures"][0]["failure_type"] == "detection_count_mismatch"
+    assert failure["failure_type"] == "detection_count_mismatch"
+    assert failure["base_count"] == 3
+    assert failure["candidate_count"] == 1
+    assert failure["mismatch_ratio"] == 2 / 3
+    assert failure["threshold"] == 0.5
 
 
 def test_cli_analyze_runs():
@@ -67,6 +80,25 @@ def test_cli_analyze_runs():
     assert "No failure detected" in result.stdout
 
 
+def test_cli_analyze_bbox_collapse_shows_numeric_context():
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "analyze",
+            "--input",
+            str(ROOT / "examples" / "int8_bbox_collapse.json"),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert "affected_count" in result.stdout or "collapse_ratio" in result.stdout
+
+
 def test_cli_compare_runs():
     result = subprocess.run(
         [
@@ -86,3 +118,4 @@ def test_cli_compare_runs():
     )
 
     assert "detection_count_mismatch" in result.stdout
+    assert "mismatch_ratio" in result.stdout

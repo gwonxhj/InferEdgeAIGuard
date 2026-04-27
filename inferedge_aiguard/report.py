@@ -27,9 +27,28 @@ def format_summary(summary: dict[str, Any]) -> str:
 
     lines.append("- result: Failure detected")
     for failure in summary.get("failures", []):
-        lines.append(
-            f"- failure_type={failure['failure_type']} | "
-            f"severity={failure['severity']} | message={failure['message']}"
-        )
+        parts = [
+            f"failure_type={failure['failure_type']}",
+            f"severity={failure['severity']}",
+            f"message={failure['message']}",
+        ]
+        for field in (
+            "affected_count",
+            "total_count",
+            "collapse_ratio",
+            "saturation_ratio",
+            "mismatch_ratio",
+            "threshold",
+            "ratio_threshold",
+        ):
+            if field in failure:
+                parts.append(f"{field}={_format_value(failure[field])}")
+        lines.append(f"- {' | '.join(parts)}")
 
     return "\n".join(lines)
+
+
+def _format_value(value: Any) -> str:
+    if isinstance(value, float):
+        return f"{value:.6g}"
+    return str(value)

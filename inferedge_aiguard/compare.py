@@ -51,20 +51,25 @@ def _detect_count_mismatch(
     if base_count == 0:
         if candidate_count == 0:
             return None
-        ratio = 1.0
+        mismatch_ratio = 1.0
     else:
-        ratio = abs(base_count - candidate_count) / base_count
+        mismatch_ratio = abs(base_count - candidate_count) / base_count
 
-    if ratio < threshold:
+    if mismatch_ratio < threshold:
         return None
+
+    severity = "high" if mismatch_ratio >= 0.8 else "medium"
 
     return {
         "failure_type": "detection_count_mismatch",
-        "severity": "high",
+        "severity": severity,
         "message": (
             f"Detection count changed from {base_count} to {candidate_count} "
-            f"(mismatch ratio {ratio:.2f}, threshold {threshold:.2f})."
+            f"(mismatch ratio {mismatch_ratio:.2f}, threshold {threshold:.2f})."
         ),
         "affected_count": abs(base_count - candidate_count),
-        "mismatch_ratio": ratio,
+        "base_count": base_count,
+        "candidate_count": candidate_count,
+        "mismatch_ratio": mismatch_ratio,
+        "threshold": threshold,
     }

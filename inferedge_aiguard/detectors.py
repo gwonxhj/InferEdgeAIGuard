@@ -15,6 +15,10 @@ def detect_bbox_collapse(output: dict[str, Any], threshold: float = 1e-6) -> Fai
     """Detect boxes whose width or height has collapsed near zero."""
 
     validate_output(output)
+    total_count = len(output["detections"])
+    if total_count == 0:
+        return None
+
     affected_count = 0
 
     for detection in output["detections"]:
@@ -25,14 +29,25 @@ def detect_bbox_collapse(output: dict[str, Any], threshold: float = 1e-6) -> Fai
     if affected_count == 0:
         return None
 
+    collapse_ratio = affected_count / total_count
+    if collapse_ratio >= 0.5:
+        severity = "high"
+    elif collapse_ratio >= 0.1:
+        severity = "medium"
+    else:
+        severity = "low"
+
     return {
         "failure_type": "bbox_collapse",
-        "severity": "high",
+        "severity": severity,
         "message": (
-            f"{affected_count} detection(s) have bbox width/height at or below "
-            f"collapse threshold {threshold}."
+            f"{affected_count}/{total_count} detection bbox width/height values are "
+            f"at or below collapse threshold {threshold}."
         ),
         "affected_count": affected_count,
+        "total_count": total_count,
+        "collapse_ratio": collapse_ratio,
+        "threshold": threshold,
     }
 
 
@@ -46,7 +61,8 @@ def detect_confidence_saturation(
 
     validate_output(output)
     detections = output["detections"]
-    if not detections:
+    total_count = len(detections)
+    if total_count == 0:
         return None
 
     saturated_count = sum(
@@ -55,20 +71,26 @@ def detect_confidence_saturation(
         if float(detection["confidence"]) <= low_threshold
         or float(detection["confidence"]) >= high_threshold
     )
-    ratio = saturated_count / len(detections)
+    saturation_ratio = saturated_count / total_count
 
-    if ratio < ratio_threshold:
+    if saturation_ratio < ratio_threshold:
         return None
+
+    severity = "high" if saturation_ratio >= 0.95 else "medium"
 
     return {
         "failure_type": "confidence_saturation",
-        "severity": "medium",
+        "severity": severity,
         "message": (
-            f"{saturated_count}/{len(detections)} detection confidence values are "
+            f"{saturated_count}/{total_count} detection confidence values are "
             f"near {low_threshold} or {high_threshold}."
         ),
         "affected_count": saturated_count,
-        "saturation_ratio": ratio,
+        "total_count": total_count,
+        "saturation_ratio": saturation_ratio,
+        "low_threshold": low_threshold,
+        "high_threshold": high_threshold,
+        "ratio_threshold": ratio_threshold,
     }
 
 
