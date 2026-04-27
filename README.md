@@ -186,6 +186,8 @@ python -m inferedge_aiguard.cli batch-analyze \
 
 `--save-json`은 summary dict를 그대로 저장하므로 후속 분석, 표 작성, 논문/포트폴리오 실험 로그 누적에 적합합니다. `--save-md`는 사람이 읽기 쉬운 실험 리포트를 남길 때 사용합니다.
 
+`--save-md`로 batch 결과를 저장하면 표 형태의 Markdown report가 생성됩니다. `batch-analyze` report에는 `Metadata`, `Aggregate Summary`, `Failure Type Counts`, `Samples` 섹션이 포함됩니다. `batch-compare` report에는 `Metadata`, `Aggregate Summary`, `Failure Type Counts`, `Unmatched Files`, `Pairs` 섹션이 포함됩니다. 두 report 모두 `Raw CLI Summary`를 함께 포함하므로 CLI 출력과 문서형 요약을 동시에 확인할 수 있습니다.
+
 저장 기능 역시 ground truth 평가가 아니라 output-level failure signal 기록입니다. 즉 "정답 대비 정확도"를 저장하는 것이 아니라, InferEdgeAIGuard가 감지한 출력 레벨 failure signal과 집계 결과를 재현 가능한 파일로 남기는 기능입니다.
 
 테스트를 실행합니다.

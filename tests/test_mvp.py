@@ -418,6 +418,35 @@ def test_cli_batch_analyze_save_json(tmp_path):
     assert saved["mode"] == "batch_analyze"
 
 
+def test_cli_batch_analyze_save_markdown_tables(tmp_path):
+    output_path = tmp_path / "reports" / "batch_analyze.md"
+
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "batch-analyze",
+            "--input-dir",
+            str(SINGLE_EXAMPLES),
+            "--save-md",
+            str(output_path),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    content = output_path.read_text(encoding="utf-8")
+    assert "## Metadata" in content
+    assert "## Aggregate Summary" in content
+    assert "## Failure Type Counts" in content
+    assert "## Samples" in content
+    assert "| Metric | Value |" in content
+    assert "failure_rate" in content
+
+
 def test_cli_batch_compare_save_markdown(tmp_path):
     base_dir = tmp_path / "base"
     candidate_dir = tmp_path / "candidate"
@@ -449,3 +478,10 @@ def test_cli_batch_compare_save_markdown(tmp_path):
     content = output_path.read_text(encoding="utf-8")
     assert output_path.exists()
     assert "Batch Compare Report" in content or "pair_count" in content
+    assert "## Metadata" in content
+    assert "## Aggregate Summary" in content
+    assert "## Failure Type Counts" in content
+    assert "## Unmatched Files" in content
+    assert "## Pairs" in content
+    assert "| Filename | Base Image ID | Candidate Image ID" in content
+    assert "pair_count" in content
