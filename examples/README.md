@@ -9,6 +9,7 @@
 - `int8/`: `batch-compare`에서 candidate로 사용할 INT8 output fixture
 - `lab_compare/`: `reason-compare`에서 사용할 InferEdgeLab compare result reasoning fixture
 - `lab_result/`: Python API `analyze_structured_result()`에서 사용할 InferEdgeLab structured result fixture
+- `lab_history/`: Python API `analyze_run_history()`에서 사용할 repeated Lab structured result fixture
 
 ## 실행 예시
 
@@ -71,3 +72,10 @@ python -m inferedge_aiguard.cli reason-result \
 ```
 
 `reason-result`는 compare 결과가 아니라 단일 Lab structured result JSON을 분석합니다.
+
+Lab run history reasoning 예제도 포함되어 있습니다.
+
+- `lab_history/stable_fp32_history.json`: 반복 실행 latency가 안정적이고 accuracy가 일관되게 기록된 FP32 history 예제
+- `lab_history/unstable_int8_history.json`: mean/p99 latency instability, outlier run, quantized accuracy missing이 발생하는 INT8 history 예제
+
+아직 run history 전용 CLI는 없으며, Python API 예제로 사용할 수 있습니다.

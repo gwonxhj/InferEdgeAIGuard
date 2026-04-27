@@ -18,6 +18,8 @@ def format_summary(summary: dict[str, Any]) -> str:
         return _format_compare_reasoning_summary(summary)
     if summary.get("mode") == "structured_result_reasoning":
         return _format_structured_result_reasoning_summary(summary)
+    if summary.get("mode") == "run_history_reasoning":
+        return _format_run_history_reasoning_summary(summary)
 
     lines: list[str] = []
 
@@ -132,12 +134,26 @@ def _format_structured_result_reasoning_summary(summary: dict[str, Any]) -> str:
     )
 
 
-def _format_reasoning_summary(summary: dict[str, Any], title: str) -> str:
+def _format_run_history_reasoning_summary(summary: dict[str, Any]) -> str:
+    return _format_reasoning_summary(
+        summary,
+        "InferEdgeAIGuard run history reasoning summary",
+        extra_lines=[f"- run_count: {summary.get('run_count', 0)}"],
+    )
+
+
+def _format_reasoning_summary(
+    summary: dict[str, Any],
+    title: str,
+    extra_lines: list[str] | None = None,
+) -> str:
     lines = [
         title,
         f"- status: {summary.get('status', 'unknown')}",
         f"- confidence: {_format_value(summary.get('confidence', 0.0))}",
     ]
+    if extra_lines:
+        lines.extend(extra_lines)
 
     anomalies = summary.get("anomalies", [])
     if not anomalies:
@@ -196,6 +212,8 @@ def save_summary_markdown(summary: dict[str, Any], output_path: str | Path) -> N
         content = _markdown_compare_reasoning_report(summary)
     elif summary.get("mode") == "structured_result_reasoning":
         content = _markdown_reasoning_report(summary)
+    elif summary.get("mode") == "run_history_reasoning":
+        content = _markdown_run_history_reasoning_report(summary)
     else:
         content = _markdown_basic_report(summary)
     path.write_text(content, encoding="utf-8")
@@ -210,6 +228,8 @@ def _markdown_title(summary: dict[str, Any]) -> str:
         return "# InferEdgeAIGuard Compare Reasoning Report"
     if summary.get("mode") == "structured_result_reasoning":
         return "# InferEdgeAIGuard Structured Result Reasoning Report"
+    if summary.get("mode") == "run_history_reasoning":
+        return "# InferEdgeAIGuard Run History Reasoning Report"
     if "base_count" in summary:
         return "# InferEdgeAIGuard Compare Report"
     return "# InferEdgeAIGuard Analyze Report"
@@ -311,6 +331,53 @@ def _markdown_batch_compare_report(summary: dict[str, Any]) -> str:
 
 def _markdown_compare_reasoning_report(summary: dict[str, Any]) -> str:
     return _markdown_reasoning_report(summary)
+
+
+def _markdown_run_history_reasoning_report(summary: dict[str, Any]) -> str:
+    anomalies = summary.get("anomalies", [])
+    anomaly_section = "No anomaly detected"
+    if anomalies:
+        anomaly_section = _markdown_table(
+            ["Type", "Severity", "Message"],
+            [
+                [
+                    anomaly.get("type", ""),
+                    anomaly.get("severity", ""),
+                    anomaly.get("message", ""),
+                ]
+                for anomaly in anomalies
+            ],
+        )
+
+    metrics = summary.get("history_metrics", {})
+    sections = [
+        _markdown_title(summary),
+        "## Aggregate Summary",
+        _markdown_table(
+            ["Metric", "Value"],
+            [
+                ["status", summary.get("status", "unknown")],
+                ["confidence", _format_value(summary.get("confidence", 0.0))],
+                ["run_count", summary.get("run_count", 0)],
+            ],
+        ),
+        "## History Metrics",
+        _markdown_table(
+            ["Metric", "Value"],
+            [
+                [key, _format_markdown_list(value) if isinstance(value, list) else value]
+                for key, value in metrics.items()
+            ],
+        ),
+        "## Anomalies",
+        anomaly_section,
+        "## Suspected Causes",
+        _markdown_bullet_list(summary.get("suspected_causes", [])),
+        "## Recommendations",
+        _markdown_bullet_list(summary.get("recommendations", [])),
+        _markdown_raw_cli_summary(summary),
+    ]
+    return "\n\n".join(sections) + "\n"
 
 
 def _markdown_reasoning_report(summary: dict[str, Any]) -> str:

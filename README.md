@@ -107,6 +107,27 @@ python -m inferedge_aiguard.cli reason-result \
 
 이 단계도 실제 Lab repo import 없이 Lab structured result JSON을 직접 읽어 reasoning summary를 생성합니다.
 
+## Run history reasoning
+
+2.5단계부터 AIGuard는 단일 structured result뿐 아니라 repeated run history도 분석합니다. 이 기능은 "이 단일 결과가 이상한가?"가 아니라 "여러 번 반복 실행했을 때 시스템이 안정적이고 일관적인가?"를 판단하기 위한 reasoning layer입니다.
+
+Python API는 `analyze_run_history(results)`입니다. 입력은 InferEdgeLab structured result dict의 list입니다.
+
+초기 rule은 다음을 감지합니다.
+
+- insufficient history
+- mixed identity fields
+- mixed shape/config
+- mean latency instability
+- p99 latency instability
+- outlier run
+- partial accuracy missing
+- quantized history accuracy missing
+
+history reasoning은 같은 model, engine, device, precision, batch/height/width 조건으로 묶인 반복 실행 결과를 전제로 합니다. 같은 history 안에 다른 실험 그룹이 섞이면 `mixed_run_identity` 또는 `mixed_shape_config`로 신뢰할 수 없는 history로 판단합니다.
+
+이 단계는 CLI 없이 Python API와 report formatter만 추가합니다. 실제 Lab repo import 없이 structured result list를 직접 넘겨 반복 실험의 latency 안정성, tail latency 변동, outlier run, accuracy logging 일관성을 확인하는 시작점입니다.
+
 ## 1차 MVP 범위
 
 - YOLO detection output JSON 최소 스키마 검증
