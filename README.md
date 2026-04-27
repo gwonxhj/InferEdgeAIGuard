@@ -126,7 +126,21 @@ Python API는 `analyze_run_history(results)`입니다. 입력은 InferEdgeLab st
 
 history reasoning은 같은 model, engine, device, precision, batch/height/width 조건으로 묶인 반복 실행 결과를 전제로 합니다. 같은 history 안에 다른 실험 그룹이 섞이면 `mixed_run_identity` 또는 `mixed_shape_config`로 신뢰할 수 없는 history로 판단합니다.
 
-이 단계는 CLI 없이 Python API와 report formatter만 추가합니다. 실제 Lab repo import 없이 structured result list를 직접 넘겨 반복 실험의 latency 안정성, tail latency 변동, outlier run, accuracy logging 일관성을 확인하는 시작점입니다.
+`reason-history` CLI는 repeated Lab structured result list JSON을 입력으로 받습니다. `reason-result`가 단일 structured result를 분석한다면, `reason-history`는 반복 실행 history 관점에서 안정성과 일관성을 분석합니다.
+
+```bash
+python -m inferedge_aiguard.cli reason-history \
+  --input examples/lab_history/unstable_int8_history.json
+```
+
+```bash
+python -m inferedge_aiguard.cli reason-history \
+  --input examples/lab_history/unstable_int8_history.json \
+  --save-json reports/history_reasoning.json \
+  --save-md reports/history_reasoning.md
+```
+
+`reason-history`는 mean latency instability, p99 latency instability, latency outlier run, mixed identity/shape config, partial or missing accuracy logging 같은 반복 실험 관점의 anomaly signal을 보고합니다. 실제 Lab repo import 없이 structured result list JSON을 직접 읽어 reasoning summary를 생성합니다.
 
 ## 1차 MVP 범위
 

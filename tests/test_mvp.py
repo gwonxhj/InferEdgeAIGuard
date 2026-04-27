@@ -1104,3 +1104,123 @@ def test_run_history_save_markdown_report(tmp_path):
     assert "History Metrics" in content
     assert "Anomalies" in content
     assert "Recommendations" in content
+
+
+def test_cli_reason_history_runs_stable_history():
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "reason-history",
+            "--input",
+            str(LAB_HISTORY_EXAMPLES / "stable_fp32_history.json"),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert "InferEdgeAIGuard run history reasoning summary" in result.stdout
+    assert "- status: ok" in result.stdout
+    assert "No anomaly detected" in result.stdout
+
+
+def test_cli_reason_history_runs_unstable_history():
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "reason-history",
+            "--input",
+            str(LAB_HISTORY_EXAMPLES / "unstable_int8_history.json"),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert (
+        "mean_latency_instability" in result.stdout
+        or "p99_latency_instability" in result.stdout
+    )
+
+
+def test_cli_reason_history_save_json(tmp_path):
+    output_path = tmp_path / "reports" / "history_reasoning.json"
+
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "reason-history",
+            "--input",
+            str(LAB_HISTORY_EXAMPLES / "unstable_int8_history.json"),
+            "--save-json",
+            str(output_path),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    saved = json.loads(output_path.read_text(encoding="utf-8"))
+    assert saved["mode"] == "run_history_reasoning"
+    assert "status" in saved
+    assert "anomalies" in saved
+    assert "recommendations" in saved
+
+
+def test_cli_reason_history_save_markdown(tmp_path):
+    output_path = tmp_path / "reports" / "history_reasoning.md"
+
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "reason-history",
+            "--input",
+            str(LAB_HISTORY_EXAMPLES / "unstable_int8_history.json"),
+            "--save-md",
+            str(output_path),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    content = output_path.read_text(encoding="utf-8")
+    assert "Run History Reasoning Report" in content
+    assert "Aggregate Summary" in content
+    assert "History Metrics" in content
+    assert "Anomalies" in content
+    assert "Recommendations" in content
+
+
+def test_cli_reason_history_rejects_non_list_json(tmp_path):
+    input_path = tmp_path / "not_history.json"
+    input_path.write_text('{"model": "resnet18.onnx"}\n', encoding="utf-8")
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "reason-history",
+            "--input",
+            str(input_path),
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode != 0
+    assert "Expected JSON list" in result.stderr
