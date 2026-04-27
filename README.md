@@ -153,10 +153,13 @@ InferEdgeAIGuard includes a fixture-based validation report that demonstrates ho
 
 - Validation report: [docs/validation_report.md](docs/validation_report.md)
 - Jetson validation plan: [docs/jetson_validation_plan.md](docs/jetson_validation_plan.md)
+- Jetson validation report: [docs/jetson_validation_report.md](docs/jetson_validation_report.md)
 - Saved evidence reports: `reports/validation/`
+- Real-device Jetson reports: `reports/jetson/`
+- Real-device Jetson inputs: `real_device/jetson/`
 - Inputs: `examples/lab_compat/`
 
-현재 validation은 realistic fixture 기반입니다. 실제 Jetson validation은 다음 단계에서 Jetson/InferEdgeLab real result를 수집한 뒤 수행할 예정입니다. Fixture-based validation report is available now, and Jetson real-device validation is planned in [docs/jetson_validation_plan.md](docs/jetson_validation_plan.md).
+Fixture-based validation report is available now, and Jetson real-device validation is planned in [docs/jetson_validation_plan.md](docs/jetson_validation_plan.md). 초기 Jetson FP32/FP16 evidence는 [docs/jetson_validation_report.md](docs/jetson_validation_report.md)에 정리되어 있습니다.
 
 ## Output JSON Schema
 

@@ -23,6 +23,7 @@ LAB_COMPARE_EXAMPLES = EXAMPLES / "lab_compare"
 LAB_RESULT_EXAMPLES = EXAMPLES / "lab_result"
 LAB_HISTORY_EXAMPLES = EXAMPLES / "lab_history"
 LAB_COMPAT_EXAMPLES = EXAMPLES / "lab_compat"
+JETSON_REAL_DEVICE = ROOT / "real_device" / "jetson"
 
 
 def load_example(name: str) -> dict:
@@ -553,6 +554,53 @@ def test_reasoning_cross_precision_large_latency_delta_warns():
         for anomaly in summary["anomalies"]
     )
     assert "precision_or_runtime_change" in summary["suspected_causes"]
+
+
+def test_reasoning_insufficient_precision_speedup_warns():
+    summary = analyze_compare_result(
+        {
+            "comparison_mode": "cross_precision",
+            "precision_pair": "fp32_vs_fp16",
+            "latency_delta_pct": -1.0,
+            "accuracy": 0.77,
+            "shape_match": True,
+            "run_config_match": True,
+        }
+    )
+
+    assert summary["status"] == "warning"
+    assert "insufficient_precision_speedup" in anomaly_types(summary)
+    assert "precision_speedup_not_observed" in summary["suspected_causes"]
+
+
+def test_reasoning_sufficient_precision_speedup_does_not_warn():
+    summary = analyze_compare_result(
+        {
+            "comparison_mode": "cross_precision",
+            "precision_pair": "fp32_vs_fp16",
+            "latency_delta_pct": -25.0,
+            "accuracy": 0.77,
+            "shape_match": True,
+            "run_config_match": True,
+        }
+    )
+
+    assert "insufficient_precision_speedup" not in anomaly_types(summary)
+
+
+def test_reasoning_same_precision_ignores_insufficient_speedup_rule():
+    summary = analyze_compare_result(
+        {
+            "comparison_mode": "same_precision",
+            "precision_pair": "fp32_vs_fp32",
+            "latency_delta_pct": -1.0,
+            "accuracy": 0.77,
+            "shape_match": True,
+            "run_config_match": True,
+        }
+    )
+
+    assert "insufficient_precision_speedup" not in anomaly_types(summary)
 
 
 def test_reasoning_ok_result_has_no_anomalies():
@@ -1524,3 +1572,23 @@ def test_unified_reason_lab_compat_history_save_markdown(tmp_path):
     )
 
     assert "Run History Reasoning Report" in output_path.read_text(encoding="utf-8")
+
+
+def test_unified_reason_jetson_compare_detects_insufficient_precision_speedup():
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "reason",
+            "--input",
+            str(JETSON_REAL_DEVICE / "compare_fp32_fp16.json"),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert "InferEdgeAIGuard compare reasoning summary" in result.stdout
+    assert "insufficient_precision_speedup" in result.stdout

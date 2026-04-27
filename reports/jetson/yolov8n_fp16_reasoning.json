@@ -1,0 +1,9 @@
+{
+  "mode": "structured_result_reasoning",
+  "status": "ok",
+  "anomalies": [],
+  "explanations": [],
+  "suspected_causes": [],
+  "confidence": 0.5,
+  "recommendations": []
+}

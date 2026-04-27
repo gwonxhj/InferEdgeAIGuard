@@ -1,0 +1,30 @@
+{
+  "mode": "compare_reasoning",
+  "status": "warning",
+  "anomalies": [
+    {
+      "type": "insufficient_precision_speedup",
+      "severity": "medium",
+      "message": "Cross-precision candidate shows less than 10% latency improvement, so the expected precision speedup was not observed.",
+      "evidence": {
+        "comparison_mode": "cross_precision",
+        "precision_pair": "fp32_vs_fp16",
+        "latency_delta_pct": -1.015310170420805,
+        "minimum_expected_speedup_pct": 10.0
+      }
+    }
+  ],
+  "explanations": [
+    "Cross-precision candidate shows less than 10% latency improvement, so the expected precision speedup was not observed."
+  ],
+  "suspected_causes": [
+    "precision_speedup_not_observed",
+    "runtime_or_engine_optimization_issue"
+  ],
+  "confidence": 0.7,
+  "recommendations": [
+    "Verify that the TensorRT engine was actually built and executed with the expected reduced precision.",
+    "Check runtime_artifact_path, engine build settings, and operator precision fallback.",
+    "Repeat profiling to rule out measurement variance or device load effects."
+  ]
+}
