@@ -1,0 +1,67 @@
+{
+  "model": "yolov8n.onnx",
+  "engine": "tensorrt",
+  "device": "gpu",
+  "precision": "fp16",
+  "batch": 1,
+  "height": 640,
+  "width": 640,
+  "mean_ms": 13.352749789987683,
+  "p99_ms": 16.816976569712097,
+  "timestamp": "20260424-131747-658979",
+  "source_report_path": "reports/yolov8n__tensorrt_gpu__b1__h640w640__r100__20260424-035442.json",
+  "system": {
+    "os": "Linux 5.15.148-tegra",
+    "python": "3.10.12",
+    "machine": "aarch64",
+    "processor": "aarch64",
+    "cpu_count_logical": 6
+  },
+  "run_config": {
+    "engine": "tensorrt",
+    "engine_path": "builds/yolov8n__jetson__tensorrt__jetson_fp16/model.engine",
+    "rknn_target": null,
+    "device_name": "jetson",
+    "warmup": 10,
+    "runs": 100,
+    "intra_threads": 1,
+    "inter_threads": 1,
+    "requested_batch": 1,
+    "requested_height": null,
+    "requested_width": null
+  },
+  "accuracy": {
+    "task": "detection",
+    "metrics": {
+      "map50": 0.7791,
+      "f1_score": 0.818,
+      "precision": 0.795,
+      "recall": 0.8424
+    }
+  },
+  "extra": {
+    "input_names": [
+      "images"
+    ],
+    "runtime_artifact_path": "builds/yolov8n__jetson__tensorrt__jetson_fp16/model.engine",
+    "rknn_target": null,
+    "device_name": "jetson",
+    "primary_input_name": "images",
+    "resolved_input_shapes": {
+      "images": [
+        1,
+        3,
+        640,
+        640
+      ]
+    },
+    "effective_batch": 1,
+    "effective_height": 640,
+    "effective_width": 640,
+    "enrichment": {
+      "source": "enrich_result_cmd",
+      "accuracy_json_path": "/home/risenano01/InferEdgeLab/benchmarks/rknn_accuracy_payloads/yolov8n_fp16_detection_accuracy.json",
+      "replaces_existing_accuracy": false
+    }
+  }
+}

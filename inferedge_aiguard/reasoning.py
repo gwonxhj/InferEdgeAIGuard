@@ -18,8 +18,8 @@ def analyze_compare_result(compare_result: dict[str, Any]) -> dict[str, Any]:
         severity: str,
         message: str,
         evidence: dict[str, Any],
-        suspected_cause: str,
-        recommendation: str,
+        suspected_cause: str | list[str],
+        recommendation: str | list[str],
     ) -> None:
         anomalies.append(
             {
@@ -30,8 +30,10 @@ def analyze_compare_result(compare_result: dict[str, Any]) -> dict[str, Any]:
             }
         )
         explanations.append(message)
-        _append_unique(suspected_causes, suspected_cause)
-        _append_unique(recommendations, recommendation)
+        for cause in _as_list(suspected_cause):
+            _append_unique(suspected_causes, cause)
+        for item in _as_list(recommendation):
+            _append_unique(recommendations, item)
 
     shape_match = _first_present(compare_result, "shape_match", "shape_matched")
     if shape_match is False:
@@ -112,6 +114,40 @@ def analyze_compare_result(compare_result: dict[str, Any]) -> dict[str, Any]:
                 "Verify that the observed latency delta is expected for the target "
                 "engine/device/precision."
             ),
+        )
+
+    if _has_insufficient_precision_speedup(compare_result):
+        add_anomaly(
+            "insufficient_precision_speedup",
+            "medium",
+            (
+                "Cross-precision candidate shows less than 10% latency improvement, "
+                "so the expected precision speedup was not observed."
+            ),
+            {
+                "comparison_mode": compare_result.get("comparison_mode"),
+                "precision_pair": compare_result.get("precision_pair"),
+                "latency_delta_pct": compare_result.get("latency_delta_pct"),
+                "minimum_expected_speedup_pct": 10.0,
+            },
+            [
+                "precision_speedup_not_observed",
+                "runtime_or_engine_optimization_issue",
+            ],
+            [
+                (
+                    "Verify that the TensorRT engine was actually built and executed "
+                    "with the expected reduced precision."
+                ),
+                (
+                    "Check runtime_artifact_path, engine build settings, and operator "
+                    "precision fallback."
+                ),
+                (
+                    "Repeat profiling to rule out measurement variance or device "
+                    "load effects."
+                ),
+            ],
         )
 
     status = _status_from_anomalies(anomalies)
@@ -342,6 +378,41 @@ def _large_latency_delta(compare_result: dict[str, Any]) -> bool:
     return False
 
 
+def _has_insufficient_precision_speedup(compare_result: dict[str, Any]) -> bool:
+    latency_delta_pct = compare_result.get("latency_delta_pct")
+    if not isinstance(latency_delta_pct, (int, float)) or isinstance(
+        latency_delta_pct, bool
+    ):
+        return False
+    if not _is_cross_precision(compare_result):
+        return False
+    if _candidate_precision(compare_result) not in {"fp16", "int8"}:
+        return False
+    return latency_delta_pct > -10.0
+
+
+def _candidate_precision(compare_result: dict[str, Any]) -> str | None:
+    for parent_key in ("candidate", "new"):
+        value = compare_result.get(parent_key)
+        if isinstance(value, dict):
+            precision = value.get("precision")
+            if precision is not None:
+                return str(precision).lower()
+
+    precision_pair = compare_result.get("precision_pair")
+    if precision_pair is None:
+        return None
+
+    precision_text = str(precision_pair).lower()
+    if "_vs_" in precision_text:
+        candidate_precision = precision_text.rsplit("_vs_", 1)[1]
+        if candidate_precision in {"fp16", "int8"}:
+            return candidate_precision
+    if precision_text in {"fp32_vs_fp16", "fp32_vs_int8"}:
+        return precision_text.rsplit("_", 1)[1]
+    return None
+
+
 def _latency_evidence(compare_result: dict[str, Any]) -> dict[str, Any]:
     return {
         "overall_judgement": compare_result.get("overall_judgement"),
@@ -371,6 +442,12 @@ def _confidence_for_status(status: str) -> float:
 def _append_unique(values: list[str], value: str) -> None:
     if value not in values:
         values.append(value)
+
+
+def _as_list(value: str | list[str]) -> list[str]:
+    if isinstance(value, list):
+        return value
+    return [value]
 
 
 def _is_number(value: Any) -> bool:
