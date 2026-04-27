@@ -67,6 +67,32 @@ python -m inferedge_aiguard.cli reason-compare \
 
 이 adapter는 실제 InferEdgeLab repo를 import하지 않고도 JSON schema 변형에 대한 호환성을 높이기 위한 계층입니다.
 
+## Lab structured result reasoning
+
+2.3단계부터 AIGuard는 Lab compare result뿐 아니라 Lab structured result 단일 측정 결과도 분석합니다. 목표는 compare 이전의 단일 측정 결과에 대해 "이 결과 자체를 신뢰할 수 있는가?"를 판단하는 것입니다.
+
+Python API는 `analyze_structured_result(result)`입니다. 입력은 InferEdgeLab structured result dict이며 주요 기준 필드는 다음과 같습니다.
+
+- `model`, `engine`, `device`, `precision`
+- `mean_ms`, `p99_ms`
+- `run_config`
+- `system`
+- `extra.runtime_artifact_path`
+- `extra.resolved_input_shapes`
+- `accuracy` optional
+
+초기 rule은 다음을 감지합니다.
+
+- missing identity fields
+- missing 또는 invalid latency metrics
+- p99 latency instability
+- missing runtime artifact provenance
+- missing resolved input shapes
+- quantized precision without accuracy
+- missing run_config/system metadata
+
+이 단계는 CLI 없이 Python API와 report formatter만 추가합니다. 실제 Lab repo import 없이 structured result dict를 직접 넘겨 사용하는 시작점입니다.
+
 ## 1차 MVP 범위
 
 - YOLO detection output JSON 최소 스키마 검증

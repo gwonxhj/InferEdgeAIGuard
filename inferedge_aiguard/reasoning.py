@@ -126,6 +126,171 @@ def analyze_compare_result(compare_result: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def analyze_structured_result(result: dict[str, Any]) -> dict[str, Any]:
+    """Analyze one InferEdgeLab structured measurement result."""
+
+    anomalies: list[dict[str, Any]] = []
+    explanations: list[str] = []
+    suspected_causes: list[str] = []
+    recommendations: list[str] = []
+
+    def add_anomaly(
+        anomaly_type: str,
+        severity: str,
+        message: str,
+        evidence: dict[str, Any],
+        suspected_cause: str,
+        recommendation: str,
+    ) -> None:
+        anomalies.append(
+            {
+                "type": anomaly_type,
+                "severity": severity,
+                "message": message,
+                "evidence": evidence,
+            }
+        )
+        explanations.append(message)
+        _append_unique(suspected_causes, suspected_cause)
+        _append_unique(recommendations, recommendation)
+
+    missing_identity_fields = [
+        field for field in ("model", "engine", "device", "precision") if not result.get(field)
+    ]
+    if missing_identity_fields:
+        add_anomaly(
+            "missing_identity_field",
+            "high",
+            "Required identity fields are missing from the structured result.",
+            {"missing_fields": missing_identity_fields},
+            "incomplete_result_schema",
+            (
+                "Ensure model, engine, device, and precision are recorded in the Lab "
+                "structured result."
+            ),
+        )
+
+    mean_ms = result.get("mean_ms")
+    p99_ms = result.get("p99_ms")
+    missing_latency_fields = [
+        field for field in ("mean_ms", "p99_ms") if result.get(field) is None
+    ]
+    if missing_latency_fields:
+        add_anomaly(
+            "missing_latency_metric",
+            "high",
+            "Required latency metrics are missing from the structured result.",
+            {"missing_fields": missing_latency_fields},
+            "incomplete_latency_measurement",
+            "Re-run profiling and ensure mean_ms and p99_ms are exported.",
+        )
+
+    invalid_latency = {
+        field: value
+        for field, value in (("mean_ms", mean_ms), ("p99_ms", p99_ms))
+        if _is_number(value) and value <= 0
+    }
+    if invalid_latency:
+        add_anomaly(
+            "invalid_latency_value",
+            "high",
+            "Latency metrics must be positive values.",
+            invalid_latency,
+            "invalid_measurement_export",
+            "Check timing collection and result serialization.",
+        )
+
+    if _is_number(mean_ms) and _is_number(p99_ms) and mean_ms > 0:
+        p99_to_mean_ratio = p99_ms / mean_ms
+        if p99_to_mean_ratio >= 2.0:
+            add_anomaly(
+                "latency_instability",
+                "medium",
+                "p99 latency is much higher than mean latency.",
+                {
+                    "mean_ms": mean_ms,
+                    "p99_ms": p99_ms,
+                    "p99_to_mean_ratio": p99_to_mean_ratio,
+                },
+                "runtime_jitter_or_outlier_latency",
+                (
+                    "Repeat profiling and inspect warmup/runs/device load before "
+                    "trusting the result."
+                ),
+            )
+
+    extra = result.get("extra") if isinstance(result.get("extra"), dict) else {}
+    if not extra.get("runtime_artifact_path"):
+        add_anomaly(
+            "missing_runtime_artifact",
+            "medium",
+            "runtime_artifact_path is missing from result.extra.",
+            {"runtime_artifact_path": extra.get("runtime_artifact_path")},
+            "missing_runtime_provenance",
+            "Record runtime_artifact_path so the measured engine/artifact can be traced.",
+        )
+
+    if not extra.get("resolved_input_shapes"):
+        add_anomaly(
+            "missing_resolved_input_shapes",
+            "medium",
+            "resolved_input_shapes is missing from result.extra.",
+            {"resolved_input_shapes": extra.get("resolved_input_shapes")},
+            "missing_shape_provenance",
+            "Record resolved_input_shapes to validate actual runtime input dimensions.",
+        )
+
+    precision = str(result.get("precision", "")).lower()
+    if precision in {"int8", "fp16"} and not _has_accuracy_value(result):
+        add_anomaly(
+            "accuracy_missing_warning",
+            "medium",
+            "Quantized precision result is missing accuracy or task metric validation.",
+            {"precision": result.get("precision")},
+            "missing_accuracy_validation",
+            (
+                "Add accuracy or task metric validation before accepting quantized "
+                "inference results."
+            ),
+        )
+
+    run_config = result.get("run_config")
+    if not isinstance(run_config, dict) or not run_config:
+        add_anomaly(
+            "missing_run_config",
+            "medium",
+            "run_config is missing from the structured result.",
+            {"run_config": run_config},
+            "missing_run_configuration",
+            "Record warmup/runs/batch/shape configuration for reproducible validation.",
+        )
+
+    system = result.get("system")
+    if not isinstance(system, dict) or not system:
+        add_anomaly(
+            "missing_system_metadata",
+            "low",
+            "system metadata is missing from the structured result.",
+            {"system": system},
+            "missing_environment_metadata",
+            (
+                "Record system metadata such as OS, architecture, device, or "
+                "accelerator information."
+            ),
+        )
+
+    status = _status_from_anomalies(anomalies)
+    return {
+        "mode": "structured_result_reasoning",
+        "status": status,
+        "anomalies": anomalies,
+        "explanations": explanations,
+        "suspected_causes": suspected_causes,
+        "confidence": _confidence_for_status(status),
+        "recommendations": recommendations,
+    }
+
+
 def _first_present(data: dict[str, Any], *keys: str) -> Any:
     for key in keys:
         if key in data:
@@ -206,3 +371,19 @@ def _confidence_for_status(status: str) -> float:
 def _append_unique(values: list[str], value: str) -> None:
     if value not in values:
         values.append(value)
+
+
+def _is_number(value: Any) -> bool:
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+def _has_accuracy_value(result: dict[str, Any]) -> bool:
+    if "accuracy" in result and result.get("accuracy") is not None:
+        return True
+
+    metrics = result.get("metrics")
+    if isinstance(metrics, dict) and metrics.get("accuracy") is not None:
+        return True
+
+    extra = result.get("extra")
+    return isinstance(extra, dict) and extra.get("accuracy") is not None

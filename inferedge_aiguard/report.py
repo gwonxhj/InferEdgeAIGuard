@@ -16,6 +16,8 @@ def format_summary(summary: dict[str, Any]) -> str:
         return _format_batch_compare_summary(summary)
     if summary.get("mode") == "compare_reasoning":
         return _format_compare_reasoning_summary(summary)
+    if summary.get("mode") == "structured_result_reasoning":
+        return _format_structured_result_reasoning_summary(summary)
 
     lines: list[str] = []
 
@@ -117,8 +119,22 @@ def _format_batch_compare_summary(summary: dict[str, Any]) -> str:
 
 
 def _format_compare_reasoning_summary(summary: dict[str, Any]) -> str:
-    lines = [
+    return _format_reasoning_summary(
+        summary,
         "InferEdgeAIGuard compare reasoning summary",
+    )
+
+
+def _format_structured_result_reasoning_summary(summary: dict[str, Any]) -> str:
+    return _format_reasoning_summary(
+        summary,
+        "InferEdgeAIGuard structured result reasoning summary",
+    )
+
+
+def _format_reasoning_summary(summary: dict[str, Any], title: str) -> str:
+    lines = [
+        title,
         f"- status: {summary.get('status', 'unknown')}",
         f"- confidence: {_format_value(summary.get('confidence', 0.0))}",
         "- anomalies:",
@@ -177,6 +193,8 @@ def save_summary_markdown(summary: dict[str, Any], output_path: str | Path) -> N
         content = _markdown_batch_compare_report(summary)
     elif summary.get("mode") == "compare_reasoning":
         content = _markdown_compare_reasoning_report(summary)
+    elif summary.get("mode") == "structured_result_reasoning":
+        content = _markdown_reasoning_report(summary)
     else:
         content = _markdown_basic_report(summary)
     path.write_text(content, encoding="utf-8")
@@ -189,6 +207,8 @@ def _markdown_title(summary: dict[str, Any]) -> str:
         return "# InferEdgeAIGuard Batch Compare Report"
     if summary.get("mode") == "compare_reasoning":
         return "# InferEdgeAIGuard Compare Reasoning Report"
+    if summary.get("mode") == "structured_result_reasoning":
+        return "# InferEdgeAIGuard Structured Result Reasoning Report"
     if "base_count" in summary:
         return "# InferEdgeAIGuard Compare Report"
     return "# InferEdgeAIGuard Analyze Report"
@@ -289,6 +309,10 @@ def _markdown_batch_compare_report(summary: dict[str, Any]) -> str:
 
 
 def _markdown_compare_reasoning_report(summary: dict[str, Any]) -> str:
+    return _markdown_reasoning_report(summary)
+
+
+def _markdown_reasoning_report(summary: dict[str, Any]) -> str:
     anomalies = summary.get("anomalies", [])
     anomaly_section = "No anomaly detected"
     if anomalies:

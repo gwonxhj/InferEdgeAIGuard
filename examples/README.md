@@ -8,6 +8,7 @@
 - `fp32/`: `batch-compare`에서 baseline으로 사용할 FP32 output fixture
 - `int8/`: `batch-compare`에서 candidate로 사용할 INT8 output fixture
 - `lab_compare/`: `reason-compare`에서 사용할 InferEdgeLab compare result reasoning fixture
+- `lab_result/`: Python API `analyze_structured_result()`에서 사용할 InferEdgeLab structured result fixture
 
 ## 실행 예시
 
@@ -58,3 +59,10 @@ python -m inferedge_aiguard.cli reason-compare --input examples/lab_compare/cros
 ```bash
 python -m inferedge_aiguard.cli reason-compare --input examples/lab_compare/alias_schema_example.json
 ```
+
+Lab structured result reasoning 예제도 포함되어 있습니다.
+
+- `lab_result/valid_fp32_result.json`: anomaly가 없는 정상 FP32 structured result 예제
+- `lab_result/suspicious_int8_missing_accuracy.json`: latency instability, missing provenance, missing accuracy warning이 발생하는 INT8 예제
+
+아직 structured result 전용 CLI는 없으며, Python API 예제로 사용할 수 있습니다.

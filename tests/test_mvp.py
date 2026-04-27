@@ -8,8 +8,8 @@ from inferedge_aiguard.adapters import normalize_lab_compare_result
 from inferedge_aiguard.batch import analyze_directory, compare_directories
 from inferedge_aiguard.compare import compare_outputs
 from inferedge_aiguard.detectors import get_detector_config, summarize_failures
-from inferedge_aiguard.reasoning import analyze_compare_result
-from inferedge_aiguard.report import format_summary, save_summary_json
+from inferedge_aiguard.reasoning import analyze_compare_result, analyze_structured_result
+from inferedge_aiguard.report import format_summary, save_summary_json, save_summary_markdown
 from inferedge_aiguard.schema import load_output_json
 
 
@@ -19,6 +19,7 @@ SINGLE_EXAMPLES = EXAMPLES / "single"
 FP32_EXAMPLES = EXAMPLES / "fp32"
 INT8_EXAMPLES = EXAMPLES / "int8"
 LAB_COMPARE_EXAMPLES = EXAMPLES / "lab_compare"
+LAB_RESULT_EXAMPLES = EXAMPLES / "lab_result"
 
 
 def load_example(name: str) -> dict:
@@ -767,3 +768,140 @@ def test_cli_reason_compare_alias_schema_example():
         or "unreliable_comparison" in result.stdout
     )
     assert "likely_quantization_effect" in result.stdout
+
+
+def load_lab_result(name: str) -> dict:
+    return json.loads((LAB_RESULT_EXAMPLES / name).read_text(encoding="utf-8"))
+
+
+def anomaly_types(summary: dict) -> list[str]:
+    return [anomaly.get("type") for anomaly in summary.get("anomalies", [])]
+
+
+def test_structured_result_valid_fp32_is_ok():
+    summary = analyze_structured_result(load_lab_result("valid_fp32_result.json"))
+
+    assert summary["status"] == "ok"
+    assert summary["anomalies"] == []
+
+
+def test_structured_result_suspicious_int8_has_accuracy_warning():
+    summary = analyze_structured_result(
+        load_lab_result("suspicious_int8_missing_accuracy.json")
+    )
+
+    assert summary["status"] in {"warning", "error"}
+    assert "accuracy_missing_warning" in anomaly_types(summary)
+
+
+def test_structured_result_missing_runtime_artifact_detected():
+    summary = analyze_structured_result(
+        load_lab_result("suspicious_int8_missing_accuracy.json")
+    )
+
+    assert "missing_runtime_artifact" in anomaly_types(summary)
+
+
+def test_structured_result_missing_resolved_input_shapes_detected():
+    summary = analyze_structured_result(
+        load_lab_result("suspicious_int8_missing_accuracy.json")
+    )
+
+    assert "missing_resolved_input_shapes" in anomaly_types(summary)
+
+
+def test_structured_result_latency_instability_detected():
+    summary = analyze_structured_result(
+        load_lab_result("suspicious_int8_missing_accuracy.json")
+    )
+
+    assert "latency_instability" in anomaly_types(summary)
+
+
+def test_structured_result_missing_identity_field_is_error():
+    summary = analyze_structured_result(
+        {
+            "engine": "onnxruntime",
+            "device": "cpu",
+            "precision": "fp32",
+            "mean_ms": 1.0,
+            "p99_ms": 1.2,
+            "run_config": {"runs": 3},
+            "system": {"os": "linux"},
+            "extra": {
+                "runtime_artifact_path": "model.onnx",
+                "resolved_input_shapes": {"input": [1, 3, 224, 224]},
+            },
+        }
+    )
+
+    assert summary["status"] == "error"
+    assert "missing_identity_field" in anomaly_types(summary)
+
+
+def test_structured_result_missing_latency_metric_is_error():
+    result = load_lab_result("valid_fp32_result.json")
+    result.pop("p99_ms")
+    summary = analyze_structured_result(result)
+
+    assert summary["status"] == "error"
+    assert "missing_latency_metric" in anomaly_types(summary)
+
+
+def test_structured_result_invalid_latency_value_is_error():
+    result = load_lab_result("valid_fp32_result.json")
+    result["mean_ms"] = 0
+    summary = analyze_structured_result(result)
+
+    assert summary["status"] == "error"
+    assert "invalid_latency_value" in anomaly_types(summary)
+
+
+def test_structured_result_missing_run_config_detected():
+    result = load_lab_result("valid_fp32_result.json")
+    result.pop("run_config")
+    summary = analyze_structured_result(result)
+
+    assert "missing_run_config" in anomaly_types(summary)
+
+
+def test_structured_result_missing_system_metadata_detected():
+    result = load_lab_result("valid_fp32_result.json")
+    result.pop("system")
+    summary = analyze_structured_result(result)
+
+    assert "missing_system_metadata" in anomaly_types(summary)
+
+
+def test_structured_result_format_summary():
+    summary = analyze_structured_result(load_lab_result("suspicious_int8_missing_accuracy.json"))
+    formatted = format_summary(summary)
+
+    assert "InferEdgeAIGuard structured result reasoning summary" in formatted
+    assert "status" in formatted
+    assert "recommendations" in formatted
+
+
+def test_structured_result_save_json_preserves_mode(tmp_path):
+    output_path = tmp_path / "structured.json"
+    summary = analyze_structured_result(load_lab_result("valid_fp32_result.json"))
+
+    save_summary_json(summary, output_path)
+    saved = json.loads(output_path.read_text(encoding="utf-8"))
+
+    assert saved["mode"] == "structured_result_reasoning"
+
+
+def test_structured_result_save_markdown_report(tmp_path):
+    output_path = tmp_path / "structured.md"
+    summary = analyze_structured_result(
+        load_lab_result("suspicious_int8_missing_accuracy.json")
+    )
+
+    save_summary_markdown(summary, output_path)
+    content = output_path.read_text(encoding="utf-8")
+
+    assert "Structured Result Reasoning Report" in content
+    assert "Aggregate Summary" in content
+    assert "Anomalies" in content
+    assert "Recommendations" in content
