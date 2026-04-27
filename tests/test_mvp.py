@@ -7,6 +7,8 @@ from shutil import copyfile
 from inferedge_aiguard.batch import analyze_directory, compare_directories
 from inferedge_aiguard.compare import compare_outputs
 from inferedge_aiguard.detectors import get_detector_config, summarize_failures
+from inferedge_aiguard.reasoning import analyze_compare_result
+from inferedge_aiguard.report import format_summary, save_summary_json
 from inferedge_aiguard.schema import load_output_json
 
 
@@ -485,3 +487,98 @@ def test_cli_batch_compare_save_markdown(tmp_path):
     assert "## Pairs" in content
     assert "| Filename | Base Image ID | Candidate Image ID" in content
     assert "pair_count" in content
+
+
+def test_reasoning_shape_mismatch_is_error():
+    summary = analyze_compare_result({"shape_match": False})
+
+    assert summary["status"] == "error"
+    assert summary["anomalies"][0]["type"] == "unreliable_comparison"
+    assert "input_shape_mismatch" in summary["suspected_causes"]
+
+
+def test_reasoning_run_config_mismatch_is_error():
+    summary = analyze_compare_result({"run_config_match": False})
+
+    assert summary["status"] == "error"
+    assert any(
+        anomaly["type"] == "unreliable_comparison"
+        for anomaly in summary["anomalies"]
+    )
+    assert "run_config_mismatch" in summary["suspected_causes"]
+
+
+def test_reasoning_latency_improvement_without_accuracy_warns():
+    summary = analyze_compare_result({"overall_judgement": "improvement"})
+
+    assert summary["status"] == "warning"
+    assert any(
+        anomaly["type"] == "accuracy_missing_warning"
+        for anomaly in summary["anomalies"]
+    )
+    assert "missing_accuracy_validation" in summary["suspected_causes"]
+
+
+def test_reasoning_latency_improvement_with_accuracy_drop_warns():
+    summary = analyze_compare_result(
+        {
+            "overall_judgement": "improvement",
+            "accuracy_delta": -0.03,
+        }
+    )
+
+    assert summary["status"] == "warning"
+    assert any(anomaly["type"] == "risky_tradeoff" for anomaly in summary["anomalies"])
+    assert "possible_quantization_accuracy_loss" in summary["suspected_causes"]
+
+
+def test_reasoning_cross_precision_large_latency_delta_warns():
+    summary = analyze_compare_result(
+        {
+            "comparison_mode": "cross_precision",
+            "latency_delta_pct": -45.0,
+            "accuracy": 0.9,
+        }
+    )
+
+    assert summary["status"] == "warning"
+    assert any(
+        anomaly["type"] == "likely_quantization_effect"
+        for anomaly in summary["anomalies"]
+    )
+    assert "precision_or_runtime_change" in summary["suspected_causes"]
+
+
+def test_reasoning_ok_result_has_no_anomalies():
+    summary = analyze_compare_result(
+        {
+            "shape_match": True,
+            "run_config_match": True,
+            "overall_judgement": "same",
+            "accuracy": 0.9,
+            "latency_delta_pct": 2.0,
+        }
+    )
+
+    assert summary["status"] == "ok"
+    assert summary["anomalies"] == []
+    assert summary["confidence"] == 0.5
+
+
+def test_reasoning_format_summary_includes_status_and_recommendations():
+    summary = analyze_compare_result({"shape_matched": False})
+    formatted = format_summary(summary)
+
+    assert "InferEdgeAIGuard compare reasoning summary" in formatted
+    assert "status" in formatted
+    assert "recommendations" in formatted
+
+
+def test_reasoning_save_json_preserves_mode(tmp_path):
+    output_path = tmp_path / "reasoning.json"
+    summary = analyze_compare_result({"mean_judgement": "improvement"})
+
+    save_summary_json(summary, output_path)
+    saved = json.loads(output_path.read_text(encoding="utf-8"))
+
+    assert saved["mode"] == "compare_reasoning"

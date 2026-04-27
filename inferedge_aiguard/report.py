@@ -14,6 +14,8 @@ def format_summary(summary: dict[str, Any]) -> str:
         return _format_batch_summary(summary)
     if summary.get("mode") == "batch_compare":
         return _format_batch_compare_summary(summary)
+    if summary.get("mode") == "compare_reasoning":
+        return _format_compare_reasoning_summary(summary)
 
     lines: list[str] = []
 
@@ -111,6 +113,31 @@ def _format_batch_compare_summary(summary: dict[str, Any]) -> str:
         "- unmatched_candidate_files: "
         f"{_format_list(summary.get('unmatched_candidate_files', []))}"
     )
+    return "\n".join(lines)
+
+
+def _format_compare_reasoning_summary(summary: dict[str, Any]) -> str:
+    lines = [
+        "InferEdgeAIGuard compare reasoning summary",
+        f"- status: {summary.get('status', 'unknown')}",
+        f"- confidence: {_format_value(summary.get('confidence', 0.0))}",
+        "- anomalies:",
+    ]
+
+    anomalies = summary.get("anomalies", [])
+    if not anomalies:
+        lines.append("  No anomaly detected")
+    else:
+        for anomaly in anomalies:
+            lines.append(
+                "  - "
+                f"type={anomaly.get('type')} | "
+                f"severity={anomaly.get('severity')} | "
+                f"message={anomaly.get('message')}"
+            )
+
+    lines.append(f"- suspected_causes: {_format_list(summary.get('suspected_causes', []))}")
+    lines.append(f"- recommendations: {_format_list(summary.get('recommendations', []))}")
     return "\n".join(lines)
 
 
