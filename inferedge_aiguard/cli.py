@@ -10,6 +10,7 @@ from .adapters import normalize_lab_compare_result
 from .batch import analyze_directory, compare_directories
 from .compare import compare_outputs
 from .detectors import summarize_failures
+from .history import analyze_run_history
 from .reasoning import analyze_compare_result, analyze_structured_result
 from .report import format_summary, save_summary_json, save_summary_markdown
 from .schema import load_output_json
@@ -75,6 +76,17 @@ def build_parser() -> argparse.ArgumentParser:
     )
     _add_save_options(reason_result_parser)
 
+    reason_history_parser = subparsers.add_parser(
+        "reason-history",
+        help="Reason over an InferEdgeLab structured result history JSON file",
+    )
+    reason_history_parser.add_argument(
+        "--input",
+        required=True,
+        help="Path to InferEdgeLab structured result history JSON list",
+    )
+    _add_save_options(reason_history_parser)
+
     return parser
 
 
@@ -136,6 +148,15 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 0
 
+    if args.command == "reason-history":
+        raw = _load_json_list(args.input)
+        _emit_summary(
+            analyze_run_history(raw),
+            save_json=args.save_json,
+            save_md=args.save_md,
+        )
+        return 0
+
     parser.error(f"unknown command: {args.command}")
     return 2
 
@@ -164,6 +185,14 @@ def _load_json_dict(path: str) -> dict:
         data = json.load(file)
     if not isinstance(data, dict):
         raise ValueError(f"Expected JSON object: {path}")
+    return data
+
+
+def _load_json_list(path: str) -> list:
+    with Path(path).open("r", encoding="utf-8") as file:
+        data = json.load(file)
+    if not isinstance(data, list):
+        raise ValueError(f"Expected JSON list: {path}")
     return data
 
 
