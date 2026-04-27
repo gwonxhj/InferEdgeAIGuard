@@ -67,6 +67,36 @@ The `reason` command auto-routes input JSON:
 
 This shape is suitable for a future single API endpoint, while the current project remains CLI-first.
 
+## Lab Deployment Decision Contract
+
+InferEdgeLab 4.2 can include AIGuard output as optional `guard_analysis` evidence when it builds a deployment decision. Lab remains the decision owner; AIGuard only supplies rule-based evidence.
+
+The stable MVP contract is:
+
+```json
+{
+  "status": "ok",
+  "mode": "compare_reasoning",
+  "anomalies": [],
+  "suspected_causes": [],
+  "recommendations": [],
+  "confidence": 0.5
+}
+```
+
+`status` is the only field Lab requires for deployment decision mapping:
+
+| AIGuard status | Lab deployment effect |
+|---|---|
+| `ok` | Lab may classify favorable evidence as `deployable` or neutral evidence as `deployable_with_note`. |
+| `warning` | Lab maps the result to `review_required`. |
+| `error` | Lab maps the result to `blocked`. |
+| `skipped` | Lab maps the result to `unknown`. |
+
+The remaining fields are evidence fields for reviewers and reports. They must not replace Lab judgement, runtime profiling, or Forge artifact metadata.
+
+The Python schema helper `validate_guard_analysis` validates this contract without importing InferEdgeLab. This keeps AIGuard optional while making the cross-repo handoff explicit and testable.
+
 ## Future Direction
 
 Potential extensions:

@@ -167,6 +167,23 @@ python -m inferedge_aiguard.cli reason --input examples/lab_compat/lab_history_r
 
 이 단계는 실제 Lab repo import가 아니라 JSON 호환성 검증 단계입니다.
 
+## Lab Deployment Decision Handoff
+
+InferEdgeLab 4.2의 deployment decision layer는 AIGuard를 optional evidence로 유지합니다. AIGuard가 실행되면 Lab은 `guard_analysis.status`를 읽어 최종 deployment decision에 반영합니다.
+
+Stable MVP mapping:
+
+| `guard_analysis.status` | Lab deployment decision impact |
+|---|---|
+| `ok` | favorable Lab judgement can become `deployable`; neutral judgement can become `deployable_with_note` |
+| `warning` | `review_required` |
+| `error` | `blocked` |
+| `skipped` | `unknown` |
+
+AIGuard output remains rule + evidence based. It should include reviewer-facing evidence such as `mode`, `anomalies`, `suspected_causes`, `recommendations`, and `confidence`, but it must not overwrite Lab judgement.
+
+The schema helper `validate_guard_analysis` locks this handoff shape inside AIGuard without requiring a runtime dependency on InferEdgeLab.
+
 ## Validation Evidence
 
 InferEdgeAIGuard includes a fixture-based validation report that demonstrates how the reasoning layer detects suspicious compare results, structured result issues, and repeated-run instability.

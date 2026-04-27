@@ -1,4 +1,4 @@
-"""Minimal schema utilities for YOLO-style detection output JSON."""
+"""Minimal schema utilities for InferEdgeAIGuard JSON contracts."""
 
 from __future__ import annotations
 
@@ -46,6 +46,42 @@ def validate_output(data: Any) -> JsonDict:
     return data
 
 
+def validate_guard_analysis(data: Any) -> JsonDict:
+    """Validate the Lab deployment_decision guard_analysis contract.
+
+    InferEdgeLab intentionally treats AIGuard as optional and currently consumes
+    only guard_analysis.status for deployment decisions. AIGuard still validates
+    the surrounding evidence shape so saved reasoning output remains reviewable.
+    """
+
+    if not isinstance(data, dict):
+        raise SchemaValidationError("guard_analysis must be a JSON object")
+
+    status = data.get("status")
+    if status not in {"ok", "warning", "error", "skipped"}:
+        raise SchemaValidationError(
+            "guard_analysis.status must be one of: ok, warning, error, skipped"
+        )
+
+    if "mode" in data and not isinstance(data["mode"], str):
+        raise SchemaValidationError("guard_analysis.mode must be a string")
+
+    _validate_optional_list(data, "anomalies", item_type=dict)
+    _validate_optional_list(data, "suspected_causes", item_type=str)
+    _validate_optional_list(data, "recommendations", item_type=str)
+
+    confidence = data.get("confidence")
+    if confidence is not None:
+        if not isinstance(confidence, (int, float)) or isinstance(confidence, bool):
+            raise SchemaValidationError("guard_analysis.confidence must be a number")
+        if not 0.0 <= float(confidence) <= 1.0:
+            raise SchemaValidationError(
+                "guard_analysis.confidence must be between 0.0 and 1.0"
+            )
+
+    return data
+
+
 def _validate_detection(detection: Any, index: int) -> None:
     if not isinstance(detection, dict):
         raise SchemaValidationError(f"detections[{index}] must be an object")
@@ -69,4 +105,25 @@ def _validate_detection(detection: Any, index: int) -> None:
         if not isinstance(value, (int, float)) or isinstance(value, bool):
             raise SchemaValidationError(
                 f"detections[{index}].bbox[{bbox_index}] must be a number"
+            )
+
+
+def _validate_optional_list(
+    data: JsonDict,
+    field: str,
+    *,
+    item_type: type,
+) -> None:
+    if field not in data:
+        return
+
+    values = data[field]
+    if not isinstance(values, list):
+        raise SchemaValidationError(f"guard_analysis.{field} must be a list")
+
+    for index, value in enumerate(values):
+        if not isinstance(value, item_type):
+            expected = "object" if item_type is dict else item_type.__name__
+            raise SchemaValidationError(
+                f"guard_analysis.{field}[{index}] must be a {expected}"
             )
