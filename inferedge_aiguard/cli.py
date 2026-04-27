@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import argparse
+import json
+from pathlib import Path
 
 from .batch import analyze_directory, compare_directories
 from .compare import compare_outputs
 from .detectors import summarize_failures
+from .reasoning import analyze_compare_result
 from .report import format_summary, save_summary_json, save_summary_markdown
 from .schema import load_output_json
 
@@ -53,6 +56,15 @@ def build_parser() -> argparse.ArgumentParser:
     )
     _add_save_options(batch_compare_parser)
 
+    reason_compare_parser = subparsers.add_parser(
+        "reason-compare",
+        help="Reason over an InferEdgeLab compare result JSON file",
+    )
+    reason_compare_parser.add_argument(
+        "--input", required=True, help="Path to InferEdgeLab compare result JSON"
+    )
+    _add_save_options(reason_compare_parser)
+
     return parser
 
 
@@ -95,6 +107,15 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 0
 
+    if args.command == "reason-compare":
+        compare_result = _load_json_dict(args.input)
+        _emit_summary(
+            analyze_compare_result(compare_result),
+            save_json=args.save_json,
+            save_md=args.save_md,
+        )
+        return 0
+
     parser.error(f"unknown command: {args.command}")
     return 2
 
@@ -116,6 +137,14 @@ def _emit_summary(
     if save_md:
         save_summary_markdown(summary, save_md)
         print(f"- saved_md: {save_md}")
+
+
+def _load_json_dict(path: str) -> dict:
+    with Path(path).open("r", encoding="utf-8") as file:
+        data = json.load(file)
+    if not isinstance(data, dict):
+        raise ValueError(f"Expected JSON object: {path}")
+    return data
 
 
 if __name__ == "__main__":

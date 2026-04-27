@@ -17,6 +17,7 @@ EXAMPLES = ROOT / "examples"
 SINGLE_EXAMPLES = EXAMPLES / "single"
 FP32_EXAMPLES = EXAMPLES / "fp32"
 INT8_EXAMPLES = EXAMPLES / "int8"
+LAB_COMPARE_EXAMPLES = EXAMPLES / "lab_compare"
 
 
 def load_example(name: str) -> dict:
@@ -582,3 +583,100 @@ def test_reasoning_save_json_preserves_mode(tmp_path):
     saved = json.loads(output_path.read_text(encoding="utf-8"))
 
     assert saved["mode"] == "compare_reasoning"
+
+
+def test_cli_reason_compare_runs_cross_precision_example():
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "reason-compare",
+            "--input",
+            str(LAB_COMPARE_EXAMPLES / "cross_precision_latency_only.json"),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert "InferEdgeAIGuard compare reasoning summary" in result.stdout
+    assert "status" in result.stdout
+    assert (
+        "accuracy_missing_warning" in result.stdout
+        or "likely_quantization_effect" in result.stdout
+    )
+
+
+def test_cli_reason_compare_save_json(tmp_path):
+    output_path = tmp_path / "reports" / "reasoning.json"
+
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "reason-compare",
+            "--input",
+            str(LAB_COMPARE_EXAMPLES / "cross_precision_latency_only.json"),
+            "--save-json",
+            str(output_path),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    saved = json.loads(output_path.read_text(encoding="utf-8"))
+    assert saved["mode"] == "compare_reasoning"
+    assert "status" in saved
+    assert "anomalies" in saved
+    assert "recommendations" in saved
+
+
+def test_cli_reason_compare_save_markdown(tmp_path):
+    output_path = tmp_path / "reports" / "reasoning.md"
+
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "reason-compare",
+            "--input",
+            str(LAB_COMPARE_EXAMPLES / "cross_precision_latency_only.json"),
+            "--save-md",
+            str(output_path),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    content = output_path.read_text(encoding="utf-8")
+    assert "Compare Reasoning Report" in content
+    assert "Aggregate Summary" in content
+    assert "Anomalies" in content
+    assert "Recommendations" in content
+
+
+def test_cli_reason_compare_shape_mismatch_example():
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "reason-compare",
+            "--input",
+            str(LAB_COMPARE_EXAMPLES / "invalid_shape_mismatch.json"),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert "unreliable_comparison" in result.stdout
