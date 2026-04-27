@@ -8,6 +8,7 @@ from inferedge_aiguard.adapters import normalize_lab_compare_result
 from inferedge_aiguard.batch import analyze_directory, compare_directories
 from inferedge_aiguard.compare import compare_outputs
 from inferedge_aiguard.detectors import get_detector_config, summarize_failures
+from inferedge_aiguard.history import analyze_run_history
 from inferedge_aiguard.reasoning import analyze_compare_result, analyze_structured_result
 from inferedge_aiguard.report import format_summary, save_summary_json, save_summary_markdown
 from inferedge_aiguard.schema import load_output_json
@@ -20,6 +21,7 @@ FP32_EXAMPLES = EXAMPLES / "fp32"
 INT8_EXAMPLES = EXAMPLES / "int8"
 LAB_COMPARE_EXAMPLES = EXAMPLES / "lab_compare"
 LAB_RESULT_EXAMPLES = EXAMPLES / "lab_result"
+LAB_HISTORY_EXAMPLES = EXAMPLES / "lab_history"
 
 
 def load_example(name: str) -> dict:
@@ -999,3 +1001,106 @@ def test_cli_reason_result_valid_fp32_is_ok():
 
     assert "- status: ok" in result.stdout
     assert "No anomaly detected" in result.stdout
+
+
+def load_lab_history(name: str) -> list[dict]:
+    return json.loads((LAB_HISTORY_EXAMPLES / name).read_text(encoding="utf-8"))
+
+
+def test_run_history_stable_fp32_is_ok():
+    summary = analyze_run_history(load_lab_history("stable_fp32_history.json"))
+
+    assert summary["status"] == "ok"
+    assert summary["anomalies"] == []
+    assert summary["history_metrics"]["run_count"] == 3
+
+
+def test_run_history_unstable_int8_has_mean_latency_instability():
+    summary = analyze_run_history(load_lab_history("unstable_int8_history.json"))
+
+    assert summary["status"] == "warning"
+    assert "mean_latency_instability" in anomaly_types(summary)
+
+
+def test_run_history_unstable_int8_has_p99_latency_instability():
+    summary = analyze_run_history(load_lab_history("unstable_int8_history.json"))
+
+    assert "p99_latency_instability" in anomaly_types(summary)
+
+
+def test_run_history_unstable_int8_has_latency_outlier_run():
+    summary = analyze_run_history(load_lab_history("unstable_int8_history.json"))
+
+    assert "latency_outlier_run" in anomaly_types(summary)
+
+
+def test_run_history_unstable_int8_has_quantized_accuracy_missing():
+    summary = analyze_run_history(load_lab_history("unstable_int8_history.json"))
+
+    assert "quantized_history_accuracy_missing" in anomaly_types(summary)
+
+
+def test_run_history_single_run_is_insufficient():
+    history = load_lab_history("stable_fp32_history.json")[:1]
+    summary = analyze_run_history(history)
+
+    assert "insufficient_history" in anomaly_types(summary)
+
+
+def test_run_history_mixed_identity_is_error():
+    history = load_lab_history("stable_fp32_history.json")
+    history[1]["precision"] = "int8"
+    summary = analyze_run_history(history)
+
+    assert summary["status"] == "error"
+    assert "mixed_run_identity" in anomaly_types(summary)
+
+
+def test_run_history_mixed_shape_config_is_error():
+    history = load_lab_history("stable_fp32_history.json")
+    history[1]["height"] = 256
+    summary = analyze_run_history(history)
+
+    assert summary["status"] == "error"
+    assert "mixed_shape_config" in anomaly_types(summary)
+
+
+def test_run_history_partial_accuracy_missing_detected():
+    history = load_lab_history("stable_fp32_history.json")
+    history[1].pop("accuracy")
+    summary = analyze_run_history(history)
+
+    assert "partial_accuracy_missing" in anomaly_types(summary)
+
+
+def test_run_history_format_summary():
+    summary = analyze_run_history(load_lab_history("unstable_int8_history.json"))
+    formatted = format_summary(summary)
+
+    assert "InferEdgeAIGuard run history reasoning summary" in formatted
+    assert "status" in formatted
+    assert "recommendations" in formatted
+
+
+def test_run_history_save_json_preserves_mode(tmp_path):
+    output_path = tmp_path / "history.json"
+    summary = analyze_run_history(load_lab_history("stable_fp32_history.json"))
+
+    save_summary_json(summary, output_path)
+    saved = json.loads(output_path.read_text(encoding="utf-8"))
+
+    assert saved["mode"] == "run_history_reasoning"
+
+
+def test_run_history_save_markdown_report(tmp_path):
+    output_path = tmp_path / "history.md"
+    summary = analyze_run_history(load_lab_history("unstable_int8_history.json"))
+
+    save_summary_markdown(summary, output_path)
+    content = output_path.read_text(encoding="utf-8")
+
+    assert "Run History Reasoning Report" in content
+    assert "Aggregate Summary" in content
+    assert "History Metrics" in content
+    assert "Anomalies" in content
+    assert "Recommendations" in content
