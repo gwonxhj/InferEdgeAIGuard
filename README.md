@@ -167,6 +167,22 @@ python -m inferedge_aiguard.cli reason \
 
 이 구조는 향후 API나 SaaS로 확장할 때 단일 endpoint로 reasoning 요청을 받을 수 있게 만드는 기반입니다. 단, 현재 단계에서는 SaaS/API 서버를 구현하지 않고 CLI entrypoint만 추가합니다.
 
+## Lab compatibility examples
+
+`examples/lab_compat`는 실제 InferEdgeLab 출력에 더 가까운 compatibility fixture입니다. 이 fixture들은 실제 Lab repo를 import하지 않고도 AIGuard의 unified `reason` CLI가 Lab 스타일 JSON을 올바른 reasoning 경로로 라우팅하는지 검증하기 위한 샘플입니다.
+
+- `lab_compare_realistic.json`: cross precision FP32 vs INT8 compare result 형태
+- `lab_result_realistic.json`: 단일 TensorRT INT8 structured result 형태
+- `lab_history_realistic.json`: repeated TensorRT INT8 structured result history 형태
+
+```bash
+python -m inferedge_aiguard.cli reason --input examples/lab_compat/lab_compare_realistic.json
+python -m inferedge_aiguard.cli reason --input examples/lab_compat/lab_result_realistic.json
+python -m inferedge_aiguard.cli reason --input examples/lab_compat/lab_history_realistic.json
+```
+
+이 단계는 실제 Lab repo import가 아니라 JSON 호환성 검증 단계입니다.
+
 ## 1차 MVP 범위
 
 - YOLO detection output JSON 최소 스키마 검증

@@ -22,6 +22,7 @@ INT8_EXAMPLES = EXAMPLES / "int8"
 LAB_COMPARE_EXAMPLES = EXAMPLES / "lab_compare"
 LAB_RESULT_EXAMPLES = EXAMPLES / "lab_result"
 LAB_HISTORY_EXAMPLES = EXAMPLES / "lab_history"
+LAB_COMPAT_EXAMPLES = EXAMPLES / "lab_compat"
 
 
 def load_example(name: str) -> dict:
@@ -1408,3 +1409,118 @@ def test_cli_reason_rejects_unsupported_json(tmp_path):
 
     assert result.returncode != 0
     assert "Unable to infer reasoning input type" in result.stderr
+
+
+def test_unified_reason_lab_compat_compare():
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "reason",
+            "--input",
+            str(LAB_COMPAT_EXAMPLES / "lab_compare_realistic.json"),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert "InferEdgeAIGuard compare reasoning summary" in result.stdout
+    assert "accuracy_missing_warning" in result.stdout
+    assert "likely_quantization_effect" in result.stdout
+
+
+def test_unified_reason_lab_compat_result():
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "reason",
+            "--input",
+            str(LAB_COMPAT_EXAMPLES / "lab_result_realistic.json"),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert "InferEdgeAIGuard structured result reasoning summary" in result.stdout
+    assert "accuracy_missing_warning" in result.stdout
+    assert "latency_instability" in result.stdout
+    assert "missing_runtime_artifact" not in result.stdout
+    assert "missing_resolved_input_shapes" not in result.stdout
+
+
+def test_unified_reason_lab_compat_history():
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "reason",
+            "--input",
+            str(LAB_COMPAT_EXAMPLES / "lab_history_realistic.json"),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert "InferEdgeAIGuard run history reasoning summary" in result.stdout
+    assert (
+        "mean_latency_instability" in result.stdout
+        or "p99_latency_instability" in result.stdout
+    )
+    assert "quantized_history_accuracy_missing" in result.stdout
+
+
+def test_unified_reason_lab_compat_compare_save_json(tmp_path):
+    output_path = tmp_path / "compat_compare.json"
+
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "reason",
+            "--input",
+            str(LAB_COMPAT_EXAMPLES / "lab_compare_realistic.json"),
+            "--save-json",
+            str(output_path),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    saved = json.loads(output_path.read_text(encoding="utf-8"))
+    assert saved["mode"] == "compare_reasoning"
+
+
+def test_unified_reason_lab_compat_history_save_markdown(tmp_path):
+    output_path = tmp_path / "compat_history.md"
+
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "reason",
+            "--input",
+            str(LAB_COMPAT_EXAMPLES / "lab_history_realistic.json"),
+            "--save-md",
+            str(output_path),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert "Run History Reasoning Report" in output_path.read_text(encoding="utf-8")
