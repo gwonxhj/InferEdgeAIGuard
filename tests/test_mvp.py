@@ -11,7 +11,11 @@ from inferedge_aiguard.detectors import get_detector_config, summarize_failures
 from inferedge_aiguard.history import analyze_run_history
 from inferedge_aiguard.reasoning import analyze_compare_result, analyze_structured_result
 from inferedge_aiguard.report import format_summary, save_summary_json, save_summary_markdown
-from inferedge_aiguard.schema import load_output_json
+from inferedge_aiguard.schema import (
+    SchemaValidationError,
+    load_output_json,
+    validate_guard_analysis,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -1592,3 +1596,50 @@ def test_unified_reason_jetson_compare_detects_insufficient_precision_speedup():
 
     assert "InferEdgeAIGuard compare reasoning summary" in result.stdout
     assert "insufficient_precision_speedup" in result.stdout
+
+
+def test_guard_analysis_contract_accepts_reasoning_summary():
+    summary = analyze_compare_result({"shape_match": False})
+
+    validated = validate_guard_analysis(summary)
+
+    assert validated["status"] == "error"
+    assert validated["anomalies"][0]["type"] == "unreliable_comparison"
+
+
+def test_guard_analysis_contract_accepts_skipped_status():
+    validated = validate_guard_analysis(
+        {
+            "status": "skipped",
+            "mode": "compare_reasoning",
+            "anomalies": [],
+            "suspected_causes": [],
+            "recommendations": ["Run InferEdgeAIGuard before deployment."],
+            "confidence": 0.0,
+        }
+    )
+
+    assert validated["status"] == "skipped"
+
+
+def test_guard_analysis_contract_rejects_unknown_status():
+    try:
+        validate_guard_analysis({"status": "blocked"})
+    except SchemaValidationError as exc:
+        assert "guard_analysis.status" in str(exc)
+    else:
+        raise AssertionError("expected SchemaValidationError")
+
+
+def test_guard_analysis_contract_rejects_invalid_evidence_shape():
+    try:
+        validate_guard_analysis(
+            {
+                "status": "warning",
+                "anomalies": ["accuracy_missing_warning"],
+            }
+        )
+    except SchemaValidationError as exc:
+        assert "guard_analysis.anomalies[0]" in str(exc)
+    else:
+        raise AssertionError("expected SchemaValidationError")
