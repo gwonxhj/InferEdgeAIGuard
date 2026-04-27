@@ -10,7 +10,7 @@ from .adapters import normalize_lab_compare_result
 from .batch import analyze_directory, compare_directories
 from .compare import compare_outputs
 from .detectors import summarize_failures
-from .reasoning import analyze_compare_result
+from .reasoning import analyze_compare_result, analyze_structured_result
 from .report import format_summary, save_summary_json, save_summary_markdown
 from .schema import load_output_json
 
@@ -66,6 +66,15 @@ def build_parser() -> argparse.ArgumentParser:
     )
     _add_save_options(reason_compare_parser)
 
+    reason_result_parser = subparsers.add_parser(
+        "reason-result",
+        help="Reason over an InferEdgeLab structured result JSON file",
+    )
+    reason_result_parser.add_argument(
+        "--input", required=True, help="Path to InferEdgeLab structured result JSON"
+    )
+    _add_save_options(reason_result_parser)
+
     return parser
 
 
@@ -113,6 +122,15 @@ def main(argv: list[str] | None = None) -> int:
         compare_result = normalize_lab_compare_result(raw)
         _emit_summary(
             analyze_compare_result(compare_result),
+            save_json=args.save_json,
+            save_md=args.save_md,
+        )
+        return 0
+
+    if args.command == "reason-result":
+        raw = _load_json_dict(args.input)
+        _emit_summary(
+            analyze_structured_result(raw),
             save_json=args.save_json,
             save_md=args.save_md,
         )

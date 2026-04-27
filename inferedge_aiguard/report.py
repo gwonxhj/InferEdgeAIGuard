@@ -137,13 +137,14 @@ def _format_reasoning_summary(summary: dict[str, Any], title: str) -> str:
         title,
         f"- status: {summary.get('status', 'unknown')}",
         f"- confidence: {_format_value(summary.get('confidence', 0.0))}",
-        "- anomalies:",
     ]
 
     anomalies = summary.get("anomalies", [])
     if not anomalies:
-        lines.append("  No anomaly detected")
+        lines.append("- result: No anomaly detected")
+        lines.append("- anomalies: []")
     else:
+        lines.append("- anomalies:")
         for anomaly in anomalies:
             lines.append(
                 "  - "
@@ -341,9 +342,9 @@ def _markdown_reasoning_report(summary: dict[str, Any]) -> str:
         "## Anomalies",
         anomaly_section,
         "## Suspected Causes",
-        _format_markdown_list(summary.get("suspected_causes", [])),
+        _markdown_bullet_list(summary.get("suspected_causes", [])),
         "## Recommendations",
-        _format_markdown_list(summary.get("recommendations", [])),
+        _markdown_bullet_list(summary.get("recommendations", [])),
         _markdown_raw_cli_summary(summary),
     ]
     return "\n\n".join(sections) + "\n"
@@ -401,6 +402,12 @@ def _format_markdown_list(values: list[Any]) -> str:
     if not values:
         return "[]"
     return ", ".join(str(value) for value in values)
+
+
+def _markdown_bullet_list(values: list[Any]) -> str:
+    if not values:
+        return "[]"
+    return "\n".join(f"- {value}" for value in values)
 
 
 def _escape_markdown_cell(value: Any) -> str:
