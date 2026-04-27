@@ -151,6 +151,7 @@ python -m inferedge_aiguard.cli reason --input examples/lab_compat/lab_history_r
 
 InferEdgeAIGuard includes a fixture-based validation report that demonstrates how the reasoning layer detects suspicious compare results, structured result issues, and repeated-run instability.
 
+- Portfolio summary: [docs/portfolio_summary.md](docs/portfolio_summary.md)
 - Validation report: [docs/validation_report.md](docs/validation_report.md)
 - Jetson validation plan: [docs/jetson_validation_plan.md](docs/jetson_validation_plan.md)
 - Jetson validation report: [docs/jetson_validation_report.md](docs/jetson_validation_report.md)
