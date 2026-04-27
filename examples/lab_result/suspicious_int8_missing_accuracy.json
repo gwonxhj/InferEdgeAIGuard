@@ -1,0 +1,23 @@
+{
+  "model": "resnet18.onnx",
+  "engine": "tensorrt",
+  "device": "jetson_orin_nano",
+  "precision": "int8",
+  "batch": 1,
+  "height": 224,
+  "width": 224,
+  "mean_ms": 4.0,
+  "p99_ms": 12.5,
+  "run_config": {
+    "warmup": 5,
+    "runs": 20
+  },
+  "system": {
+    "os": "linux",
+    "arch": "aarch64"
+  },
+  "extra": {
+    "runtime_artifact_path": "",
+    "resolved_input_shapes": {}
+  }
+}
