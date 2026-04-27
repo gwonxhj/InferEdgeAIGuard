@@ -1224,3 +1224,187 @@ def test_cli_reason_history_rejects_non_list_json(tmp_path):
 
     assert result.returncode != 0
     assert "Expected JSON list" in result.stderr
+
+
+def test_cli_reason_routes_lab_compare_result():
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "reason",
+            "--input",
+            str(LAB_COMPARE_EXAMPLES / "cross_precision_latency_only.json"),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert "InferEdgeAIGuard compare reasoning summary" in result.stdout
+    assert (
+        "accuracy_missing_warning" in result.stdout
+        or "likely_quantization_effect" in result.stdout
+    )
+
+
+def test_cli_reason_routes_structured_result():
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "reason",
+            "--input",
+            str(LAB_RESULT_EXAMPLES / "suspicious_int8_missing_accuracy.json"),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert "InferEdgeAIGuard structured result reasoning summary" in result.stdout
+    assert "accuracy_missing_warning" in result.stdout
+
+
+def test_cli_reason_routes_run_history():
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "reason",
+            "--input",
+            str(LAB_HISTORY_EXAMPLES / "unstable_int8_history.json"),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert "InferEdgeAIGuard run history reasoning summary" in result.stdout
+    assert (
+        "mean_latency_instability" in result.stdout
+        or "p99_latency_instability" in result.stdout
+    )
+
+
+def test_cli_reason_save_json_compare_mode(tmp_path):
+    output_path = tmp_path / "reports" / "compare_reason.json"
+
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "reason",
+            "--input",
+            str(LAB_COMPARE_EXAMPLES / "cross_precision_latency_only.json"),
+            "--save-json",
+            str(output_path),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    saved = json.loads(output_path.read_text(encoding="utf-8"))
+    assert saved["mode"] == "compare_reasoning"
+
+
+def test_cli_reason_save_json_structured_result_mode(tmp_path):
+    output_path = tmp_path / "reports" / "result_reason.json"
+
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "reason",
+            "--input",
+            str(LAB_RESULT_EXAMPLES / "suspicious_int8_missing_accuracy.json"),
+            "--save-json",
+            str(output_path),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    saved = json.loads(output_path.read_text(encoding="utf-8"))
+    assert saved["mode"] == "structured_result_reasoning"
+
+
+def test_cli_reason_save_json_run_history_mode(tmp_path):
+    output_path = tmp_path / "reports" / "history_reason.json"
+
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "reason",
+            "--input",
+            str(LAB_HISTORY_EXAMPLES / "unstable_int8_history.json"),
+            "--save-json",
+            str(output_path),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    saved = json.loads(output_path.read_text(encoding="utf-8"))
+    assert saved["mode"] == "run_history_reasoning"
+
+
+def test_cli_reason_save_markdown(tmp_path):
+    output_path = tmp_path / "reports" / "history_reason.md"
+
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "reason",
+            "--input",
+            str(LAB_HISTORY_EXAMPLES / "unstable_int8_history.json"),
+            "--save-md",
+            str(output_path),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    content = output_path.read_text(encoding="utf-8")
+    assert "Run History Reasoning Report" in content
+
+
+def test_cli_reason_rejects_unsupported_json(tmp_path):
+    input_path = tmp_path / "unsupported.json"
+    input_path.write_text('{"hello": "world"}\n', encoding="utf-8")
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "reason",
+            "--input",
+            str(input_path),
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode != 0
+    assert "Unable to infer reasoning input type" in result.stderr

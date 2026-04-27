@@ -84,3 +84,11 @@ python -m inferedge_aiguard.cli reason-history \
 ```
 
 `reason-history`는 repeated Lab structured result list JSON을 입력으로 받아 반복 실행 안정성과 logging 일관성을 분석합니다.
+
+통합 `reason` 명령은 입력 JSON 타입을 자동 판별합니다.
+
+```bash
+python -m inferedge_aiguard.cli reason --input examples/lab_compare/cross_precision_latency_only.json
+python -m inferedge_aiguard.cli reason --input examples/lab_result/suspicious_int8_missing_accuracy.json
+python -m inferedge_aiguard.cli reason --input examples/lab_history/unstable_int8_history.json
+```

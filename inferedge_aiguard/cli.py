@@ -58,6 +58,15 @@ def build_parser() -> argparse.ArgumentParser:
     )
     _add_save_options(batch_compare_parser)
 
+    reason_parser = subparsers.add_parser(
+        "reason",
+        help="Auto-route an InferEdgeLab JSON file to the appropriate reasoning path",
+    )
+    reason_parser.add_argument(
+        "--input", required=True, help="Path to InferEdgeLab reasoning input JSON"
+    )
+    _add_save_options(reason_parser)
+
     reason_compare_parser = subparsers.add_parser(
         "reason-compare",
         help="Reason over an InferEdgeLab compare result JSON file",
@@ -129,6 +138,15 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 0
 
+    if args.command == "reason":
+        raw = _load_json(args.input)
+        _emit_summary(
+            _infer_reasoning_summary(raw),
+            save_json=args.save_json,
+            save_md=args.save_md,
+        )
+        return 0
+
     if args.command == "reason-compare":
         raw = _load_json_dict(args.input)
         compare_result = normalize_lab_compare_result(raw)
@@ -180,17 +198,71 @@ def _emit_summary(
         print(f"- saved_md: {save_md}")
 
 
-def _load_json_dict(path: str) -> dict:
+def _infer_reasoning_summary(data: object) -> dict:
+    if isinstance(data, list):
+        return analyze_run_history(data)
+
+    if not isinstance(data, dict):
+        raise ValueError("Unable to infer reasoning input type: expected JSON object or list")
+
+    if _looks_like_compare_result(data):
+        return analyze_compare_result(normalize_lab_compare_result(data))
+
+    if _looks_like_structured_result(data):
+        return analyze_structured_result(data)
+
+    raise ValueError("Unable to infer reasoning input type from JSON object")
+
+
+def _looks_like_compare_result(data: dict) -> bool:
+    compare_keys = {
+        "comparison_mode",
+        "precision_pair",
+        "overall_judgement",
+        "overall_judgment",
+        "mean_judgement",
+        "mean_judgment",
+        "latency_delta_pct",
+        "mean_delta_pct",
+        "shape_match",
+        "shape_matched",
+        "run_config_match",
+        "run_config_matched",
+        "compare_result",
+        "comparison",
+    }
+    return any(key in data for key in compare_keys)
+
+
+def _looks_like_structured_result(data: dict) -> bool:
+    structured_keys = {
+        "model",
+        "engine",
+        "device",
+        "precision",
+        "mean_ms",
+        "p99_ms",
+        "run_config",
+        "system",
+        "extra",
+    }
+    return any(key in data for key in structured_keys)
+
+
+def _load_json(path: str) -> object:
     with Path(path).open("r", encoding="utf-8") as file:
-        data = json.load(file)
+        return json.load(file)
+
+
+def _load_json_dict(path: str) -> dict:
+    data = _load_json(path)
     if not isinstance(data, dict):
         raise ValueError(f"Expected JSON object: {path}")
     return data
 
 
 def _load_json_list(path: str) -> list:
-    with Path(path).open("r", encoding="utf-8") as file:
-        data = json.load(file)
+    data = _load_json(path)
     if not isinstance(data, list):
         raise ValueError(f"Expected JSON list: {path}")
     return data
