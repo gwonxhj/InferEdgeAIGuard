@@ -6,7 +6,7 @@ from shutil import copyfile
 
 from inferedge_aiguard.batch import analyze_directory, compare_directories
 from inferedge_aiguard.compare import compare_outputs
-from inferedge_aiguard.detectors import summarize_failures
+from inferedge_aiguard.detectors import get_detector_config, summarize_failures
 from inferedge_aiguard.schema import load_output_json
 
 
@@ -23,6 +23,20 @@ def load_example(name: str) -> dict:
 
 def copy_example(name: str, destination: Path) -> None:
     copyfile(SINGLE_EXAMPLES / name, destination)
+
+
+def assert_summary_metadata(summary: dict) -> None:
+    assert summary["guard_version"] == "0.1.0"
+    assert isinstance(summary["created_at"], str)
+    assert summary["created_at"].endswith("Z")
+    assert "detector_config" in summary
+    assert_detector_config(summary["detector_config"])
+
+
+def assert_detector_config(config: dict) -> None:
+    assert "bbox_collapse" in config
+    assert "confidence_saturation" in config
+    assert "detection_count_mismatch" in config
 
 
 def test_normal_case_has_no_false_positive():
@@ -72,6 +86,30 @@ def test_detection_count_mismatch_detected():
     assert failure["threshold"] == 0.5
 
 
+def test_detector_config_contains_all_failure_definitions():
+    config = get_detector_config()
+
+    assert_detector_config(config)
+    assert config["bbox_collapse"]["threshold"] == 1e-6
+    assert config["confidence_saturation"]["ratio_threshold"] == 0.8
+    assert config["detection_count_mismatch"]["threshold"] == 0.5
+
+
+def test_summarize_failures_includes_metadata():
+    summary = summarize_failures(load_example("fp32_normal.json"))
+
+    assert_summary_metadata(summary)
+
+
+def test_compare_outputs_includes_metadata():
+    summary = compare_outputs(
+        load_example("fp32_normal.json"),
+        load_example("int8_count_mismatch.json"),
+    )
+
+    assert_summary_metadata(summary)
+
+
 def test_cli_analyze_runs():
     result = subprocess.run(
         [
@@ -89,6 +127,7 @@ def test_cli_analyze_runs():
     )
 
     assert "No failure detected" in result.stdout
+    assert "guard_version" in result.stdout or "created_at" in result.stdout
 
 
 def test_cli_analyze_bbox_collapse_shows_numeric_context():
@@ -147,6 +186,12 @@ def test_analyze_directory_summarizes_examples():
         {"path", "image_id", "precision", "has_failure", "failure_types"} <= sample.keys()
         for sample in summary["samples"]
     )
+
+
+def test_analyze_directory_includes_metadata():
+    summary = analyze_directory(SINGLE_EXAMPLES)
+
+    assert_summary_metadata(summary)
 
 
 def test_cli_batch_analyze_runs():
@@ -265,6 +310,12 @@ def test_compare_directories_examples_pair_fixtures():
     )
 
 
+def test_compare_directories_includes_metadata():
+    summary = compare_directories(FP32_EXAMPLES, INT8_EXAMPLES)
+
+    assert_summary_metadata(summary)
+
+
 def test_cli_batch_compare_examples_runs():
     result = subprocess.run(
         [
@@ -311,6 +362,7 @@ def test_cli_analyze_save_json(tmp_path):
     assert output_path.exists()
     assert "has_failure" in saved
     assert "failures" in saved
+    assert "detector_config" in saved
 
 
 def test_cli_analyze_save_markdown(tmp_path):

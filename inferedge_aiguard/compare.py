@@ -4,7 +4,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from .detectors import detect_bbox_collapse, detect_confidence_saturation
+from .detectors import (
+    detect_bbox_collapse,
+    detect_confidence_saturation,
+    summary_metadata,
+)
 from .schema import validate_output
 
 
@@ -36,6 +40,7 @@ def compare_outputs(
             failures.append(failure)
 
     return {
+        **summary_metadata(),
         "has_failure": bool(failures),
         "failures": failures,
         "base_count": base_count,

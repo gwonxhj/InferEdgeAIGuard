@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from .compare import compare_outputs
-from .detectors import summarize_failures
+from .detectors import summarize_failures, summary_metadata
 from .schema import load_output_json
 
 
@@ -50,6 +50,7 @@ def analyze_directory(input_dir: str | Path) -> dict[str, Any]:
     failure_rate = failure_sample_count / sample_count if sample_count else 0.0
 
     return {
+        **summary_metadata(),
         "mode": "batch_analyze",
         "input_dir": str(directory),
         "sample_count": sample_count,
@@ -105,6 +106,7 @@ def compare_directories(base_dir: str | Path, candidate_dir: str | Path) -> dict
     failure_rate = failure_pair_count / pair_count if pair_count else 0.0
 
     return {
+        **summary_metadata(),
         "mode": "batch_compare",
         "base_dir": str(base_directory),
         "candidate_dir": str(candidate_directory),

@@ -39,3 +39,5 @@ python -m inferedge_aiguard.cli batch-compare \
 ```
 
 이 예제는 ground truth 기반 정확도 평가가 아니라 output-level failure signal 검증용입니다.
+
+저장된 JSON report에는 `guard_version`, `created_at`, `detector_config`가 포함됩니다. 이 metadata는 어떤 InferEdgeAIGuard 버전과 detector threshold로 실험 결과를 만들었는지 재현하기 위한 정보입니다.

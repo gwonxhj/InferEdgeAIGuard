@@ -19,10 +19,12 @@ def format_summary(summary: dict[str, Any]) -> str:
 
     if "base_count" in summary:
         lines.append("InferEdgeAIGuard compare summary")
+        lines.extend(_metadata_lines(summary))
         lines.append(f"- base_count: {summary['base_count']}")
         lines.append(f"- candidate_count: {summary['candidate_count']}")
     else:
         lines.append("InferEdgeAIGuard analyze summary")
+        lines.extend(_metadata_lines(summary))
         lines.append(f"- model: {summary.get('model', 'unknown')}")
         lines.append(f"- precision: {summary.get('precision', 'unknown')}")
         lines.append(f"- image_id: {summary.get('image_id', 'unknown')}")
@@ -64,6 +66,7 @@ def _format_value(value: Any) -> str:
 def _format_batch_summary(summary: dict[str, Any]) -> str:
     lines = [
         "InferEdgeAIGuard batch analyze summary",
+        *_metadata_lines(summary),
         f"- input_dir: {summary['input_dir']}",
         f"- sample_count: {summary['sample_count']}",
         f"- failure_sample_count: {summary['failure_sample_count']}",
@@ -85,6 +88,7 @@ def _format_batch_summary(summary: dict[str, Any]) -> str:
 def _format_batch_compare_summary(summary: dict[str, Any]) -> str:
     lines = [
         "InferEdgeAIGuard batch compare summary",
+        *_metadata_lines(summary),
         f"- base_dir: {summary['base_dir']}",
         f"- candidate_dir: {summary['candidate_dir']}",
         f"- pair_count: {summary['pair_count']}",
@@ -114,6 +118,15 @@ def _format_list(values: list[Any]) -> str:
     if not values:
         return "[]"
     return "[" + ", ".join(str(value) for value in values) + "]"
+
+
+def _metadata_lines(summary: dict[str, Any]) -> list[str]:
+    lines: list[str] = []
+    if "guard_version" in summary:
+        lines.append(f"- guard_version: {summary['guard_version']}")
+    if "created_at" in summary:
+        lines.append(f"- created_at: {summary['created_at']}")
+    return lines
 
 
 def save_summary_json(summary: dict[str, Any], output_path: str | Path) -> None:

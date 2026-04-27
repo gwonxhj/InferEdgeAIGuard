@@ -2,13 +2,43 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import Any
 
+from . import __version__
 from .schema import validate_output
 
 
 Failure = dict[str, Any]
 Summary = dict[str, Any]
+
+
+def get_detector_config() -> dict[str, Any]:
+    """Return the detector threshold/config snapshot used by summaries."""
+
+    return {
+        "bbox_collapse": {
+            "threshold": 1e-6,
+        },
+        "confidence_saturation": {
+            "low_threshold": 0.01,
+            "high_threshold": 0.99,
+            "ratio_threshold": 0.8,
+        },
+        "detection_count_mismatch": {
+            "threshold": 0.5,
+        },
+    }
+
+
+def summary_metadata() -> dict[str, Any]:
+    """Return reproducibility metadata for summary outputs."""
+
+    return {
+        "guard_version": __version__,
+        "created_at": _utc_now_iso(),
+        "detector_config": get_detector_config(),
+    }
 
 
 def detect_bbox_collapse(output: dict[str, Any], threshold: float = 1e-6) -> Failure | None:
@@ -108,6 +138,7 @@ def summarize_failures(output: dict[str, Any]) -> Summary:
     ]
 
     return {
+        **summary_metadata(),
         "has_failure": bool(failures),
         "failures": failures,
         "detection_count": len(output["detections"]),
@@ -115,3 +146,12 @@ def summarize_failures(output: dict[str, Any]) -> Summary:
         "precision": output["precision"],
         "image_id": output["image_id"],
     }
+
+
+def _utc_now_iso() -> str:
+    return (
+        datetime.now(timezone.utc)
+        .replace(microsecond=0)
+        .isoformat()
+        .replace("+00:00", "Z")
+    )

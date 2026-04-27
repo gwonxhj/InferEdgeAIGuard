@@ -73,6 +73,16 @@ FP32 baseline과 candidate output의 detection 개수가 크게 달라지는 경
 
 이 방식은 detector 결과가 단순 경고 문자열이 아니라 `affected_count`, `total_count`, `ratio`, `threshold`를 함께 가진 연구/분석 가능한 failure signal이 되도록 하기 위한 기준입니다.
 
+## Summary metadata
+
+모든 summary 결과에는 실험 재현성을 위한 metadata가 포함됩니다.
+
+- `guard_version`: 실험에 사용한 InferEdgeAIGuard 버전
+- `created_at`: summary 생성 시각의 UTC ISO-8601 문자열
+- `detector_config`: failure 판단에 사용된 threshold/config snapshot
+
+`detector_config`에는 `bbox_collapse`, `confidence_saturation`, `detection_count_mismatch`의 기준값이 저장됩니다. 이 metadata는 논문/포트폴리오 실험 로그에서 "어떤 버전과 어떤 threshold로 failure signal을 판단했는가"를 나중에 재현하기 위한 정보입니다.
+
 ## 입력 JSON 형식
 
 ```json
