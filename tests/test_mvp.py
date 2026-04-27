@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 from shutil import copyfile
 
+from inferedge_aiguard.adapters import normalize_lab_compare_result
 from inferedge_aiguard.batch import analyze_directory, compare_directories
 from inferedge_aiguard.compare import compare_outputs
 from inferedge_aiguard.detectors import get_detector_config, summarize_failures
@@ -680,3 +681,89 @@ def test_cli_reason_compare_shape_mismatch_example():
     )
 
     assert "unreliable_comparison" in result.stdout
+
+
+def test_adapter_normalizes_shape_alias():
+    normalized = normalize_lab_compare_result({"shape_matched": True})
+
+    assert normalized["shape_match"] is True
+
+
+def test_adapter_normalizes_run_config_alias():
+    normalized = normalize_lab_compare_result({"run_config_matched": False})
+
+    assert normalized["run_config_match"] is False
+
+
+def test_adapter_normalizes_latency_delta_alias():
+    normalized = normalize_lab_compare_result({"mean_delta_pct": -42.0})
+
+    assert normalized["latency_delta_pct"] == -42.0
+
+
+def test_adapter_normalizes_judgement_alias():
+    normalized = normalize_lab_compare_result({"overall_judgment": "improvement"})
+
+    assert normalized["overall_judgement"] == "improvement"
+
+
+def test_adapter_extracts_nested_accuracy_and_delta():
+    normalized = normalize_lab_compare_result(
+        {
+            "base": {"accuracy": 0.76},
+            "candidate": {"accuracy": 0.72},
+        }
+    )
+
+    assert normalized["base_accuracy"] == 0.76
+    assert normalized["candidate_accuracy"] == 0.72
+    assert normalized["accuracy_delta"] == 0.72 - 0.76
+
+
+def test_adapter_normalizes_metrics_accuracy_delta():
+    normalized = normalize_lab_compare_result({"metrics": {"accuracy_delta": -0.04}})
+
+    assert normalized["accuracy_delta"] == -0.04
+
+
+def test_adapter_normalizes_nested_compare_result():
+    normalized = normalize_lab_compare_result(
+        {
+            "compare_result": {
+                "overall_judgment": "improvement",
+                "shape_matched": True,
+                "run_config_matched": True,
+                "mean_delta_pct": -42.0,
+                "precision_comparison": "fp32_vs_int8",
+            }
+        }
+    )
+
+    assert normalized["overall_judgement"] == "improvement"
+    assert normalized["shape_match"] is True
+    assert normalized["run_config_match"] is True
+    assert normalized["latency_delta_pct"] == -42.0
+    assert normalized["precision_pair"] == "fp32_vs_int8"
+
+
+def test_cli_reason_compare_alias_schema_example():
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "reason-compare",
+            "--input",
+            str(LAB_COMPARE_EXAMPLES / "alias_schema_example.json"),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert (
+        "accuracy_missing_warning" in result.stdout
+        or "unreliable_comparison" in result.stdout
+    )
+    assert "likely_quantization_effect" in result.stdout

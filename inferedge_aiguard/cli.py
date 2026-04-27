@@ -6,6 +6,7 @@ import argparse
 import json
 from pathlib import Path
 
+from .adapters import normalize_lab_compare_result
 from .batch import analyze_directory, compare_directories
 from .compare import compare_outputs
 from .detectors import summarize_failures
@@ -108,7 +109,8 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "reason-compare":
-        compare_result = _load_json_dict(args.input)
+        raw = _load_json_dict(args.input)
+        compare_result = normalize_lab_compare_result(raw)
         _emit_summary(
             analyze_compare_result(compare_result),
             save_json=args.save_json,

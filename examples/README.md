@@ -49,7 +49,12 @@ Lab compare result reasoning 예제도 포함되어 있습니다.
 
 - `lab_compare/cross_precision_latency_only.json`: cross precision latency improvement지만 accuracy 정보가 없어 reasoning warning이 발생하는 예제
 - `lab_compare/invalid_shape_mismatch.json`: shape mismatch로 unreliable comparison이 발생하는 예제
+- `lab_compare/alias_schema_example.json`: adapter가 alias 필드명을 표준 compare dict로 정규화하는 예제
 
 ```bash
 python -m inferedge_aiguard.cli reason-compare --input examples/lab_compare/cross_precision_latency_only.json
+```
+
+```bash
+python -m inferedge_aiguard.cli reason-compare --input examples/lab_compare/alias_schema_example.json
 ```

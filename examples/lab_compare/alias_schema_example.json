@@ -1,0 +1,10 @@
+{
+  "compare_result": {
+    "comparison_mode": "cross_precision",
+    "precision_comparison": "fp32_vs_int8",
+    "overall_judgment": "improvement",
+    "shape_matched": true,
+    "run_config_matched": true,
+    "mean_delta_pct": -42.0
+  }
+}

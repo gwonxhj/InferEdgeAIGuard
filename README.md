@@ -55,6 +55,18 @@ python -m inferedge_aiguard.cli reason-compare \
 
 이 CLI 연결은 실제 InferEdgeLab repo import가 아니라 Lab compare result JSON 호환을 위한 첫 단계입니다.
 
+`reason-compare`는 내부에서 Lab compare result JSON을 정규화하는 adapter를 거칩니다. AIGuard 내부 reasoning은 이 정규화된 compare dict를 기준으로 동작합니다.
+
+지원하는 alias 예시는 다음과 같습니다.
+
+- `shape_match` / `shape_matched`
+- `run_config_match` / `run_config_matched`
+- `latency_delta_pct` / `mean_delta_pct`
+- `overall_judgement` / `overall_judgment`
+- `base.accuracy` / `candidate.accuracy` / `metrics.accuracy_delta`
+
+이 adapter는 실제 InferEdgeLab repo를 import하지 않고도 JSON schema 변형에 대한 호환성을 높이기 위한 계층입니다.
+
 ## 1차 MVP 범위
 
 - YOLO detection output JSON 최소 스키마 검증
