@@ -1,0 +1,104 @@
+{
+  "guard_version": "0.1.0",
+  "created_at": "2026-04-27T13:21:36Z",
+  "detector_config": {
+    "bbox_collapse": {
+      "threshold": 1e-06
+    },
+    "confidence_saturation": {
+      "low_threshold": 0.01,
+      "high_threshold": 0.99,
+      "ratio_threshold": 0.8
+    },
+    "detection_count_mismatch": {
+      "threshold": 0.5
+    }
+  },
+  "mode": "run_history_reasoning",
+  "status": "warning",
+  "run_count": 3,
+  "anomalies": [
+    {
+      "type": "mean_latency_instability",
+      "severity": "medium",
+      "message": "Mean latency varies significantly across repeated runs.",
+      "evidence": {
+        "min_mean_ms": 5.0,
+        "max_mean_ms": 10.1,
+        "ratio": 2.02
+      }
+    },
+    {
+      "type": "p99_latency_instability",
+      "severity": "medium",
+      "message": "p99 latency varies significantly across repeated runs.",
+      "evidence": {
+        "min_p99_ms": 7.1,
+        "max_p99_ms": 18.4,
+        "ratio": 2.591549295774648
+      }
+    },
+    {
+      "type": "latency_outlier_run",
+      "severity": "medium",
+      "message": "One or more runs have mean latency far above the history median.",
+      "evidence": {
+        "outlier_indices": [
+          2
+        ],
+        "median_mean_ms": 5.2
+      }
+    },
+    {
+      "type": "quantized_history_accuracy_missing",
+      "severity": "medium",
+      "message": "Repeated quantized runs are missing accuracy or task metric validation.",
+      "evidence": {
+        "precision_values": [
+          "int8"
+        ],
+        "run_count": 3
+      }
+    }
+  ],
+  "explanations": [
+    "Mean latency varies significantly across repeated runs.",
+    "p99 latency varies significantly across repeated runs.",
+    "One or more runs have mean latency far above the history median.",
+    "Repeated quantized runs are missing accuracy or task metric validation."
+  ],
+  "suspected_causes": [
+    "runtime_jitter_or_unstable_device_load",
+    "tail_latency_jitter",
+    "single_run_outlier",
+    "missing_accuracy_validation"
+  ],
+  "confidence": 0.7,
+  "recommendations": [
+    "Repeat profiling after controlling device load, warmup, and run count.",
+    "Inspect tail latency outliers and increase repeated runs.",
+    "Inspect the outlier run and repeat profiling to confirm whether it is reproducible.",
+    "Add accuracy validation for repeated quantized runs before accepting the performance trend."
+  ],
+  "history_metrics": {
+    "run_count": 3,
+    "mean_ms_values": [
+      5.0,
+      5.2,
+      10.1
+    ],
+    "p99_ms_values": [
+      7.1,
+      7.5,
+      18.4
+    ],
+    "min_mean_ms": 5.0,
+    "max_mean_ms": 10.1,
+    "mean_latency_ratio": 2.02,
+    "min_p99_ms": 7.1,
+    "max_p99_ms": 18.4,
+    "p99_latency_ratio": 2.591549295774648,
+    "accuracy_present_count": 0,
+    "accuracy_missing_count": 3
+  }
+}
