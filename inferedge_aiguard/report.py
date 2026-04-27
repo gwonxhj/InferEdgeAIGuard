@@ -8,6 +8,9 @@ from typing import Any
 def format_summary(summary: dict[str, Any]) -> str:
     """Format an analyze or compare summary for CLI output."""
 
+    if summary.get("mode") == "batch_analyze":
+        return _format_batch_summary(summary)
+
     lines: list[str] = []
 
     if "base_count" in summary:
@@ -52,3 +55,24 @@ def _format_value(value: Any) -> str:
     if isinstance(value, float):
         return f"{value:.6g}"
     return str(value)
+
+
+def _format_batch_summary(summary: dict[str, Any]) -> str:
+    lines = [
+        "InferEdgeAIGuard batch analyze summary",
+        f"- input_dir: {summary['input_dir']}",
+        f"- sample_count: {summary['sample_count']}",
+        f"- failure_sample_count: {summary['failure_sample_count']}",
+        f"- failure_rate: {_format_value(summary['failure_rate'])}",
+        "- failure_type_counts:",
+    ]
+
+    failure_type_counts = summary.get("failure_type_counts", {})
+    if not failure_type_counts:
+        lines.append("  No failure detected")
+        return "\n".join(lines)
+
+    for failure_type, count in sorted(failure_type_counts.items()):
+        lines.append(f"  - {failure_type}: {count}")
+
+    return "\n".join(lines)

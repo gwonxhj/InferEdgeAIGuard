@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 
+from .batch import analyze_directory
 from .compare import compare_outputs
 from .detectors import summarize_failures
 from .report import format_summary
@@ -28,6 +29,13 @@ def build_parser() -> argparse.ArgumentParser:
         "--candidate", required=True, help="Path to candidate output JSON"
     )
 
+    batch_parser = subparsers.add_parser(
+        "batch-analyze", help="Analyze all output JSON files in a directory"
+    )
+    batch_parser.add_argument(
+        "--input-dir", required=True, help="Directory containing output JSON files"
+    )
+
     return parser
 
 
@@ -44,6 +52,10 @@ def main(argv: list[str] | None = None) -> int:
         base = load_output_json(args.base)
         candidate = load_output_json(args.candidate)
         print(format_summary(compare_outputs(base, candidate)))
+        return 0
+
+    if args.command == "batch-analyze":
+        print(format_summary(analyze_directory(args.input_dir)))
         return 0
 
     parser.error(f"unknown command: {args.command}")

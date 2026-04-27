@@ -2,6 +2,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+from inferedge_aiguard.batch import analyze_directory
 from inferedge_aiguard.compare import compare_outputs
 from inferedge_aiguard.detectors import summarize_failures
 from inferedge_aiguard.schema import load_output_json
@@ -119,3 +120,51 @@ def test_cli_compare_runs():
 
     assert "detection_count_mismatch" in result.stdout
     assert "mismatch_ratio" in result.stdout
+
+
+def test_analyze_directory_summarizes_examples():
+    summary = analyze_directory(ROOT / "examples")
+    json_count = len(list((ROOT / "examples").glob("*.json")))
+
+    assert summary["mode"] == "batch_analyze"
+    assert summary["sample_count"] == json_count
+    assert summary["failure_rate"] > 0
+    assert (
+        "bbox_collapse" in summary["failure_type_counts"]
+        or "confidence_saturation" in summary["failure_type_counts"]
+    )
+    assert all(
+        {"path", "image_id", "precision", "has_failure", "failure_types"} <= sample.keys()
+        for sample in summary["samples"]
+    )
+
+
+def test_cli_batch_analyze_runs():
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "batch-analyze",
+            "--input-dir",
+            str(ROOT / "examples"),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert "InferEdgeAIGuard batch analyze summary" in result.stdout
+    assert "sample_count" in result.stdout
+    assert "failure_rate" in result.stdout
+
+
+def test_analyze_directory_empty_dir(tmp_path):
+    summary = analyze_directory(tmp_path)
+
+    assert summary["sample_count"] == 0
+    assert summary["failure_sample_count"] == 0
+    assert summary["failure_rate"] == 0.0
+    assert summary["failure_type_counts"] == {}
+    assert summary["samples"] == []
