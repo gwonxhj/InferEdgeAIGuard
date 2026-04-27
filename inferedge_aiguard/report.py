@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
 from typing import Any
 
 
@@ -112,3 +114,32 @@ def _format_list(values: list[Any]) -> str:
     if not values:
         return "[]"
     return "[" + ", ".join(str(value) for value in values) + "]"
+
+
+def save_summary_json(summary: dict[str, Any], output_path: str | Path) -> None:
+    """Save a summary dict as a JSON report."""
+
+    path = Path(output_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as file:
+        json.dump(summary, file, ensure_ascii=False, indent=2)
+        file.write("\n")
+
+
+def save_summary_markdown(summary: dict[str, Any], output_path: str | Path) -> None:
+    """Save a formatted summary as a Markdown report."""
+
+    path = Path(output_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    content = f"{_markdown_title(summary)}\n\n```text\n{format_summary(summary)}\n```\n"
+    path.write_text(content, encoding="utf-8")
+
+
+def _markdown_title(summary: dict[str, Any]) -> str:
+    if summary.get("mode") == "batch_analyze":
+        return "# InferEdgeAIGuard Batch Analyze Report"
+    if summary.get("mode") == "batch_compare":
+        return "# InferEdgeAIGuard Batch Compare Report"
+    if "base_count" in summary:
+        return "# InferEdgeAIGuard Compare Report"
+    return "# InferEdgeAIGuard Analyze Report"

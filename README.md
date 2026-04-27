@@ -150,6 +150,26 @@ batch compare summary는 다음 지표를 제공합니다.
 
 이 기능은 ground truth 정확도 평가가 아니라 FP32 baseline 대비 candidate output-level failure signal 비교입니다. RQ1 "FP32 대비 INT8/FP16 inference는 어떤 failure pattern을 보이는가?"를 최소한의 실험 단위로 확인하기 위한 구조입니다.
 
+CLI 결과를 JSON 또는 Markdown 파일로 저장할 수 있습니다.
+
+```bash
+python -m inferedge_aiguard.cli analyze \
+  --input examples/fp32_normal.json \
+  --save-json reports/analyze_normal.json \
+  --save-md reports/analyze_normal.md
+```
+
+```bash
+python -m inferedge_aiguard.cli batch-analyze \
+  --input-dir examples \
+  --save-json reports/batch_analyze.json \
+  --save-md reports/batch_analyze.md
+```
+
+`--save-json`은 summary dict를 그대로 저장하므로 후속 분석, 표 작성, 논문/포트폴리오 실험 로그 누적에 적합합니다. `--save-md`는 사람이 읽기 쉬운 실험 리포트를 남길 때 사용합니다.
+
+저장 기능 역시 ground truth 평가가 아니라 output-level failure signal 기록입니다. 즉 "정답 대비 정확도"를 저장하는 것이 아니라, InferEdgeAIGuard가 감지한 출력 레벨 failure signal과 집계 결과를 재현 가능한 파일로 남기는 기능입니다.
+
 테스트를 실행합니다.
 
 ```bash

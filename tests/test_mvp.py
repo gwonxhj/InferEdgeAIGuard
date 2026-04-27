@@ -1,3 +1,4 @@
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -246,3 +247,115 @@ def test_compare_directories_zero_pairs(tmp_path):
     assert summary["failure_type_counts"] == {}
     assert summary["unmatched_base_files"] == ["base_only.json"]
     assert summary["unmatched_candidate_files"] == ["candidate_only.json"]
+
+
+def test_cli_analyze_save_json(tmp_path):
+    output_path = tmp_path / "reports" / "analyze_normal.json"
+
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "analyze",
+            "--input",
+            str(ROOT / "examples" / "fp32_normal.json"),
+            "--save-json",
+            str(output_path),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    saved = json.loads(output_path.read_text(encoding="utf-8"))
+    assert output_path.exists()
+    assert "has_failure" in saved
+    assert "failures" in saved
+
+
+def test_cli_analyze_save_markdown(tmp_path):
+    output_path = tmp_path / "reports" / "analyze_normal.md"
+
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "analyze",
+            "--input",
+            str(ROOT / "examples" / "fp32_normal.json"),
+            "--save-md",
+            str(output_path),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    content = output_path.read_text(encoding="utf-8")
+    assert output_path.exists()
+    assert (
+        "InferEdgeAIGuard Analyze Report" in content
+        or "No failure detected" in content
+    )
+
+
+def test_cli_batch_analyze_save_json(tmp_path):
+    output_path = tmp_path / "reports" / "batch_analyze.json"
+
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "batch-analyze",
+            "--input-dir",
+            str(ROOT / "examples"),
+            "--save-json",
+            str(output_path),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    saved = json.loads(output_path.read_text(encoding="utf-8"))
+    assert output_path.exists()
+    assert saved["mode"] == "batch_analyze"
+
+
+def test_cli_batch_compare_save_markdown(tmp_path):
+    base_dir = tmp_path / "base"
+    candidate_dir = tmp_path / "candidate"
+    output_path = tmp_path / "reports" / "batch_compare.md"
+    base_dir.mkdir()
+    candidate_dir.mkdir()
+    copy_example("fp32_normal.json", base_dir / "sample_001.json")
+    copy_example("int8_count_mismatch.json", candidate_dir / "sample_001.json")
+
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "batch-compare",
+            "--base-dir",
+            str(base_dir),
+            "--candidate-dir",
+            str(candidate_dir),
+            "--save-md",
+            str(output_path),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    content = output_path.read_text(encoding="utf-8")
+    assert output_path.exists()
+    assert "Batch Compare Report" in content or "pair_count" in content
