@@ -10,6 +10,8 @@ def format_summary(summary: dict[str, Any]) -> str:
 
     if summary.get("mode") == "batch_analyze":
         return _format_batch_summary(summary)
+    if summary.get("mode") == "batch_compare":
+        return _format_batch_compare_summary(summary)
 
     lines: list[str] = []
 
@@ -76,3 +78,37 @@ def _format_batch_summary(summary: dict[str, Any]) -> str:
         lines.append(f"  - {failure_type}: {count}")
 
     return "\n".join(lines)
+
+
+def _format_batch_compare_summary(summary: dict[str, Any]) -> str:
+    lines = [
+        "InferEdgeAIGuard batch compare summary",
+        f"- base_dir: {summary['base_dir']}",
+        f"- candidate_dir: {summary['candidate_dir']}",
+        f"- pair_count: {summary['pair_count']}",
+        f"- failure_pair_count: {summary['failure_pair_count']}",
+        f"- failure_rate: {_format_value(summary['failure_rate'])}",
+        "- failure_type_counts:",
+    ]
+
+    failure_type_counts = summary.get("failure_type_counts", {})
+    if not failure_type_counts:
+        lines.append("  No failure detected")
+    else:
+        for failure_type, count in sorted(failure_type_counts.items()):
+            lines.append(f"  - {failure_type}: {count}")
+
+    lines.append(
+        f"- unmatched_base_files: {_format_list(summary.get('unmatched_base_files', []))}"
+    )
+    lines.append(
+        "- unmatched_candidate_files: "
+        f"{_format_list(summary.get('unmatched_candidate_files', []))}"
+    )
+    return "\n".join(lines)
+
+
+def _format_list(values: list[Any]) -> str:
+    if not values:
+        return "[]"
+    return "[" + ", ".join(str(value) for value in values) + "]"

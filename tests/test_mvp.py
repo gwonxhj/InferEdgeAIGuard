@@ -1,8 +1,9 @@
 import subprocess
 import sys
 from pathlib import Path
+from shutil import copyfile
 
-from inferedge_aiguard.batch import analyze_directory
+from inferedge_aiguard.batch import analyze_directory, compare_directories
 from inferedge_aiguard.compare import compare_outputs
 from inferedge_aiguard.detectors import summarize_failures
 from inferedge_aiguard.schema import load_output_json
@@ -13,6 +14,10 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def load_example(name: str) -> dict:
     return load_output_json(ROOT / "examples" / name)
+
+
+def copy_example(name: str, destination: Path) -> None:
+    copyfile(ROOT / "examples" / name, destination)
 
 
 def test_normal_case_has_no_false_positive():
@@ -168,3 +173,76 @@ def test_analyze_directory_empty_dir(tmp_path):
     assert summary["failure_rate"] == 0.0
     assert summary["failure_type_counts"] == {}
     assert summary["samples"] == []
+
+
+def test_compare_directories_matches_common_filenames(tmp_path):
+    base_dir = tmp_path / "base"
+    candidate_dir = tmp_path / "candidate"
+    base_dir.mkdir()
+    candidate_dir.mkdir()
+    copy_example("fp32_normal.json", base_dir / "sample_001.json")
+    copy_example("int8_count_mismatch.json", candidate_dir / "sample_001.json")
+    copy_example("fp32_normal.json", base_dir / "base_only.json")
+    copy_example("int8_count_mismatch.json", candidate_dir / "candidate_only.json")
+
+    summary = compare_directories(base_dir, candidate_dir)
+
+    assert summary["mode"] == "batch_compare"
+    assert summary["pair_count"] == 1
+    assert summary["failure_rate"] > 0
+    assert "detection_count_mismatch" in summary["failure_type_counts"]
+    assert summary["unmatched_base_files"] == ["base_only.json"]
+    assert summary["unmatched_candidate_files"] == ["candidate_only.json"]
+    assert summary["pairs"][0]["filename"] == "sample_001.json"
+    assert summary["pairs"][0]["base_precision"] == "fp32"
+    assert summary["pairs"][0]["candidate_precision"] == "int8"
+    assert summary["pairs"][0]["failure_types"] == ["detection_count_mismatch"]
+
+
+def test_cli_batch_compare_runs(tmp_path):
+    base_dir = tmp_path / "base"
+    candidate_dir = tmp_path / "candidate"
+    base_dir.mkdir()
+    candidate_dir.mkdir()
+    copy_example("fp32_normal.json", base_dir / "sample_001.json")
+    copy_example("int8_count_mismatch.json", candidate_dir / "sample_001.json")
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "batch-compare",
+            "--base-dir",
+            str(base_dir),
+            "--candidate-dir",
+            str(candidate_dir),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert "InferEdgeAIGuard batch compare summary" in result.stdout
+    assert "pair_count" in result.stdout
+    assert "failure_rate" in result.stdout
+    assert "detection_count_mismatch" in result.stdout
+
+
+def test_compare_directories_zero_pairs(tmp_path):
+    base_dir = tmp_path / "base"
+    candidate_dir = tmp_path / "candidate"
+    base_dir.mkdir()
+    candidate_dir.mkdir()
+    copy_example("fp32_normal.json", base_dir / "base_only.json")
+    copy_example("int8_count_mismatch.json", candidate_dir / "candidate_only.json")
+
+    summary = compare_directories(base_dir, candidate_dir)
+
+    assert summary["pair_count"] == 0
+    assert summary["failure_pair_count"] == 0
+    assert summary["failure_rate"] == 0.0
+    assert summary["failure_type_counts"] == {}
+    assert summary["unmatched_base_files"] == ["base_only.json"]
+    assert summary["unmatched_candidate_files"] == ["candidate_only.json"]
