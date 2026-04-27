@@ -1,0 +1,9 @@
+{
+  "comparison_mode": "same_precision",
+  "precision_pair": "fp32_vs_fp32",
+  "overall_judgement": "neutral",
+  "shape_match": false,
+  "run_config_match": true,
+  "latency_delta_pct": 2.0,
+  "accuracy": 0.9
+}

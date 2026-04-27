@@ -175,6 +175,8 @@ def save_summary_markdown(summary: dict[str, Any], output_path: str | Path) -> N
         content = _markdown_batch_analyze_report(summary)
     elif summary.get("mode") == "batch_compare":
         content = _markdown_batch_compare_report(summary)
+    elif summary.get("mode") == "compare_reasoning":
+        content = _markdown_compare_reasoning_report(summary)
     else:
         content = _markdown_basic_report(summary)
     path.write_text(content, encoding="utf-8")
@@ -185,6 +187,8 @@ def _markdown_title(summary: dict[str, Any]) -> str:
         return "# InferEdgeAIGuard Batch Analyze Report"
     if summary.get("mode") == "batch_compare":
         return "# InferEdgeAIGuard Batch Compare Report"
+    if summary.get("mode") == "compare_reasoning":
+        return "# InferEdgeAIGuard Compare Reasoning Report"
     if "base_count" in summary:
         return "# InferEdgeAIGuard Compare Report"
     return "# InferEdgeAIGuard Analyze Report"
@@ -279,6 +283,43 @@ def _markdown_batch_compare_report(summary: dict[str, Any]) -> str:
                 for pair in summary.get("pairs", [])
             ],
         ),
+        _markdown_raw_cli_summary(summary),
+    ]
+    return "\n\n".join(sections) + "\n"
+
+
+def _markdown_compare_reasoning_report(summary: dict[str, Any]) -> str:
+    anomalies = summary.get("anomalies", [])
+    anomaly_section = "No anomaly detected"
+    if anomalies:
+        anomaly_section = _markdown_table(
+            ["Type", "Severity", "Message"],
+            [
+                [
+                    anomaly.get("type", ""),
+                    anomaly.get("severity", ""),
+                    anomaly.get("message", ""),
+                ]
+                for anomaly in anomalies
+            ],
+        )
+
+    sections = [
+        _markdown_title(summary),
+        "## Aggregate Summary",
+        _markdown_table(
+            ["Metric", "Value"],
+            [
+                ["status", summary.get("status", "unknown")],
+                ["confidence", _format_value(summary.get("confidence", 0.0))],
+            ],
+        ),
+        "## Anomalies",
+        anomaly_section,
+        "## Suspected Causes",
+        _format_markdown_list(summary.get("suspected_causes", [])),
+        "## Recommendations",
+        _format_markdown_list(summary.get("recommendations", [])),
         _markdown_raw_cli_summary(summary),
     ]
     return "\n\n".join(sections) + "\n"
