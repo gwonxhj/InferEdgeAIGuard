@@ -905,3 +905,97 @@ def test_structured_result_save_markdown_report(tmp_path):
     assert "Aggregate Summary" in content
     assert "Anomalies" in content
     assert "Recommendations" in content
+
+
+def test_cli_reason_result_runs():
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "reason-result",
+            "--input",
+            str(LAB_RESULT_EXAMPLES / "suspicious_int8_missing_accuracy.json"),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert "InferEdgeAIGuard structured result reasoning summary" in result.stdout
+    assert "accuracy_missing_warning" in result.stdout
+
+
+def test_cli_reason_result_save_json(tmp_path):
+    output_path = tmp_path / "reports" / "result_reasoning.json"
+
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "reason-result",
+            "--input",
+            str(LAB_RESULT_EXAMPLES / "suspicious_int8_missing_accuracy.json"),
+            "--save-json",
+            str(output_path),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    saved = json.loads(output_path.read_text(encoding="utf-8"))
+    assert saved["mode"] == "structured_result_reasoning"
+    assert "status" in saved
+    assert "anomalies" in saved
+    assert "recommendations" in saved
+
+
+def test_cli_reason_result_save_markdown(tmp_path):
+    output_path = tmp_path / "reports" / "result_reasoning.md"
+
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "reason-result",
+            "--input",
+            str(LAB_RESULT_EXAMPLES / "suspicious_int8_missing_accuracy.json"),
+            "--save-md",
+            str(output_path),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    content = output_path.read_text(encoding="utf-8")
+    assert "Structured Result Reasoning Report" in content
+    assert "Aggregate Summary" in content
+    assert "Anomalies" in content
+    assert "Recommendations" in content
+
+
+def test_cli_reason_result_valid_fp32_is_ok():
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "reason-result",
+            "--input",
+            str(LAB_RESULT_EXAMPLES / "valid_fp32_result.json"),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert "- status: ok" in result.stdout
+    assert "No anomaly detected" in result.stdout

@@ -91,7 +91,21 @@ Python API는 `analyze_structured_result(result)`입니다. 입력은 InferEdgeL
 - quantized precision without accuracy
 - missing run_config/system metadata
 
-이 단계는 CLI 없이 Python API와 report formatter만 추가합니다. 실제 Lab repo import 없이 structured result dict를 직접 넘겨 사용하는 시작점입니다.
+`reason-result` CLI는 InferEdgeLab structured result JSON을 입력으로 받습니다. `reason-compare`가 두 실행 결과의 compare result를 해석하는 명령이라면, `reason-result`는 compare 이전의 단일 측정 결과 자체를 분석합니다.
+
+```bash
+python -m inferedge_aiguard.cli reason-result \
+  --input examples/lab_result/suspicious_int8_missing_accuracy.json
+```
+
+```bash
+python -m inferedge_aiguard.cli reason-result \
+  --input examples/lab_result/suspicious_int8_missing_accuracy.json \
+  --save-json reports/result_reasoning.json \
+  --save-md reports/result_reasoning.md
+```
+
+이 단계도 실제 Lab repo import 없이 Lab structured result JSON을 직접 읽어 reasoning summary를 생성합니다.
 
 ## 1차 MVP 범위
 

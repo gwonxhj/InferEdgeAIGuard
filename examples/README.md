@@ -65,4 +65,9 @@ Lab structured result reasoning 예제도 포함되어 있습니다.
 - `lab_result/valid_fp32_result.json`: anomaly가 없는 정상 FP32 structured result 예제
 - `lab_result/suspicious_int8_missing_accuracy.json`: latency instability, missing provenance, missing accuracy warning이 발생하는 INT8 예제
 
-아직 structured result 전용 CLI는 없으며, Python API 예제로 사용할 수 있습니다.
+```bash
+python -m inferedge_aiguard.cli reason-result \
+  --input examples/lab_result/suspicious_int8_missing_accuracy.json
+```
+
+`reason-result`는 compare 결과가 아니라 단일 Lab structured result JSON을 분석합니다.
