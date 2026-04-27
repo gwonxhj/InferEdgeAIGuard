@@ -1,0 +1,66 @@
+{
+  "guard_version": "0.1.0",
+  "created_at": "2026-04-27T14:05:17Z",
+  "detector_config": {
+    "bbox_collapse": {
+      "threshold": 1e-06
+    },
+    "confidence_saturation": {
+      "low_threshold": 0.01,
+      "high_threshold": 0.99,
+      "ratio_threshold": 0.8
+    },
+    "detection_count_mismatch": {
+      "threshold": 0.5
+    }
+  },
+  "mode": "run_history_reasoning",
+  "status": "warning",
+  "run_count": 5,
+  "anomalies": [
+    {
+      "type": "partial_accuracy_missing",
+      "severity": "medium",
+      "message": "Accuracy is logged for only part of the run history.",
+      "evidence": {
+        "accuracy_present_count": 1,
+        "accuracy_missing_count": 4
+      }
+    }
+  ],
+  "explanations": [
+    "Accuracy is logged for only part of the run history."
+  ],
+  "suspected_causes": [
+    "inconsistent_accuracy_logging"
+  ],
+  "confidence": 0.7,
+  "recommendations": [
+    "Ensure accuracy or task metrics are consistently logged across repeated runs."
+  ],
+  "history_metrics": {
+    "run_count": 5,
+    "mean_ms_values": [
+      12.409211830017739,
+      13.352749789987683,
+      13.71496924999974,
+      13.609172769988618,
+      13.352749789987683
+    ],
+    "p99_ms_values": [
+      16.95117583997444,
+      16.816976569712097,
+      17.07734356033143,
+      17.01069448038197,
+      16.816976569712097
+    ],
+    "min_mean_ms": 12.409211830017739,
+    "max_mean_ms": 13.71496924999974,
+    "mean_latency_ratio": 1.1052248473044346,
+    "min_p99_ms": 16.816976569712097,
+    "max_p99_ms": 17.07734356033143,
+    "p99_latency_ratio": 1.015482390044371,
+    "accuracy_present_count": 1,
+    "accuracy_missing_count": 4
+  }
+}
