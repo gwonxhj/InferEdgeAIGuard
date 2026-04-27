@@ -147,6 +147,16 @@ python -m inferedge_aiguard.cli reason --input examples/lab_compat/lab_history_r
 
 이 단계는 실제 Lab repo import가 아니라 JSON 호환성 검증 단계입니다.
 
+## Validation Evidence
+
+InferEdgeAIGuard includes a fixture-based validation report that demonstrates how the reasoning layer detects suspicious compare results, structured result issues, and repeated-run instability.
+
+- Validation report: [docs/validation_report.md](docs/validation_report.md)
+- Saved evidence reports: `reports/validation/`
+- Inputs: `examples/lab_compat/`
+
+현재 validation은 realistic fixture 기반입니다. 실제 Jetson validation은 다음 단계에서 Jetson/InferEdgeLab real result를 수집한 뒤 수행할 예정입니다.
+
 ## Output JSON Schema
 
 YOLO output-level detector는 다음 형식을 기준으로 합니다.

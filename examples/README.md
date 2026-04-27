@@ -28,6 +28,8 @@ python -m inferedge_aiguard.cli batch-compare --base-dir examples/fp32 --candida
 - `lab_compat/lab_result_realistic.json`: 단일 TensorRT INT8 structured result 형태
 - `lab_compat/lab_history_realistic.json`: repeated TensorRT INT8 structured result history 형태
 
+이 fixture는 `docs/validation_report.md`와 `reports/validation/` validation evidence 생성에 사용됩니다.
+
 ## Recommended Smoke Commands
 
 Output-level detector:

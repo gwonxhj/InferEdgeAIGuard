@@ -1,0 +1,43 @@
+{
+  "mode": "compare_reasoning",
+  "status": "warning",
+  "anomalies": [
+    {
+      "type": "accuracy_missing_warning",
+      "severity": "medium",
+      "message": "Latency appears improved, but accuracy or task metric validation is missing.",
+      "evidence": {
+        "overall_judgement": "improvement",
+        "mean_judgement": "improvement",
+        "latency_delta_pct": -58.7,
+        "mean_delta_pct": -58.7
+      }
+    },
+    {
+      "type": "likely_quantization_effect",
+      "severity": "low",
+      "message": "Cross-precision comparison shows a large latency delta.",
+      "evidence": {
+        "overall_judgement": "improvement",
+        "mean_judgement": "improvement",
+        "latency_delta_pct": -58.7,
+        "mean_delta_pct": -58.7,
+        "comparison_mode": "cross_precision",
+        "precision_pair": "fp32_vs_int8"
+      }
+    }
+  ],
+  "explanations": [
+    "Latency appears improved, but accuracy or task metric validation is missing.",
+    "Cross-precision comparison shows a large latency delta."
+  ],
+  "suspected_causes": [
+    "missing_accuracy_validation",
+    "precision_or_runtime_change"
+  ],
+  "confidence": 0.7,
+  "recommendations": [
+    "Add accuracy or task metric validation before accepting latency-only improvement.",
+    "Verify that the observed latency delta is expected for the target engine/device/precision."
+  ]
+}

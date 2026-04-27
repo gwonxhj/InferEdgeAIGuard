@@ -1,0 +1,37 @@
+{
+  "mode": "structured_result_reasoning",
+  "status": "warning",
+  "anomalies": [
+    {
+      "type": "latency_instability",
+      "severity": "medium",
+      "message": "p99 latency is much higher than mean latency.",
+      "evidence": {
+        "mean_ms": 5.1,
+        "p99_ms": 12.4,
+        "p99_to_mean_ratio": 2.431372549019608
+      }
+    },
+    {
+      "type": "accuracy_missing_warning",
+      "severity": "medium",
+      "message": "Quantized precision result is missing accuracy or task metric validation.",
+      "evidence": {
+        "precision": "int8"
+      }
+    }
+  ],
+  "explanations": [
+    "p99 latency is much higher than mean latency.",
+    "Quantized precision result is missing accuracy or task metric validation."
+  ],
+  "suspected_causes": [
+    "runtime_jitter_or_outlier_latency",
+    "missing_accuracy_validation"
+  ],
+  "confidence": 0.7,
+  "recommendations": [
+    "Repeat profiling and inspect warmup/runs/device load before trusting the result.",
+    "Add accuracy or task metric validation before accepting quantized inference results."
+  ]
+}
