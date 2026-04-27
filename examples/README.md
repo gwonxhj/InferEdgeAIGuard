@@ -10,6 +10,7 @@
 - `lab_compare/`: `reason-compare`에서 사용할 InferEdgeLab compare result reasoning fixture
 - `lab_result/`: Python API `analyze_structured_result()`에서 사용할 InferEdgeLab structured result fixture
 - `lab_history/`: Python API `analyze_run_history()`에서 사용할 repeated Lab structured result fixture
+- `lab_compat/`: 실제 InferEdgeLab 출력에 가까운 compatibility fixture
 
 ## 실행 예시
 
@@ -92,3 +93,17 @@ python -m inferedge_aiguard.cli reason --input examples/lab_compare/cross_precis
 python -m inferedge_aiguard.cli reason --input examples/lab_result/suspicious_int8_missing_accuracy.json
 python -m inferedge_aiguard.cli reason --input examples/lab_history/unstable_int8_history.json
 ```
+
+Lab compatibility fixture도 포함되어 있습니다.
+
+- `lab_compat/lab_compare_realistic.json`: cross precision FP32 vs INT8 compare result 형태
+- `lab_compat/lab_result_realistic.json`: 단일 TensorRT INT8 structured result 형태
+- `lab_compat/lab_history_realistic.json`: repeated TensorRT INT8 structured result history 형태
+
+```bash
+python -m inferedge_aiguard.cli reason --input examples/lab_compat/lab_compare_realistic.json
+python -m inferedge_aiguard.cli reason --input examples/lab_compat/lab_result_realistic.json
+python -m inferedge_aiguard.cli reason --input examples/lab_compat/lab_history_realistic.json
+```
+
+이 예제들은 실제 InferEdgeLab repo import가 아니라 JSON 호환성 검증용입니다.
