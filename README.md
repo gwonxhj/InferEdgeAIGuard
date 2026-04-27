@@ -142,6 +142,31 @@ python -m inferedge_aiguard.cli reason-history \
 
 `reason-history`는 mean latency instability, p99 latency instability, latency outlier run, mixed identity/shape config, partial or missing accuracy logging 같은 반복 실험 관점의 anomaly signal을 보고합니다. 실제 Lab repo import 없이 structured result list JSON을 직접 읽어 reasoning summary를 생성합니다.
 
+## Unified reason CLI
+
+`reason` 명령은 입력 JSON 타입을 자동 판별해 적절한 reasoning 경로로 라우팅하는 단일 진입점입니다.
+
+- JSON이 list이면 `reason-history`와 동일하게 run history reasoning을 수행합니다.
+- JSON이 Lab compare result dict로 보이면 `reason-compare`와 동일하게 adapter 정규화 후 compare reasoning을 수행합니다.
+- JSON이 Lab structured result dict로 보이면 `reason-result`와 동일하게 단일 result reasoning을 수행합니다.
+
+compare result와 structured result로 볼 수 있는 키가 함께 있으면 compare result를 우선합니다. 기존 `reason-compare`, `reason-result`, `reason-history` 명령도 명시적 실행용으로 계속 유지됩니다.
+
+```bash
+python -m inferedge_aiguard.cli reason --input examples/lab_compare/cross_precision_latency_only.json
+python -m inferedge_aiguard.cli reason --input examples/lab_result/suspicious_int8_missing_accuracy.json
+python -m inferedge_aiguard.cli reason --input examples/lab_history/unstable_int8_history.json
+```
+
+```bash
+python -m inferedge_aiguard.cli reason \
+  --input examples/lab_history/unstable_int8_history.json \
+  --save-json reports/reason.json \
+  --save-md reports/reason.md
+```
+
+이 구조는 향후 API나 SaaS로 확장할 때 단일 endpoint로 reasoning 요청을 받을 수 있게 만드는 기반입니다. 단, 현재 단계에서는 SaaS/API 서버를 구현하지 않고 CLI entrypoint만 추가합니다.
+
 ## 1차 MVP 범위
 
 - YOLO detection output JSON 최소 스키마 검증
