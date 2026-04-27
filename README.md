@@ -152,10 +152,11 @@ python -m inferedge_aiguard.cli reason --input examples/lab_compat/lab_history_r
 InferEdgeAIGuard includes a fixture-based validation report that demonstrates how the reasoning layer detects suspicious compare results, structured result issues, and repeated-run instability.
 
 - Validation report: [docs/validation_report.md](docs/validation_report.md)
+- Jetson validation plan: [docs/jetson_validation_plan.md](docs/jetson_validation_plan.md)
 - Saved evidence reports: `reports/validation/`
 - Inputs: `examples/lab_compat/`
 
-현재 validation은 realistic fixture 기반입니다. 실제 Jetson validation은 다음 단계에서 Jetson/InferEdgeLab real result를 수집한 뒤 수행할 예정입니다.
+현재 validation은 realistic fixture 기반입니다. 실제 Jetson validation은 다음 단계에서 Jetson/InferEdgeLab real result를 수집한 뒤 수행할 예정입니다. Fixture-based validation report is available now, and Jetson real-device validation is planned in [docs/jetson_validation_plan.md](docs/jetson_validation_plan.md).
 
 ## Output JSON Schema
 
