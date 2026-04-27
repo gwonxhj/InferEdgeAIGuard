@@ -47,6 +47,18 @@ Analyzes one Lab structured result.
 - missing resolved input shape provenance
 - quantized result without accuracy
 
+### Forge/Runtime Provenance Reasoning
+
+Compares Forge metadata/manifest provenance against Runtime result provenance.
+
+- artifact hash mismatch
+- source model hash mismatch
+- runtime artifact path mismatch
+- backend/target/precision/shape mismatch
+- insufficient provenance for review
+
+This layer is rule + evidence based. It does not execute artifacts or guess missing values. It records the mismatched field, expected Forge value, observed Runtime value, and source documents so Lab can optionally surface the guard_analysis evidence in report/deployment decision flows.
+
 ### History Reasoning
 
 Analyzes repeated Lab structured result lists.

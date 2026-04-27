@@ -62,6 +62,18 @@ YOLO detection output JSON을 직접 분석합니다.
 - missing `resolved_input_shapes`
 - quantized result without accuracy
 
+### Forge/Runtime provenance reasoning
+
+Forge metadata/manifest와 Runtime result JSON의 provenance를 비교하는 rule-based detector를 제공합니다.
+
+- artifact sha256 mismatch
+- source model sha256 mismatch
+- runtime artifact path mismatch
+- backend/target/precision/shape mismatch
+- insufficient Forge/Runtime provenance
+
+이 detector는 실제 artifact를 실행하지 않고, Forge가 기록한 build provenance와 Runtime이 기록한 profiling provenance가 같은 산출물을 가리키는지 evidence 기반으로 확인합니다. 명확한 hash mismatch는 `error` guard_analysis로 이어질 수 있고, path/config/shape mismatch 또는 provenance 누락은 `warning` evidence로 남깁니다.
+
 ### Run history reasoning
 
 `reason-history` 또는 unified `reason` 명령으로 repeated Lab structured result list JSON을 분석합니다.
