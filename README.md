@@ -1,175 +1,139 @@
 # InferEdgeAIGuard
 
-InferEdgeAIGuard는 Edge AI inference output에서 발생할 수 있는 비정상 출력 패턴을 빠르게 감지하기 위한 경량 Python 도구입니다.
+InferEdgeAIGuard는 Edge AI inference 결과를 신뢰하기 전에 latency, accuracy, runtime provenance, output pattern, repeated-run history를 기반으로 anomaly와 suspected cause를 설명하는 validation reasoning layer입니다.
 
-1차 MVP의 목표는 YOLO 계열 detection output JSON을 입력으로 받아, 모델 변환이나 경량화 이후에 나타날 수 있는 출력 실패 징후를 최소한의 규칙 기반 detector로 확인하는 것입니다. 1.1단계에서는 기능 범위를 넓히기보다 각 failure definition을 수치 기반으로 더 명확하게 정리합니다.
-
-## 핵심 관점
-
-InferEdgeAIGuard는 정답을 추정하는 truth estimation 도구가 아닙니다.
-
-이 프로젝트는 "이 예측이 실제로 맞는가?"를 판단하지 않습니다. 대신 "출력 구조나 분포가 비정상적으로 무너졌는가?"를 감지합니다. 즉 InferEdgeAIGuard의 failure는 정답 오류가 아니라 output-level anomaly/failure signal입니다.
-
-예를 들어 INT8 변환 이후 bbox width/height가 0에 가깝게 collapse되거나, confidence가 0.0 또는 1.0 근처로 과도하게 몰리거나, FP32 기준 대비 detection 수가 크게 달라지는 경우를 failure signal로 봅니다.
-
-## InferEdgeLab reasoning layer
-
-2.0단계부터 InferEdgeAIGuard는 InferEdgeLab validation pipeline 위에서 동작하는 reasoning layer로 확장됩니다.
+InferEdge ecosystem에서 역할은 다음처럼 나뉩니다.
 
 - InferEdgeLab: measurement + comparison
-- InferEdgeAIGuard: anomaly detection + explanation + suspected cause
+- InferEdgeAIGuard: anomaly reasoning + explanation + suspected cause + recommendation
 
-AIGuard는 Lab 결과를 덮어쓰지 않습니다. 대신 Lab compare result dict 위에 anomaly 판단, 설명, 의심 원인, 권장 조치를 추가합니다.
+전체 흐름은 다음을 기준으로 합니다.
 
-Python API는 `analyze_compare_result(compare_result)`입니다. 반환 구조는 다음 필드를 포함합니다.
+```text
+Forge -> Runtime -> Lab -> AIGuard
+```
 
-- `status`: `ok`, `warning`, `error`
-- `anomalies`: rule 기반 anomaly 목록
-- `explanations`: 사람이 읽을 수 있는 설명
-- `suspected_causes`: 의심 원인 목록
-- `confidence`: rule engine 판단 confidence이며 모델 정확도 confidence가 아님
-- `recommendations`: 후속 확인 권장 사항
+- Forge: deployment artifact 생성
+- Runtime: edge device inference 실행
+- Lab: latency, accuracy, structured result, compare result 생성
+- AIGuard: 결과 신뢰성 분석, anomaly detection, root-cause reasoning
 
-초기 rule은 다음을 다룹니다.
+AIGuard는 Lab 결과를 덮어쓰지 않습니다. Lab이 측정하고 비교한 JSON 결과 위에 "이 결과를 믿어도 되는가?", "어떤 anomaly signal이 있는가?", "어떤 원인을 의심해야 하는가?"를 덧붙이는 계층입니다.
 
-- shape mismatch
-- run_config mismatch
+## What AIGuard Analyzes
+
+### A. Output-level failure detection
+
+YOLO detection output JSON을 직접 분석합니다.
+
+- bbox collapse
+- confidence saturation
+- detection count mismatch
+- 단일 output, FP32/candidate pair, batch directory 분석 지원
+
+### B. Lab compare result reasoning
+
+`reason-compare` 또는 unified `reason` 명령으로 Lab compare result JSON을 분석합니다.
+
 - latency improvement + accuracy missing
-- latency improvement + accuracy drop
-- cross precision large latency delta
+- latency improvement + accuracy drop 또는 risky tradeoff
+- shape/run_config mismatch
+- cross-precision large latency delta
 
-이 단계는 Lab structured result와 결합하기 위한 시작점입니다. 아직 CLI 명령과 실제 Lab 파일 파싱은 추가하지 않습니다.
+### C. Lab structured result reasoning
 
-`reason-compare` CLI는 InferEdgeLab compare result JSON을 입력으로 받습니다. 이 명령은 YOLO output JSON을 입력으로 받는 `analyze`/`compare`와 다릅니다. 입력은 Lab compare result dict이며, AIGuard는 이를 기반으로 anomaly, explanation, suspected cause, recommendation을 생성합니다.
+`reason-result` 또는 unified `reason` 명령으로 단일 Lab structured result JSON을 분석합니다.
 
-```bash
-python -m inferedge_aiguard.cli reason-compare --input examples/lab_compare/cross_precision_latency_only.json
-```
-
-```bash
-python -m inferedge_aiguard.cli reason-compare \
-  --input examples/lab_compare/cross_precision_latency_only.json \
-  --save-json reports/reasoning.json \
-  --save-md reports/reasoning.md
-```
-
-이 CLI 연결은 실제 InferEdgeLab repo import가 아니라 Lab compare result JSON 호환을 위한 첫 단계입니다.
-
-`reason-compare`는 내부에서 Lab compare result JSON을 정규화하는 adapter를 거칩니다. AIGuard 내부 reasoning은 이 정규화된 compare dict를 기준으로 동작합니다.
-
-지원하는 alias 예시는 다음과 같습니다.
-
-- `shape_match` / `shape_matched`
-- `run_config_match` / `run_config_matched`
-- `latency_delta_pct` / `mean_delta_pct`
-- `overall_judgement` / `overall_judgment`
-- `base.accuracy` / `candidate.accuracy` / `metrics.accuracy_delta`
-
-이 adapter는 실제 InferEdgeLab repo를 import하지 않고도 JSON schema 변형에 대한 호환성을 높이기 위한 계층입니다.
-
-## Lab structured result reasoning
-
-2.3단계부터 AIGuard는 Lab compare result뿐 아니라 Lab structured result 단일 측정 결과도 분석합니다. 목표는 compare 이전의 단일 측정 결과에 대해 "이 결과 자체를 신뢰할 수 있는가?"를 판단하는 것입니다.
-
-Python API는 `analyze_structured_result(result)`입니다. 입력은 InferEdgeLab structured result dict이며 주요 기준 필드는 다음과 같습니다.
-
-- `model`, `engine`, `device`, `precision`
-- `mean_ms`, `p99_ms`
-- `run_config`
-- `system`
-- `extra.runtime_artifact_path`
-- `extra.resolved_input_shapes`
-- `accuracy` optional
-
-초기 rule은 다음을 감지합니다.
-
-- missing identity fields
-- missing 또는 invalid latency metrics
+- missing latency metric
+- invalid latency value
 - p99 latency instability
-- missing runtime artifact provenance
-- missing resolved input shapes
-- quantized precision without accuracy
-- missing run_config/system metadata
+- missing `runtime_artifact_path`
+- missing `resolved_input_shapes`
+- quantized result without accuracy
 
-`reason-result` CLI는 InferEdgeLab structured result JSON을 입력으로 받습니다. `reason-compare`가 두 실행 결과의 compare result를 해석하는 명령이라면, `reason-result`는 compare 이전의 단일 측정 결과 자체를 분석합니다.
+### D. Run history reasoning
 
-```bash
-python -m inferedge_aiguard.cli reason-result \
-  --input examples/lab_result/suspicious_int8_missing_accuracy.json
-```
+`reason-history` 또는 unified `reason` 명령으로 repeated Lab structured result list JSON을 분석합니다.
 
-```bash
-python -m inferedge_aiguard.cli reason-result \
-  --input examples/lab_result/suspicious_int8_missing_accuracy.json \
-  --save-json reports/result_reasoning.json \
-  --save-md reports/result_reasoning.md
-```
+- repeated-run mean latency instability
+- p99 tail latency instability
+- latency outlier run
+- mixed experiment group
+- partial or missing accuracy logging
 
-이 단계도 실제 Lab repo import 없이 Lab structured result JSON을 직접 읽어 reasoning summary를 생성합니다.
+## CLI Overview
 
-## Run history reasoning
+| Command | Input | Purpose |
+|---|---|---|
+| `analyze` | YOLO output JSON | Single output failure detection |
+| `compare` | FP32/candidate output JSON | Output-level pair comparison |
+| `batch-analyze` | Directory of output JSON | Batch output failure rate |
+| `batch-compare` | FP32/candidate directories | Batch output comparison |
+| `reason-compare` | Lab compare result JSON | Compare result reasoning |
+| `reason-result` | Lab structured result JSON | Single result reasoning |
+| `reason-history` | Lab structured result list JSON | Multi-run stability reasoning |
+| `reason` | Compare/result/history JSON | Unified auto-routing reasoning |
 
-2.5단계부터 AIGuard는 단일 structured result뿐 아니라 repeated run history도 분석합니다. 이 기능은 "이 단일 결과가 이상한가?"가 아니라 "여러 번 반복 실행했을 때 시스템이 안정적이고 일관적인가?"를 판단하기 위한 reasoning layer입니다.
+## Unified Reason CLI
 
-Python API는 `analyze_run_history(results)`입니다. 입력은 InferEdgeLab structured result dict의 list입니다.
-
-초기 rule은 다음을 감지합니다.
-
-- insufficient history
-- mixed identity fields
-- mixed shape/config
-- mean latency instability
-- p99 latency instability
-- outlier run
-- partial accuracy missing
-- quantized history accuracy missing
-
-history reasoning은 같은 model, engine, device, precision, batch/height/width 조건으로 묶인 반복 실행 결과를 전제로 합니다. 같은 history 안에 다른 실험 그룹이 섞이면 `mixed_run_identity` 또는 `mixed_shape_config`로 신뢰할 수 없는 history로 판단합니다.
-
-`reason-history` CLI는 repeated Lab structured result list JSON을 입력으로 받습니다. `reason-result`가 단일 structured result를 분석한다면, `reason-history`는 반복 실행 history 관점에서 안정성과 일관성을 분석합니다.
-
-```bash
-python -m inferedge_aiguard.cli reason-history \
-  --input examples/lab_history/unstable_int8_history.json
-```
-
-```bash
-python -m inferedge_aiguard.cli reason-history \
-  --input examples/lab_history/unstable_int8_history.json \
-  --save-json reports/history_reasoning.json \
-  --save-md reports/history_reasoning.md
-```
-
-`reason-history`는 mean latency instability, p99 latency instability, latency outlier run, mixed identity/shape config, partial or missing accuracy logging 같은 반복 실험 관점의 anomaly signal을 보고합니다. 실제 Lab repo import 없이 structured result list JSON을 직접 읽어 reasoning summary를 생성합니다.
-
-## Unified reason CLI
-
-`reason` 명령은 입력 JSON 타입을 자동 판별해 적절한 reasoning 경로로 라우팅하는 단일 진입점입니다.
+`reason` 명령은 입력 JSON 타입을 보고 적절한 reasoning 경로로 자동 라우팅합니다.
 
 - JSON이 list이면 `reason-history`와 동일하게 run history reasoning을 수행합니다.
 - JSON이 Lab compare result dict로 보이면 `reason-compare`와 동일하게 adapter 정규화 후 compare reasoning을 수행합니다.
 - JSON이 Lab structured result dict로 보이면 `reason-result`와 동일하게 단일 result reasoning을 수행합니다.
 
-compare result와 structured result로 볼 수 있는 키가 함께 있으면 compare result를 우선합니다. 기존 `reason-compare`, `reason-result`, `reason-history` 명령도 명시적 실행용으로 계속 유지됩니다.
-
 ```bash
-python -m inferedge_aiguard.cli reason --input examples/lab_compare/cross_precision_latency_only.json
-python -m inferedge_aiguard.cli reason --input examples/lab_result/suspicious_int8_missing_accuracy.json
-python -m inferedge_aiguard.cli reason --input examples/lab_history/unstable_int8_history.json
+python -m inferedge_aiguard.cli reason --input examples/lab_compat/lab_compare_realistic.json
+python -m inferedge_aiguard.cli reason --input examples/lab_compat/lab_result_realistic.json
+python -m inferedge_aiguard.cli reason --input examples/lab_compat/lab_history_realistic.json
 ```
+
+저장도 같은 entrypoint에서 가능합니다.
 
 ```bash
 python -m inferedge_aiguard.cli reason \
-  --input examples/lab_history/unstable_int8_history.json \
+  --input examples/lab_compat/lab_history_realistic.json \
   --save-json reports/reason.json \
   --save-md reports/reason.md
 ```
 
-이 구조는 향후 API나 SaaS로 확장할 때 단일 endpoint로 reasoning 요청을 받을 수 있게 만드는 기반입니다. 단, 현재 단계에서는 SaaS/API 서버를 구현하지 않고 CLI entrypoint만 추가합니다.
+이 구조는 향후 API나 SaaS로 확장할 때 단일 endpoint로 연결하기 좋습니다. 현재 단계에서는 SaaS/API 서버를 구현하지 않고 CLI entrypoint와 JSON/Markdown report 저장만 제공합니다.
 
-## Lab compatibility examples
+명시적 명령이 필요하면 기존 `reason-compare`, `reason-result`, `reason-history`도 그대로 사용할 수 있습니다.
 
-`examples/lab_compat`는 실제 InferEdgeLab 출력에 더 가까운 compatibility fixture입니다. 이 fixture들은 실제 Lab repo를 import하지 않고도 AIGuard의 unified `reason` CLI가 Lab 스타일 JSON을 올바른 reasoning 경로로 라우팅하는지 검증하기 위한 샘플입니다.
+## Quick Examples
+
+YOLO output 하나를 분석합니다.
+
+```bash
+python -m inferedge_aiguard.cli analyze --input examples/single/fp32_normal.json
+```
+
+FP32 baseline과 candidate output을 비교합니다.
+
+```bash
+python -m inferedge_aiguard.cli compare \
+  --base examples/single/fp32_normal.json \
+  --candidate examples/single/int8_count_mismatch.json
+```
+
+여러 YOLO output을 batch 분석합니다.
+
+```bash
+python -m inferedge_aiguard.cli batch-analyze --input-dir examples/single
+```
+
+FP32/candidate directory를 파일명 기준으로 batch 비교합니다.
+
+```bash
+python -m inferedge_aiguard.cli batch-compare \
+  --base-dir examples/fp32 \
+  --candidate-dir examples/int8
+```
+
+## Lab Compatibility Examples
+
+`examples/lab_compat`는 실제 InferEdgeLab 출력에 더 가까운 compatibility fixture입니다. 실제 Lab repo를 import하지 않고도 unified `reason` CLI가 Lab-style JSON을 올바른 reasoning 경로로 라우팅하는지 검증합니다.
 
 - `lab_compare_realistic.json`: cross precision FP32 vs INT8 compare result 형태
 - `lab_result_realistic.json`: 단일 TensorRT INT8 structured result 형태
@@ -183,78 +147,9 @@ python -m inferedge_aiguard.cli reason --input examples/lab_compat/lab_history_r
 
 이 단계는 실제 Lab repo import가 아니라 JSON 호환성 검증 단계입니다.
 
-## 1차 MVP 범위
+## Output JSON Schema
 
-- YOLO detection output JSON 최소 스키마 검증
-- bbox collapse 감지
-- confidence saturation 감지
-- FP32 baseline과 candidate output 간 detection count mismatch 감지
-- 디렉토리 단위 batch output failure signal 집계
-- 디렉토리 단위 FP32 baseline 대비 candidate output failure signal 비교
-- 사람이 읽기 쉬운 CLI report 출력
-- pytest 기반 기본 회귀 테스트
-
-## Failure definition
-
-현재 detector는 3개입니다.
-
-### bbox collapse
-
-`bbox`의 `w` 또는 `h`가 `threshold` 이하로 작아진 detection을 감지합니다.
-
-- 기본 `threshold`: `1e-6`
-- `affected_count`: collapse된 bbox 수
-- `total_count`: 전체 detection 수
-- `collapse_ratio`: `affected_count / total_count`
-
-`detections`가 비어 있으면 bbox collapse failure로 보지 않습니다.
-
-### confidence saturation
-
-confidence가 0.0 근처 또는 1.0 근처에 과도하게 몰리는 경우를 감지합니다.
-
-- 기본 `low_threshold`: `0.01`
-- 기본 `high_threshold`: `0.99`
-- 기본 `ratio_threshold`: `0.8`
-- `affected_count`: low/high saturation 구간에 들어간 detection 수
-- `total_count`: 전체 detection 수
-- `saturation_ratio`: `affected_count / total_count`
-
-`detections`가 비어 있으면 confidence saturation failure로 보지 않습니다.
-
-### detection count mismatch
-
-FP32 baseline과 candidate output의 detection 개수가 크게 달라지는 경우를 감지합니다.
-
-- 기본 `threshold`: `0.5`
-- `affected_count`: detection count 차이의 절대값
-- `base_count`: FP32 baseline detection 수
-- `candidate_count`: candidate detection 수
-- `mismatch_ratio`: `abs(base_count - candidate_count) / base_count`
-
-`base_count`가 0이고 `candidate_count`도 0이면 정상입니다. `base_count`가 0인데 `candidate_count`가 있으면 `mismatch_ratio=1.0`으로 failure 처리합니다.
-
-## Severity 산정
-
-1.1단계부터 severity는 고정값이 아니라 failure ratio 기반으로 산정합니다.
-
-- bbox collapse: `collapse_ratio >= 0.5`이면 `high`, `>= 0.1`이면 `medium`, 그 외 감지된 failure는 `low`
-- confidence saturation: `saturation_ratio >= 0.95`이면 `high`, `>= ratio_threshold`이면 `medium`
-- detection count mismatch: `mismatch_ratio >= 0.8`이면 `high`, `>= threshold`이면 `medium`
-
-이 방식은 detector 결과가 단순 경고 문자열이 아니라 `affected_count`, `total_count`, `ratio`, `threshold`를 함께 가진 연구/분석 가능한 failure signal이 되도록 하기 위한 기준입니다.
-
-## Summary metadata
-
-모든 summary 결과에는 실험 재현성을 위한 metadata가 포함됩니다.
-
-- `guard_version`: 실험에 사용한 InferEdgeAIGuard 버전
-- `created_at`: summary 생성 시각의 UTC ISO-8601 문자열
-- `detector_config`: failure 판단에 사용된 threshold/config snapshot
-
-`detector_config`에는 `bbox_collapse`, `confidence_saturation`, `detection_count_mismatch`의 기준값이 저장됩니다. 이 metadata는 논문/포트폴리오 실험 로그에서 "어떤 버전과 어떤 threshold로 failure signal을 판단했는가"를 나중에 재현하기 위한 정보입니다.
-
-## 입력 JSON 형식
+YOLO output-level detector는 다음 형식을 기준으로 합니다.
 
 ```json
 {
@@ -275,107 +170,50 @@ FP32 baseline과 candidate output의 detection 개수가 크게 달라지는 경
 - `confidence`는 `0.0` 이상 `1.0` 이하의 숫자여야 합니다.
 - `detections`는 빈 배열일 수 있습니다.
 
-## Examples 구조
+## Failure Definition
 
-예제 fixture는 CLI 사용 흐름에 맞게 나뉘어 있습니다.
+현재 output-level detector는 3개입니다.
 
-- `examples/single`: 단일 `analyze`와 `compare` 명령용 fixture
-- `examples/fp32`: `batch-compare` baseline용 FP32 fixture
-- `examples/int8`: `batch-compare` candidate용 INT8 fixture
+- bbox collapse: bbox `w` 또는 `h`가 `threshold` 이하로 작아진 detection 감지
+- confidence saturation: confidence가 0.0 또는 1.0 근처로 과도하게 몰리는 현상 감지
+- detection count mismatch: FP32 baseline 대비 candidate detection 수가 크게 달라지는 현상 감지
 
-## CLI 사용 예시
+각 detector는 `affected_count`, `total_count`, `ratio`, `threshold` 계열 필드를 함께 반환합니다. severity는 고정 문자열이 아니라 failure ratio 기반으로 산정됩니다.
 
-단일 output을 분석합니다.
+## Summary Metadata
 
-```bash
-python -m inferedge_aiguard.cli analyze --input examples/single/fp32_normal.json
-```
+모든 summary 결과에는 실험 재현성을 위한 metadata가 포함됩니다.
 
-단일 output 분석은 하나의 JSON에 대해 bbox collapse와 confidence saturation 같은 output-level failure signal을 확인합니다.
-
-FP32 baseline과 INT8 또는 FP16 candidate output을 비교합니다.
-
-```bash
-python -m inferedge_aiguard.cli compare \
-  --base examples/single/fp32_normal.json \
-  --candidate examples/single/int8_count_mismatch.json
-```
-
-여러 output JSON을 한 번에 분석합니다.
-
-```bash
-python -m inferedge_aiguard.cli batch-analyze --input-dir examples/single
-```
-
-batch output 분석은 디렉토리 안의 `*.json` 파일을 파일명 기준으로 정렬해 각각 분석한 뒤, 실험 세트 전체에서 failure signal이 얼마나 자주 나타났는지 집계합니다. 이 기능도 ground truth 평가가 아니라 output-level failure signal 집계입니다.
-
-batch summary는 다음 지표를 제공합니다.
-
-- `sample_count`: 분석한 JSON sample 수
-- `failure_sample_count`: 하나 이상의 failure가 감지된 sample 수
-- `failure_rate`: `failure_sample_count / sample_count`
-- `failure_type_counts`: failure type별 발생 횟수
-
-FP32 baseline 디렉토리와 INT8 또는 FP16 candidate 디렉토리를 파일명 기준으로 비교합니다.
-
-```bash
-python -m inferedge_aiguard.cli batch-compare \
-  --base-dir examples/fp32 \
-  --candidate-dir examples/int8
-```
-
-`batch-analyze`는 단일 디렉토리의 output JSON들을 각각 분석해 failure signal 발생률을 집계합니다. `batch-compare`는 두 디렉토리의 공통 파일명을 pair로 묶은 뒤, FP32 baseline 대비 candidate output에서 어떤 failure pattern이 나타나는지 집계합니다.
-
-`batch-compare`는 파일명 기준으로만 pair를 매칭합니다. 한쪽 디렉토리에만 있는 파일은 비교하지 않고 `unmatched_base_files` 또는 `unmatched_candidate_files`로 따로 보고합니다.
-
-batch compare summary는 다음 지표를 제공합니다.
-
-- `pair_count`: 공통 파일명으로 비교한 pair 수
-- `failure_pair_count`: 하나 이상의 failure가 감지된 pair 수
-- `failure_rate`: `failure_pair_count / pair_count`
-- `failure_type_counts`: failure type별 발생 횟수
-- `unmatched_base_files`: baseline 디렉토리에만 있는 JSON 파일명
-- `unmatched_candidate_files`: candidate 디렉토리에만 있는 JSON 파일명
-
-이 기능은 ground truth 정확도 평가가 아니라 FP32 baseline 대비 candidate output-level failure signal 비교입니다. RQ1 "FP32 대비 INT8/FP16 inference는 어떤 failure pattern을 보이는가?"를 최소한의 실험 단위로 확인하기 위한 구조입니다.
-
-CLI 결과를 JSON 또는 Markdown 파일로 저장할 수 있습니다.
-
-```bash
-python -m inferedge_aiguard.cli analyze \
-  --input examples/single/fp32_normal.json \
-  --save-json reports/analyze_normal.json \
-  --save-md reports/analyze_normal.md
-```
-
-```bash
-python -m inferedge_aiguard.cli batch-analyze \
-  --input-dir examples/single \
-  --save-json reports/batch_analyze.json \
-  --save-md reports/batch_analyze.md
-```
+- `guard_version`: 실험에 사용한 InferEdgeAIGuard 버전
+- `created_at`: summary 생성 시각의 UTC ISO-8601 문자열
+- `detector_config`: failure 판단에 사용된 threshold/config snapshot
 
 `--save-json`은 summary dict를 그대로 저장하므로 후속 분석, 표 작성, 논문/포트폴리오 실험 로그 누적에 적합합니다. `--save-md`는 사람이 읽기 쉬운 실험 리포트를 남길 때 사용합니다.
 
-`--save-md`로 batch 결과를 저장하면 표 형태의 Markdown report가 생성됩니다. `batch-analyze` report에는 `Metadata`, `Aggregate Summary`, `Failure Type Counts`, `Samples` 섹션이 포함됩니다. `batch-compare` report에는 `Metadata`, `Aggregate Summary`, `Failure Type Counts`, `Unmatched Files`, `Pairs` 섹션이 포함됩니다. 두 report 모두 `Raw CLI Summary`를 함께 포함하므로 CLI 출력과 문서형 요약을 동시에 확인할 수 있습니다.
+## Research Framing
 
-저장 기능 역시 ground truth 평가가 아니라 output-level failure signal 기록입니다. 즉 "정답 대비 정확도"를 저장하는 것이 아니라, InferEdgeAIGuard가 감지한 출력 레벨 failure signal과 집계 결과를 재현 가능한 파일로 남기는 기능입니다.
+- RQ1: Quantized/cross-runtime inference results show what kinds of failure/anomaly patterns?
+- RQ2: Can output/result-level signals identify suspicious inference results without trusting the model output?
+- RQ3: Can rule-based reasoning reduce manual debugging effort for Edge AI validation?
 
-테스트를 실행합니다.
+InferEdgeAIGuard는 ground truth 정답을 직접 판단하기보다, result-level signal을 통해 "검증자가 더 살펴봐야 할 inference result"를 빠르게 좁히는 연구형 도구입니다.
+
+## What This Project Does Not Do
+
+InferEdgeAIGuard는 result-based validation reasoning layer입니다. 다음을 직접 구현하지 않습니다.
+
+- 모델 내부 구조 분석
+- weight/graph 분석 중심 진단
+- ground truth accuracy 평가기
+- TensorRT/Jetson 실행기
+- 모델 변환기
+- ML 학습 또는 calibration 자동화
+- SaaS 제품 구현
+
+즉, AIGuard는 실행기나 변환기가 아니라 Lab/Runtime이 남긴 결과를 해석하는 reasoning layer입니다.
+
+## Tests
 
 ```bash
 python -m pytest -q
 ```
-
-## 이번 단계에서 하지 않는 것
-
-1차 MVP와 1.1단계에서는 다음을 구현하지 않습니다.
-
-- TensorRT 실행
-- Jetson 실기기 실행
-- ONNX/TensorRT 모델 변환
-- UI 또는 SaaS 기능
-- ML 학습 또는 calibration 자동화
-- ground truth 기반 정확도 평가
-
-이 범위를 의도적으로 작게 유지하면, 이후 TensorRT/Jetson/모델 변환 단계로 확장할 때도 "출력 실패 감지"라는 제품 핵심을 흔들리지 않게 검증할 수 있습니다.
