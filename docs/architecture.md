@@ -1,0 +1,79 @@
+# InferEdgeAIGuard Architecture
+
+InferEdgeAIGuard is the validation reasoning layer in the InferEdge ecosystem. It does not run inference or convert models. It reads result JSON produced by validation workflows and explains anomaly signals before a result is trusted.
+
+## Ecosystem Positioning
+
+```text
+Forge -> Runtime -> Lab -> AIGuard
+```
+
+- Forge: creates deployment artifacts such as optimized runtime files.
+- Runtime: executes inference on the target edge environment.
+- Lab: measures latency, records structured results, and compares runs.
+- AIGuard: reasons over the result data and reports anomaly, explanation, suspected cause, and recommendation.
+
+The boundary is intentional:
+
+- InferEdgeLab = measurement + comparison
+- InferEdgeAIGuard = reasoning + anomaly detection + explanation + suspected cause
+
+## Internal Layers
+
+### Output Detector
+
+Analyzes YOLO detection output JSON directly.
+
+- bbox collapse
+- confidence saturation
+- detection count mismatch
+
+### Compare Reasoning
+
+Analyzes Lab compare result JSON.
+
+- unreliable comparison from shape or run_config mismatch
+- latency improvement without accuracy validation
+- risky latency/accuracy tradeoff
+- large cross-precision latency delta
+
+### Structured Result Reasoning
+
+Analyzes one Lab structured result.
+
+- missing or invalid latency metric
+- p99 instability
+- missing runtime artifact provenance
+- missing resolved input shape provenance
+- quantized result without accuracy
+
+### History Reasoning
+
+Analyzes repeated Lab structured result lists.
+
+- mean latency instability
+- p99 tail latency instability
+- outlier run
+- mixed experiment group
+- partial or missing accuracy logging
+
+### Unified CLI/API Entry Point
+
+The `reason` command auto-routes input JSON:
+
+- list -> run history reasoning
+- Lab compare result dict -> compare reasoning
+- Lab structured result dict -> structured result reasoning
+
+This shape is suitable for a future single API endpoint, while the current project remains CLI-first.
+
+## Future Direction
+
+Potential extensions:
+
+- `/reason` API endpoint that accepts compare/result/history JSON
+- JSON report persistence for experiment tracking
+- Markdown report generation for portfolio and paper-style summaries
+- dashboard or SaaS layer on top of saved reasoning reports
+
+Current scope remains result-based validation reasoning. It does not include model conversion, device execution, ground truth evaluation, model graph analysis, or training.
