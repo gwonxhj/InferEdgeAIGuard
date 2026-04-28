@@ -60,7 +60,7 @@
     "effective_width": 640,
     "enrichment": {
       "source": "enrich_result_cmd",
-      "accuracy_json_path": "/home/risenano01/InferEdgeLab/benchmarks/rknn_accuracy_payloads/yolov8n_fp16_detection_accuracy.json",
+      "accuracy_json_path": "<jetson-lab-workspace>/benchmarks/rknn_accuracy_payloads/yolov8n_fp16_detection_accuracy.json",
       "replaces_existing_accuracy": false
     }
   }
