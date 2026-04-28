@@ -112,6 +112,19 @@ def analyze_forge_runtime_provenance(
                 ),
             )
 
+    expected_artifact_type = expected.get("artifact_type", {}).get("value")
+    observed_artifact_type = observed.get("artifact_type", {}).get("value")
+    if not _is_missing(expected_artifact_type) and not _is_missing(observed_artifact_type):
+        if not _same_value("artifact_type", expected_artifact_type, observed_artifact_type):
+            add_anomaly(
+                "artifact_type_mismatch",
+                "medium",
+                "Runtime artifact_type does not match Forge handoff provenance.",
+                _comparison_evidence("artifact_type", expected, observed),
+                "forge_runtime_artifact_type_mismatch",
+                "Review Forge artifact format and Runtime worker response provenance before deployment.",
+            )
+
     status = _status_from_anomalies(anomalies)
     return {
         "mode": "forge_runtime_provenance_reasoning",
@@ -122,6 +135,49 @@ def analyze_forge_runtime_provenance(
         "confidence": _confidence_for_status(status),
         "recommendations": recommendations,
     }
+
+
+def analyze_worker_provenance(
+    forge_summary: JsonDict,
+    runtime_worker_response: JsonDict,
+) -> JsonDict:
+    """Compare Forge worker/runtime summary with Runtime worker response evidence."""
+
+    runtime_result = _runtime_result_from_worker_response(runtime_worker_response)
+    analysis = analyze_forge_runtime_provenance(
+        runtime_result,
+        forge_metadata=normalize_forge_summary_provenance(forge_summary),
+    )
+    _rewrite_evidence_sources(
+        analysis,
+        expected_source="forge_worker_runtime_summary",
+        observed_source="runtime_worker_response",
+    )
+    return analysis
+
+
+def normalize_forge_summary_provenance(summary: JsonDict) -> JsonDict:
+    """Project a Forge worker/runtime summary into provenance comparison fields."""
+
+    if not isinstance(summary, dict):
+        return {}
+    return {
+        "source_model_sha256": summary.get("source_model_sha256"),
+        "primary_artifact_sha256": summary.get("artifact_sha256"),
+        "primary_artifact_path": summary.get("artifact_path"),
+        "artifact_type": summary.get("artifact_type"),
+        "backend": summary.get("backend"),
+        "target": summary.get("target"),
+        "precision": summary.get("precision"),
+        "batch": summary.get("batch"),
+        "height": summary.get("height"),
+        "width": summary.get("width"),
+        "preset_name": summary.get("preset_name"),
+        "build_id": summary.get("build_id"),
+    }
+
+
+compare_forge_summary_with_runtime_response = analyze_worker_provenance
 
 
 _COMPARISON_FIELDS = (
@@ -135,6 +191,39 @@ _COMPARISON_FIELDS = (
     "height",
     "width",
 )
+
+
+def _runtime_result_from_worker_response(response: JsonDict) -> JsonDict:
+    if not isinstance(response, dict):
+        return {}
+    runtime_result = response.get("runtime_result")
+    return runtime_result if isinstance(runtime_result, dict) else {}
+
+
+def _rewrite_evidence_sources(
+    analysis: JsonDict,
+    *,
+    expected_source: str,
+    observed_source: str,
+) -> None:
+    for anomaly in analysis.get("anomalies", []):
+        evidence = anomaly.get("evidence")
+        if not isinstance(evidence, dict):
+            continue
+        if "expected_source" in evidence:
+            evidence["expected_source"] = expected_source
+        if "observed_source" in evidence:
+            evidence["observed_source"] = observed_source
+        missing_fields = evidence.get("missing_fields")
+        if not isinstance(missing_fields, list):
+            continue
+        for field in missing_fields:
+            if not isinstance(field, dict):
+                continue
+            if "expected_source" in field:
+                field["expected_source"] = expected_source
+            if "observed_source" in field:
+                field["observed_source"] = observed_source
 
 
 def _normalize_forge_provenance(
@@ -209,6 +298,18 @@ def _normalize_forge_provenance(
         "batch": _first_value(sources, _SHAPE_PATHS["batch"]),
         "height": _first_value(sources, _SHAPE_PATHS["height"]),
         "width": _first_value(sources, _SHAPE_PATHS["width"]),
+        "artifact_type": _first_value(
+            sources,
+            (
+                ("artifact_type",),
+                ("artifact", "type"),
+                ("artifact", "format"),
+                ("primary_artifact", "type"),
+                ("primary_artifact", "format"),
+                ("artifacts", 0, "type"),
+                ("artifacts", 0, "format"),
+            ),
+        ),
     }
 
 
@@ -267,6 +368,7 @@ def _normalize_runtime_provenance(runtime_result: JsonDict) -> JsonDict:
         "batch": _first_value(sources, (("batch",),)),
         "height": _first_value(sources, (("height",),)),
         "width": _first_value(sources, (("width",),)),
+        "artifact_type": _first_value(sources, (("artifact_type",),)),
     }
 
 

@@ -53,11 +53,12 @@ Compares Forge metadata/manifest provenance against Runtime result provenance.
 
 - artifact hash mismatch
 - source model hash mismatch
+- Forge worker/runtime summary vs Runtime worker_response provenance mismatch
 - runtime artifact path mismatch
 - backend/target/precision/shape mismatch
 - insufficient provenance for review
 
-This layer is rule + evidence based. It does not execute artifacts or guess missing values. It records the mismatched field, expected Forge value, observed Runtime value, and source documents so Lab can optionally surface the guard_analysis evidence in report/deployment decision flows.
+This layer is rule + evidence based. It does not execute artifacts or guess missing values. It records the mismatched field, expected Forge value, observed Runtime value, and source documents so Lab can optionally surface the guard_analysis evidence in report/deployment decision flows. Worker provenance fixtures cover the newer Forge summary -> Lab worker request -> Runtime worker response path without requiring any cross-repo runtime dependency.
 
 ### History Reasoning
 
