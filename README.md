@@ -6,8 +6,8 @@ InferEdgeAIGuard는 Edge AI inference 결과를 신뢰하기 전에 latency, acc
 
 InferEdge ecosystem에서 역할은 다음처럼 나뉩니다.
 
-- InferEdgeLab = measurement + comparison
-- InferEdgeAIGuard = anomaly reasoning + explanation + suspected cause
+- InferEdgeLab = analysis, API/report/job workflow, and final deployment decision owner
+- InferEdgeAIGuard = optional deterministic diagnosis evidence
 
 전체 흐름은 다음을 기준으로 합니다.
 
@@ -15,10 +15,10 @@ InferEdge ecosystem에서 역할은 다음처럼 나뉩니다.
 
 - Forge: deployment artifact 생성
 - Runtime: edge device inference 실행
-- Lab: latency, accuracy, structured result, compare result 생성
-- AIGuard: 결과 신뢰성 분석, anomaly detection, root-cause reasoning
+- Lab: latency/accuracy evidence 분석, report/API bundle, deployment decision 생성
+- AIGuard: 결과 신뢰성 분석, anomaly detection, suspected-cause evidence 생성
 
-AIGuard는 Lab 결과를 덮어쓰지 않습니다. Lab이 측정하고 비교한 JSON 결과 위에 "이 결과를 믿어도 되는가?", "어떤 anomaly signal이 있는가?", "어떤 원인을 의심해야 하는가?"를 덧붙이는 계층입니다.
+AIGuard는 Lab 결과나 deployment decision을 덮어쓰지 않습니다. Lab이 분석한 JSON 결과 위에 "이 결과를 믿어도 되는가?", "어떤 anomaly signal이 있는가?", "어떤 원인을 의심해야 하는가?"를 optional evidence로 덧붙이는 계층입니다.
 
 ## InferEdge Pipeline Role
 
