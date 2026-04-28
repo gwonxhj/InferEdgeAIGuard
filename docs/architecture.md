@@ -10,13 +10,13 @@ Forge -> Runtime -> Lab -> AIGuard
 
 - Forge: creates deployment artifacts such as optimized runtime files.
 - Runtime: executes inference on the target edge environment.
-- Lab: measures latency, records structured results, and compares runs.
-- AIGuard: reasons over the result data and reports anomaly, explanation, suspected cause, and recommendation.
+- Lab: analyzes Runtime results, records reports/API bundles, and owns deployment decisions.
+- AIGuard: reasons over the result data and reports optional anomaly, evidence, suspected cause, and recommendation.
 
 The boundary is intentional:
 
-- InferEdgeLab = measurement + comparison
-- InferEdgeAIGuard = reasoning + anomaly detection + explanation + suspected cause
+- InferEdgeLab = analysis, report/API/job workflow, and final decision ownership
+- InferEdgeAIGuard = optional rule/evidence diagnosis
 
 ## Internal Layers
 

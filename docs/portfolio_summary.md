@@ -4,7 +4,7 @@
 
 InferEdgeAIGuard는 Edge AI inference 결과를 그대로 신뢰하지 않고, latency, accuracy, runtime provenance, 반복 실행 결과를 기반으로 anomaly와 suspected cause를 설명하는 validation reasoning layer입니다.
 
-InferEdge ecosystem에서 AIGuard는 다음 흐름의 마지막 판단 계층입니다.
+InferEdge ecosystem에서 AIGuard는 다음 흐름의 optional diagnosis evidence 계층입니다. 최종 deployment decision은 InferEdgeLab이 소유합니다.
 
 ```text
 Forge -> Runtime -> Lab -> AIGuard
@@ -12,10 +12,10 @@ Forge -> Runtime -> Lab -> AIGuard
 
 - Forge: deployment artifact 생성
 - Runtime: edge device inference 실행
-- Lab: measurement + comparison
-- AIGuard: anomaly detection + reasoning + explanation
+- Lab: analysis/report/API/deployment decision owner
+- AIGuard: anomaly detection + rule/evidence diagnosis
 
-InferEdgeLab이 latency, accuracy, structured result, compare result를 생성한다면, InferEdgeAIGuard는 그 결과 위에서 "이 결과를 그대로 믿어도 되는가?", "어떤 의심 신호가 있는가?", "무엇을 먼저 점검해야 하는가?"를 설명합니다.
+InferEdgeLab이 Runtime result를 분석하고 report/API/deployment decision을 생성한다면, InferEdgeAIGuard는 그 결과 위에서 "이 결과를 그대로 믿어도 되는가?", "어떤 의심 신호가 있는가?", "무엇을 먼저 점검해야 하는가?"를 optional `guard_analysis` evidence로 설명합니다.
 
 ## 2. 해결하려는 문제
 
@@ -155,7 +155,7 @@ InferEdgeAIGuard는 다음을 직접 수행하지 않습니다.
 - controlled repeated-run Jetson history를 추가 수집
 - FP16/INT8 TensorRT engine build option과 precision fallback evidence 정리
 - AIGuard rule별 validation matrix 작성
-- 향후 API/SaaS로 확장할 경우 unified `reason` entrypoint를 backend endpoint로 연결
+- 향후 API/SaaS로 확장할 경우 unified `reason` entrypoint를 optional diagnosis endpoint로 연결
 
 현재 단계에서 InferEdgeAIGuard는 "Edge inference result를 측정하는 도구"가 아니라, 측정 결과를 검토하고 의심 신호를 설명하는 validation reasoning layer로 포지셔닝됩니다.
 
