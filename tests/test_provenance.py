@@ -1,5 +1,16 @@
+import json
+from pathlib import Path
+
 from inferedge_aiguard.provenance import analyze_forge_runtime_provenance
+from inferedge_aiguard.provenance import analyze_worker_provenance
 from inferedge_aiguard.schema import validate_guard_analysis
+
+
+FIXTURES = Path(__file__).resolve().parent / "fixtures"
+
+
+def load_fixture(name: str) -> dict:
+    return json.loads((FIXTURES / name).read_text(encoding="utf-8"))
 
 
 def test_matching_forge_runtime_provenance_is_ok():
@@ -12,6 +23,94 @@ def test_matching_forge_runtime_provenance_is_ok():
     assert summary["mode"] == "forge_runtime_provenance_reasoning"
     assert summary["status"] == "ok"
     assert summary["anomalies"] == []
+    validate_guard_analysis(summary)
+
+
+def test_matching_worker_provenance_is_ok():
+    summary = analyze_worker_provenance(
+        load_fixture("forge_worker_runtime_summary.json"),
+        load_fixture("runtime_worker_completed_response.json"),
+    )
+
+    assert summary["status"] == "ok"
+    assert summary["anomalies"] == []
+    validate_guard_analysis(summary)
+
+
+def test_worker_artifact_hash_mismatch_is_error_with_worker_sources():
+    summary = analyze_worker_provenance(
+        load_fixture("forge_worker_runtime_summary.json"),
+        load_fixture("runtime_worker_completed_response_artifact_mismatch.json"),
+    )
+
+    anomaly = _first_anomaly(summary, "artifact_sha256_mismatch")
+    assert summary["status"] == "error"
+    assert anomaly["severity"] == "high"
+    assert anomaly["evidence"] == {
+        "field": "artifact_sha256",
+        "expected": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "observed": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "expected_source": "forge_worker_runtime_summary",
+        "observed_source": "runtime_worker_response",
+    }
+    validate_guard_analysis(summary)
+
+
+def test_worker_source_model_hash_mismatch_is_error():
+    summary = analyze_worker_provenance(
+        load_fixture("forge_worker_runtime_summary.json"),
+        load_fixture("runtime_worker_completed_response_source_mismatch.json"),
+    )
+
+    anomaly = _first_anomaly(summary, "source_model_sha256_mismatch")
+    assert summary["status"] == "error"
+    assert anomaly["severity"] == "high"
+    assert anomaly["evidence"]["expected_source"] == "forge_worker_runtime_summary"
+    assert anomaly["evidence"]["observed_source"] == "runtime_worker_response"
+
+
+def test_worker_precision_shape_and_artifact_type_mismatch_are_warning_anomalies():
+    runtime_response = load_fixture("runtime_worker_completed_response.json")
+    runtime_response["runtime_result"]["precision"] = "fp32"
+    runtime_response["runtime_result"]["run_config"]["height"] = 320
+    runtime_response["runtime_result"]["extra"]["artifact_type"] = "onnx"
+
+    summary = analyze_worker_provenance(
+        load_fixture("forge_worker_runtime_summary.json"),
+        runtime_response,
+    )
+
+    anomaly_types = {anomaly["type"] for anomaly in summary["anomalies"]}
+    assert summary["status"] == "warning"
+    assert "runtime_config_mismatch" in anomaly_types
+    assert "shape_mismatch" in anomaly_types
+    assert "artifact_type_mismatch" in anomaly_types
+
+
+def test_worker_missing_provenance_warns_without_crashing():
+    runtime_response = load_fixture("runtime_worker_completed_response.json")
+    runtime_response["runtime_result"].pop("extra")
+
+    summary = analyze_worker_provenance(
+        load_fixture("forge_worker_runtime_summary.json"),
+        runtime_response,
+    )
+
+    anomaly = _first_anomaly(summary, "insufficient_provenance")
+    missing_fields = anomaly["evidence"]["missing_fields"]
+    missing_names = {field["field"] for field in missing_fields}
+
+    assert summary["status"] == "warning"
+    assert "artifact_sha256" in missing_names
+    assert "source_model_sha256" in missing_names
+    assert all(
+        field["expected_source"] == "forge_worker_runtime_summary"
+        for field in missing_fields
+    )
+    assert all(
+        field["observed_source"] == "runtime_worker_response"
+        for field in missing_fields
+    )
     validate_guard_analysis(summary)
 
 

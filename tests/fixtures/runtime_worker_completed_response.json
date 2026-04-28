@@ -1,0 +1,41 @@
+{
+  "job_id": "job_forge_summary_smoke",
+  "status": "completed",
+  "forge_metadata": {
+    "backend": "tensorrt",
+    "target": "jetson",
+    "precision": "fp16",
+    "artifact_path": "builds/yolov8n__jetson__tensorrt__jetson_fp16/model.engine",
+    "source_model_path": "models/yolov8n.onnx"
+  },
+  "runtime_result": {
+    "model_path": "builds/yolov8n__jetson__tensorrt__jetson_fp16/model.engine",
+    "engine_backend": "tensorrt",
+    "device_name": "jetson",
+    "precision": "fp16",
+    "batch": 1,
+    "height": 640,
+    "width": 640,
+    "mean_ms": 0.0,
+    "p50_ms": 0.0,
+    "p95_ms": 0.0,
+    "p99_ms": 0.0,
+    "run_config": {
+      "batch": 1,
+      "height": 640,
+      "width": 640,
+      "dry_run": true
+    },
+    "extra": {
+      "runtime_artifact_path": "builds/yolov8n__jetson__tensorrt__jetson_fp16/model.engine",
+      "runtime_artifact_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "source_model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "artifact_type": "engine",
+      "preset_name": "tensorrt/jetson_fp16",
+      "build_id": "yolov8n-tensorrt-jetson_fp16-20260427T000000Z",
+      "dry_run": true,
+      "worker_response_mode": "dry_run"
+    }
+  },
+  "completed_at": "2026-04-28T07:05:00Z"
+}

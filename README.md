@@ -68,11 +68,12 @@ Forge metadata/manifest와 Runtime result JSON의 provenance를 비교하는 rul
 
 - artifact sha256 mismatch
 - source model sha256 mismatch
+- Forge worker/runtime summary vs Runtime worker_response provenance mismatch
 - runtime artifact path mismatch
 - backend/target/precision/shape mismatch
 - insufficient Forge/Runtime provenance
 
-이 detector는 실제 artifact를 실행하지 않고, Forge가 기록한 build provenance와 Runtime이 기록한 profiling provenance가 같은 산출물을 가리키는지 evidence 기반으로 확인합니다. 명확한 hash mismatch는 `error` guard_analysis로 이어질 수 있고, path/config/shape mismatch 또는 provenance 누락은 `warning` evidence로 남깁니다.
+이 detector는 실제 artifact를 실행하지 않고, Forge가 기록한 build provenance와 Runtime이 기록한 profiling/worker response provenance가 같은 산출물을 가리키는지 evidence 기반으로 확인합니다. 명확한 hash mismatch는 `error` guard_analysis로 이어질 수 있고, path/config/shape mismatch 또는 provenance 누락은 `warning` evidence로 남깁니다.
 
 ### Run history reasoning
 

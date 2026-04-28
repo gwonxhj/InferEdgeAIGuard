@@ -1,0 +1,24 @@
+{
+  "job_id": "job_forge_summary_smoke",
+  "status": "completed",
+  "runtime_result": {
+    "model_path": "builds/yolov8n__jetson__tensorrt__jetson_fp16/model.engine",
+    "engine_backend": "tensorrt",
+    "device_name": "jetson",
+    "precision": "fp16",
+    "batch": 1,
+    "height": 640,
+    "width": 640,
+    "mean_ms": 0.0,
+    "p50_ms": 0.0,
+    "p95_ms": 0.0,
+    "p99_ms": 0.0,
+    "extra": {
+      "runtime_artifact_path": "builds/yolov8n__jetson__tensorrt__jetson_fp16/model.engine",
+      "runtime_artifact_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "source_model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "artifact_type": "engine"
+    }
+  },
+  "completed_at": "2026-04-28T07:05:00Z"
+}
