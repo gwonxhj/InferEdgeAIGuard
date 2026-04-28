@@ -1,5 +1,9 @@
 # InferEdgeAIGuard
 
+**GitHub description:** Optional deterministic diagnosis layer for provenance mismatch and suspicious inference result evidence.
+
+InferEdge is an end-to-end Edge AI inference validation pipeline that connects build provenance, C++ runtime execution, Lab analysis/deployment decision, and optional deterministic diagnosis evidence.
+
 InferEdgeAIGuard is an Edge AI inference validation reasoning layer that detects suspicious inference results from latency, accuracy, runtime provenance, output patterns, and repeated-run history.
 
 InferEdgeAIGuard는 Edge AI inference 결과를 신뢰하기 전에 latency, accuracy, runtime provenance, output pattern, repeated-run history를 기반으로 anomaly와 suspected cause를 설명하는 validation reasoning layer입니다.
