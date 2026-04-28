@@ -20,6 +20,37 @@ InferEdge ecosystem에서 역할은 다음처럼 나뉩니다.
 
 AIGuard는 Lab 결과를 덮어쓰지 않습니다. Lab이 측정하고 비교한 JSON 결과 위에 "이 결과를 믿어도 되는가?", "어떤 anomaly signal이 있는가?", "어떤 원인을 의심해야 하는가?"를 덧붙이는 계층입니다.
 
+## InferEdge Pipeline Role
+
+InferEdgeAIGuard is the optional rule + evidence based diagnosis layer of the larger InferEdge validation pipeline:
+
+```text
+ONNX model
+-> InferEdgeForge build
+-> metadata / manifest / worker runtime summary
+-> InferEdgeRuntime validation / result export
+-> InferEdgeLab compare / API / job workflow / deployment_decision
+-> optional InferEdgeAIGuard provenance diagnosis
+-> deploy / review / blocked decision
+```
+
+In that pipeline, AIGuard consumes evidence produced by Forge, Runtime, and Lab. It can compare Forge worker/runtime summary provenance with Runtime worker_response provenance, inspect Lab result/compare context, and emit optional `guard_analysis` for Lab to preserve in reports and API bundles.
+
+Implemented today:
+
+- deterministic detector-based reasoning for Lab compare/result/history JSON
+- artifact and source model provenance mismatch detection
+- Forge summary vs Runtime worker_response provenance mismatch coverage
+- `guard_analysis` schema compatibility with Lab deployment decision handoff
+
+Planned later:
+
+- production service or worker packaging
+- broader detector coverage as new Runtime/Forge evidence fields become stable
+- deeper integration with future SaaS job execution infrastructure
+
+AIGuard is not an LLM guessing layer and does not make the final deployment decision. InferEdgeLab remains the final `deployment_decision` owner; AIGuard supplies optional evidence that can support review or block decisions.
+
 ## Why This Exists
 
 Edge AI에서는 latency 숫자가 좋아 보여도 validation evidence가 충분하지 않을 수 있습니다.
