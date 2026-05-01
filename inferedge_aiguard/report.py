@@ -6,6 +6,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+from .diagnosis import DIAGNOSIS_SCHEMA_VERSION, diagnosis_report_to_markdown
+
 
 def format_summary(summary: dict[str, Any]) -> str:
     """Format an analyze or compare summary for CLI output."""
@@ -20,6 +22,8 @@ def format_summary(summary: dict[str, Any]) -> str:
         return _format_structured_result_reasoning_summary(summary)
     if summary.get("mode") == "run_history_reasoning":
         return _format_run_history_reasoning_summary(summary)
+    if summary.get("schema_version") == DIAGNOSIS_SCHEMA_VERSION:
+        return _format_diagnosis_report_summary(summary)
 
     lines: list[str] = []
 
@@ -214,6 +218,8 @@ def save_summary_markdown(summary: dict[str, Any], output_path: str | Path) -> N
         content = _markdown_reasoning_report(summary)
     elif summary.get("mode") == "run_history_reasoning":
         content = _markdown_run_history_reasoning_report(summary)
+    elif summary.get("schema_version") == DIAGNOSIS_SCHEMA_VERSION:
+        content = diagnosis_report_to_markdown(summary)
     else:
         content = _markdown_basic_report(summary)
     path.write_text(content, encoding="utf-8")
@@ -230,9 +236,37 @@ def _markdown_title(summary: dict[str, Any]) -> str:
         return "# InferEdgeAIGuard Structured Result Reasoning Report"
     if summary.get("mode") == "run_history_reasoning":
         return "# InferEdgeAIGuard Run History Reasoning Report"
+    if summary.get("schema_version") == DIAGNOSIS_SCHEMA_VERSION:
+        return "# InferEdgeAIGuard Evidence Diagnosis Report"
     if "base_count" in summary:
         return "# InferEdgeAIGuard Compare Report"
     return "# InferEdgeAIGuard Analyze Report"
+
+
+def _format_diagnosis_report_summary(summary: dict[str, Any]) -> str:
+    lines = [
+        "InferEdgeAIGuard evidence diagnosis summary",
+        f"- guard_verdict: {summary.get('guard_verdict', 'unknown')}",
+        f"- severity: {summary.get('severity', 'unknown')}",
+        f"- confidence: {_format_value(summary.get('confidence', 0.0))}",
+        f"- primary_reason: {summary.get('primary_reason', '')}",
+    ]
+    evidence = summary.get("evidence", [])
+    if not evidence:
+        lines.append("- evidence: []")
+    else:
+        lines.append("- evidence:")
+        for item in evidence:
+            lines.append(
+                "  - "
+                f"type={item.get('type')} | "
+                f"metric={item.get('metric_name')} | "
+                f"severity={item.get('severity')} | "
+                f"status={item.get('status')}"
+            )
+    lines.append(f"- suspected_causes: {_format_list(summary.get('suspected_causes', []))}")
+    lines.append(f"- recommendations: {_format_list(summary.get('recommendations', []))}")
+    return "\n".join(lines)
 
 
 def _markdown_basic_report(summary: dict[str, Any]) -> str:

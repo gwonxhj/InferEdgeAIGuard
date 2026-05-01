@@ -8,12 +8,20 @@ from inferedge_aiguard.adapters import normalize_lab_compare_result
 from inferedge_aiguard.batch import analyze_directory, compare_directories
 from inferedge_aiguard.compare import compare_outputs
 from inferedge_aiguard.detectors import get_detector_config, summarize_failures
+from inferedge_aiguard.diagnosis import (
+    build_diagnosis_report,
+    build_evidence_item,
+    diagnosis_report_to_markdown,
+    map_guard_verdict,
+    map_severity,
+)
 from inferedge_aiguard.history import analyze_run_history
 from inferedge_aiguard.reasoning import analyze_compare_result, analyze_structured_result
 from inferedge_aiguard.report import format_summary, save_summary_json, save_summary_markdown
 from inferedge_aiguard.schema import (
     SchemaValidationError,
     load_output_json,
+    validate_diagnosis_report,
     validate_guard_analysis,
 )
 
@@ -1643,3 +1651,129 @@ def test_guard_analysis_contract_rejects_invalid_evidence_shape():
         assert "guard_analysis.anomalies[0]" in str(exc)
     else:
         raise AssertionError("expected SchemaValidationError")
+
+
+def test_diagnosis_evidence_builder_creates_explainable_item():
+    evidence = build_evidence_item(
+        evidence_type="bbox_collapse",
+        metric_name="bbox_collapse_ratio",
+        observed_value=0.232,
+        baseline_value=0.012,
+        threshold=0.05,
+        increase_factor=19.3,
+        severity="high",
+        status="failed",
+        why_it_matters="Collapsed boxes are not usable detection outputs.",
+        suspected_causes=["Incorrect bbox decoder", "INT8 quantization artifact"],
+        recommendation="Review decoder configuration before deployment.",
+        raw_context={"total_predictions": 1024, "bbox_collapse_count": 237},
+    )
+
+    assert evidence["type"] == "bbox_collapse"
+    assert evidence["metric_name"] == "bbox_collapse_ratio"
+    assert evidence["observed_value"] == 0.232
+    assert "19.3x" in evidence["explanation"]
+    assert evidence["severity"] == "high"
+    assert evidence["status"] == "failed"
+
+
+def test_diagnosis_severity_and_verdict_mapping():
+    assert (
+        map_severity(metric_name="score_range_violation_count", observed_value=1)
+        == "critical"
+    )
+    assert map_severity(metric_name="invalid_bbox_rate", observed_value=0.21) == "high"
+    assert map_severity(metric_name="saturation_ratio", observed_value=0.75) == "medium"
+
+    review_item = build_evidence_item(
+        evidence_type="confidence_saturation",
+        metric_name="saturation_ratio",
+        observed_value=0.75,
+        threshold=0.70,
+        severity="medium",
+        status="failed",
+    )
+    blocked_item = build_evidence_item(
+        evidence_type="bbox_collapse",
+        metric_name="bbox_collapse_ratio",
+        observed_value=0.232,
+        threshold=0.05,
+        severity="high",
+        status="failed",
+    )
+
+    assert map_guard_verdict([]) == "pass"
+    assert map_guard_verdict([review_item]) == "review_required"
+    assert map_guard_verdict([blocked_item]) == "blocked"
+
+
+def test_diagnosis_report_contract_accepts_v1_report():
+    evidence = build_evidence_item(
+        evidence_type="bbox_collapse",
+        metric_name="bbox_collapse_ratio",
+        observed_value=0.232,
+        baseline_value=0.012,
+        threshold=0.05,
+        increase_factor=19.3,
+        severity="high",
+        status="failed",
+        suspected_causes=["Incorrect bbox decoder"],
+        recommendation="Do not deploy this candidate.",
+    )
+    report = build_diagnosis_report(
+        evidence=[evidence],
+        source={"evaluation_report_path": "reports/evaluation.json"},
+        confidence=0.91,
+        thresholds={"bbox_collapse_ratio_review": 0.05},
+        baseline_summary={"bbox_collapse_ratio": 0.012},
+        candidate_summary={"bbox_collapse_ratio": 0.232},
+        created_at="2026-05-02T00:00:00Z",
+    )
+
+    validated = validate_diagnosis_report(report)
+
+    assert validated["schema_version"] == "inferedge-aiguard-diagnosis-v1"
+    assert validated["guard_verdict"] == "blocked"
+    assert validated["severity"] == "high"
+    assert validated["suspected_causes"] == ["Incorrect bbox decoder"]
+    assert validated["recommendations"] == ["Do not deploy this candidate."]
+
+
+def test_diagnosis_report_contract_rejects_bad_verdict():
+    report = build_diagnosis_report(evidence=[], created_at="2026-05-02T00:00:00Z")
+    report["guard_verdict"] = "deployable"
+
+    try:
+        validate_diagnosis_report(report)
+    except SchemaValidationError as exc:
+        assert "diagnosis_report.guard_verdict" in str(exc)
+    else:
+        raise AssertionError("expected SchemaValidationError")
+
+
+def test_diagnosis_markdown_report_skeleton(tmp_path):
+    evidence = build_evidence_item(
+        evidence_type="confidence_saturation",
+        metric_name="saturation_ratio",
+        observed_value=0.764,
+        baseline_value=0.118,
+        threshold=0.70,
+        severity="high",
+        status="failed",
+        suspected_causes=["Quantization artifact"],
+        recommendation="Check score decoder and quantization calibration.",
+    )
+    report = build_diagnosis_report(
+        evidence=[evidence],
+        confidence=0.84,
+        created_at="2026-05-02T00:00:00Z",
+    )
+
+    markdown = diagnosis_report_to_markdown(report)
+    output_path = tmp_path / "diagnosis.md"
+    save_summary_markdown(report, output_path)
+
+    assert "InferEdgeAIGuard Evidence Diagnosis Report" in markdown
+    assert "guard_verdict: blocked" in markdown
+    assert "confidence_saturation" in markdown
+    assert output_path.read_text(encoding="utf-8") == markdown
