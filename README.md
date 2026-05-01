@@ -1,12 +1,30 @@
 # InferEdgeAIGuard
 
+Optional deterministic diagnosis evidence layer  
+(provenance mismatch · suspicious result signals · guard_analysis)
+
 Language: English | [한국어](README.ko.md)
 
 **GitHub description:** Optional deterministic diagnosis layer for provenance mismatch and suspicious inference result evidence.
 
-InferEdge is an end-to-end Edge AI inference validation pipeline that connects build provenance, C++ runtime execution, Lab analysis/deployment decision, and optional deterministic diagnosis evidence.
+## Summary
 
-InferEdgeAIGuard is an Edge AI inference validation reasoning layer that detects suspicious inference results from latency, accuracy, runtime provenance, output patterns, and repeated-run history.
+- Optional deterministic diagnosis layer for the InferEdge validation pipeline
+- Reads Lab compare/result/history JSON and Runtime/Forge provenance evidence
+- Detects suspicious inference signals, provenance mismatch, and weak validation evidence
+- Emits `guard_analysis` as optional evidence for Lab reports/API bundles
+- Supports review decisions without replacing InferEdgeLab as the decision owner
+
+## What Makes InferEdgeAIGuard Different?
+
+InferEdgeAIGuard is not an LLM guessing layer.
+
+It is a rule/evidence based diagnosis layer that:
+
+- checks latency, accuracy, provenance, output pattern, and run-history signals
+- explains suspected causes with deterministic evidence
+- preserves warnings/errors in a structured `guard_analysis` contract
+- stays optional so Lab remains the final deployment decision owner
 
 ## InferEdge Pipeline Role
 
