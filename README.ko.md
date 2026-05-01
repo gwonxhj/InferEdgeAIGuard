@@ -1,8 +1,28 @@
 # InferEdgeAIGuard
 
+Optional deterministic diagnosis evidence layer  
+(provenance mismatch · suspicious result signals · guard_analysis)
+
 언어: [English](README.md) | 한국어
 
-InferEdgeAIGuard는 InferEdge 전체 파이프라인에서 **optional deterministic diagnosis evidence layer** 역할을 맡는 레포입니다.
+## 요약
+
+- InferEdge validation pipeline의 optional deterministic diagnosis layer입니다.
+- Lab compare/result/history JSON과 Runtime/Forge provenance evidence를 읽습니다.
+- suspicious inference signal, provenance mismatch, 약한 validation evidence를 감지합니다.
+- Lab report/API bundle에 보존 가능한 `guard_analysis`를 optional evidence로 출력합니다.
+- InferEdgeLab의 최종 decision owner 역할을 대체하지 않고 review decision을 보조합니다.
+
+## InferEdgeAIGuard의 차별점
+
+InferEdgeAIGuard는 LLM 추측 기반 진단 도구가 아닙니다.
+
+이 레포는 rule/evidence 기반으로:
+
+- latency, accuracy, provenance, output pattern, run-history signal을 점검하고
+- suspected cause를 deterministic evidence와 함께 설명하며
+- warning/error를 structured `guard_analysis` contract로 보존하고
+- Lab이 최종 deployment decision owner로 남도록 optional evidence 역할만 수행합니다.
 
 InferEdge는 Forge build provenance, Runtime execution/result export, Lab analysis/deployment decision, optional AIGuard diagnosis evidence를 연결하는 end-to-end Edge AI inference validation pipeline입니다.
 
