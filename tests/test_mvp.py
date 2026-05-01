@@ -6,6 +6,10 @@ from shutil import copyfile
 
 from inferedge_aiguard.adapters import normalize_lab_compare_result
 from inferedge_aiguard.batch import analyze_directory, compare_directories
+from inferedge_aiguard.baseline import (
+    compare_detection_quality,
+    compute_baseline_comparison_metrics,
+)
 from inferedge_aiguard.compare import compare_outputs
 from inferedge_aiguard.detectors import get_detector_config, summarize_failures
 from inferedge_aiguard.diagnosis import (
@@ -1882,3 +1886,135 @@ def test_bbox_score_evidence_markdown_names_metrics(tmp_path):
     assert "InferEdgeAIGuard Evidence Diagnosis Report" in markdown
     assert "saturation_ratio" in markdown
     assert "confidence_saturation" in markdown
+
+
+def test_baseline_comparison_passes_for_stable_candidate():
+    baseline = {
+        "model": "yolov8n",
+        "precision": "fp32",
+        "detections": [
+            {"class_id": 0, "confidence": 0.61, "bbox": [10, 10, 20, 30]},
+            {"class_id": 0, "confidence": 0.52, "bbox": [50, 10, 25, 35]},
+        ],
+    }
+    candidate = {
+        "model": "yolov8n",
+        "precision": "fp16",
+        "detections": [
+            {"class_id": 0, "confidence": 0.60, "bbox": [11, 10, 20, 30]},
+            {"class_id": 0, "confidence": 0.54, "bbox": [50, 11, 25, 35]},
+        ],
+    }
+
+    report = compare_detection_quality(
+        baseline,
+        candidate,
+        baseline_latency_ms=45.43,
+        candidate_latency_ms=12.2,
+    )
+
+    validate_diagnosis_report(report)
+    assert report["guard_verdict"] == "pass"
+    assert report["candidate_summary"]["comparison"]["detection_count_drop_pct"] == 0
+    assert all(item["status"] == "passed" for item in report["evidence"])
+
+
+def test_baseline_comparison_blocks_bbox_collapse_drift():
+    baseline = {
+        "model": "yolov8n",
+        "precision": "fp32",
+        "detections": [
+            {"class_id": 0, "confidence": 0.7, "bbox": [0, 0, 10, 10]},
+            {"class_id": 0, "confidence": 0.6, "bbox": [20, 20, 12, 12]},
+            {"class_id": 0, "confidence": 0.5, "bbox": [40, 40, 14, 14]},
+        ],
+    }
+    candidate = {
+        "model": "yolov8n",
+        "precision": "int8",
+        "detections": [
+            {"class_id": 0, "confidence": 0.9, "bbox": [0, 0, 0, 10]},
+            {"class_id": 0, "confidence": 0.8, "bbox": [20, 20, 0, 12]},
+            {"class_id": 0, "confidence": 0.7, "bbox": [40, 40, 0, 14]},
+        ],
+    }
+
+    report = compare_detection_quality(baseline, candidate)
+
+    validate_diagnosis_report(report)
+    assert report["guard_verdict"] == "blocked"
+    collapse_item = next(
+        item
+        for item in report["evidence"]
+        if item["metric_name"] == "bbox_collapse_ratio_factor"
+    )
+    assert collapse_item["status"] == "failed"
+    assert collapse_item["increase_factor"] > 10
+
+
+def test_baseline_comparison_detects_detection_count_drop():
+    baseline = {
+        "model": "yolov8n",
+        "precision": "fp32",
+        "detections": [
+            {"class_id": 0, "confidence": 0.5, "bbox": [idx, idx, 10, 10]}
+            for idx in range(10)
+        ],
+    }
+    candidate = {
+        "model": "yolov8n",
+        "precision": "int8",
+        "detections": [
+            {"class_id": 0, "confidence": 0.9, "bbox": [0, 0, 10, 10]}
+        ],
+    }
+
+    metrics = compute_baseline_comparison_metrics(baseline, candidate)
+    report = compare_detection_quality(baseline, candidate)
+
+    validate_diagnosis_report(report)
+    assert metrics["comparison"]["detection_count_drop_pct"] == 0.9
+    assert report["guard_verdict"] == "blocked"
+    drift_item = next(
+        item
+        for item in report["evidence"]
+        if item["metric_name"] == "detection_count_drop_pct"
+    )
+    assert drift_item["severity"] == "high"
+    assert drift_item["status"] == "failed"
+
+
+def test_baseline_comparison_explains_latency_quality_tradeoff():
+    baseline = {
+        "model": "yolov8n",
+        "precision": "fp32",
+        "detections": [
+            {"class_id": 0, "confidence": 0.64, "bbox": [0, 0, 10, 10]},
+            {"class_id": 0, "confidence": 0.58, "bbox": [20, 20, 12, 12]},
+        ],
+    }
+    candidate = {
+        "model": "yolov8n",
+        "precision": "int8",
+        "detections": [
+            {"class_id": 0, "confidence": 0.999, "bbox": [0, 0, 0, 10]},
+            {"class_id": 0, "confidence": 0.998, "bbox": [20, 20, 0, 12]},
+        ],
+    }
+
+    report = compare_detection_quality(
+        baseline,
+        candidate,
+        baseline_latency_ms=45.43,
+        candidate_latency_ms=17.08,
+    )
+
+    validate_diagnosis_report(report)
+    assert report["guard_verdict"] == "blocked"
+    tradeoff_item = next(
+        item
+        for item in report["evidence"]
+        if item["type"] == "latency_quality_tradeoff"
+    )
+    assert tradeoff_item["observed_value"] < 0
+    assert "latency improved" in tradeoff_item["explanation"]
