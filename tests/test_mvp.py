@@ -15,6 +15,11 @@ from inferedge_aiguard.diagnosis import (
     map_guard_verdict,
     map_severity,
 )
+from inferedge_aiguard.evidence_detectors import (
+    analyze_detection_quality,
+    compute_bbox_validity_metrics,
+    compute_score_distribution_metrics,
+)
 from inferedge_aiguard.history import analyze_run_history
 from inferedge_aiguard.reasoning import analyze_compare_result, analyze_structured_result
 from inferedge_aiguard.report import format_summary, save_summary_json, save_summary_markdown
@@ -1777,3 +1782,103 @@ def test_diagnosis_markdown_report_skeleton(tmp_path):
     assert "guard_verdict: blocked" in markdown
     assert "confidence_saturation" in markdown
     assert output_path.read_text(encoding="utf-8") == markdown
+
+
+def test_bbox_score_evidence_report_passes_for_normal_detection_output():
+    output = {
+        "model": "yolov8n",
+        "precision": "fp32",
+        "image_id": "normal",
+        "detections": [
+            {"class_id": 0, "confidence": 0.63, "bbox": [10, 20, 30, 40]},
+            {"class_id": 0, "confidence": 0.44, "bbox": [50, 60, 20, 25]},
+        ],
+    }
+
+    report = analyze_detection_quality(output, image_width=128, image_height=128)
+
+    validate_diagnosis_report(report)
+    assert report["guard_verdict"] == "pass"
+    assert report["severity"] == "low"
+    assert report["candidate_summary"]["bbox"]["invalid_bbox_rate"] == 0.0
+    assert report["candidate_summary"]["score"]["score_range_violation_count"] == 0
+    assert all(item["status"] == "passed" for item in report["evidence"])
+
+
+def test_bbox_evidence_detects_invalid_nan_and_collapse():
+    output = {
+        "model": "yolov8n",
+        "precision": "int8",
+        "image_id": "bad_bbox",
+        "detections": [
+            {"class_id": 0, "confidence": 0.9, "bbox": [0, 0, 0, 10]},
+            {"class_id": 0, "confidence": 0.8, "bbox": [0, 0, -5, 10]},
+            {"class_id": 0, "confidence": 0.7, "bbox": [0, 0, float("nan"), 10]},
+            {"class_id": 0, "confidence": 0.6, "bbox": [120, 0, 20, 20]},
+        ],
+    }
+
+    metrics = compute_bbox_validity_metrics(output, image_width=128, image_height=128)
+    report = analyze_detection_quality(output, image_width=128, image_height=128)
+
+    validate_diagnosis_report(report)
+    assert metrics["total_predictions"] == 4
+    assert metrics["invalid_bbox_count"] == 3
+    assert metrics["zero_area_count"] == 1
+    assert metrics["nan_or_inf_count"] == 1
+    assert metrics["out_of_bounds_count"] == 1
+    assert metrics["bbox_collapse_count"] == 1
+    assert report["guard_verdict"] == "blocked"
+    assert any(item["metric_name"] == "invalid_bbox_rate" for item in report["evidence"])
+
+
+def test_score_evidence_detects_range_violation_and_saturation():
+    output = {
+        "model": "yolov8n",
+        "precision": "int8",
+        "image_id": "bad_scores",
+        "detections": [
+            {"class_id": 0, "confidence": 1.20, "bbox": [0, 0, 10, 10]},
+            {"class_id": 0, "confidence": 0.995, "bbox": [0, 0, 10, 10]},
+            {"class_id": 0, "confidence": 0.999, "bbox": [0, 0, 10, 10]},
+            {"class_id": 0, "confidence": "bad", "bbox": [0, 0, 10, 10]},
+        ],
+    }
+
+    metrics = compute_score_distribution_metrics(output)
+    report = analyze_detection_quality(output)
+
+    validate_diagnosis_report(report)
+    assert metrics["score_range_violation_count"] == 2
+    assert metrics["saturation_ratio"] == 0.75
+    assert report["guard_verdict"] == "blocked"
+    range_item = next(
+        item
+        for item in report["evidence"]
+        if item["metric_name"] == "score_range_violation_count"
+    )
+    assert range_item["severity"] == "critical"
+    assert range_item["status"] == "failed"
+
+
+def test_bbox_score_evidence_markdown_names_metrics(tmp_path):
+    output = {
+        "model": "yolov8n",
+        "precision": "int8",
+        "image_id": "saturated",
+        "detections": [
+            {"class_id": 0, "confidence": 0.999, "bbox": [0, 0, 10, 10]},
+            {"class_id": 0, "confidence": 0.998, "bbox": [0, 0, 10, 10]},
+            {"class_id": 0, "confidence": 0.997, "bbox": [0, 0, 10, 10]},
+            {"class_id": 0, "confidence": 0.996, "bbox": [0, 0, 10, 10]},
+        ],
+    }
+    report = analyze_detection_quality(output)
+    output_path = tmp_path / "diagnosis.md"
+
+    save_summary_markdown(report, output_path)
+    markdown = output_path.read_text(encoding="utf-8")
+
+    assert "InferEdgeAIGuard Evidence Diagnosis Report" in markdown
+    assert "saturation_ratio" in markdown
+    assert "confidence_saturation" in markdown
