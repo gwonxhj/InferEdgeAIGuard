@@ -1,12 +1,13 @@
 """Baseline comparison evidence for AIGuard diagnosis reports.
 
-Phase 3 compares a known-good baseline output with a candidate output and
+Phase 2 compares a known-good baseline output with a candidate output and
 explains measurable drift. It intentionally reuses the single-output bbox/score
 detectors so the report remains compatible with the v1 diagnosis contract.
 """
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import Any
 
 from .diagnosis import build_diagnosis_report, build_evidence_item, combine_severity
@@ -16,6 +17,8 @@ from .evidence_detectors import (
     compute_score_distribution_metrics,
 )
 
+
+BASELINE_PROFILE_SCHEMA_VERSION = "inferedge-aiguard-baseline-profile-v1"
 
 DEFAULT_BASELINE_THRESHOLDS = {
     **DEFAULT_EVIDENCE_THRESHOLDS,
@@ -28,6 +31,51 @@ DEFAULT_BASELINE_THRESHOLDS = {
     "detection_count_drop_pct_review": 0.50,
     "detection_count_drop_pct_blocked": 0.80,
 }
+
+
+def build_baseline_profile(
+    baseline_output: dict[str, Any],
+    *,
+    label: str = "baseline",
+    latency_ms: float | None = None,
+    accuracy: float | None = None,
+    image_width: float | None = None,
+    image_height: float | None = None,
+    thresholds: dict[str, float] | None = None,
+    source: dict[str, Any] | None = None,
+    created_at: str | None = None,
+) -> dict[str, Any]:
+    """Build a JSON-serializable known-good baseline profile.
+
+    The profile is the explicit Phase 2 handoff artifact: it captures bbox and
+    score quality metrics once, then candidate outputs can be compared against
+    it without re-running the baseline detector path.
+    """
+
+    policy = {**DEFAULT_BASELINE_THRESHOLDS, **(thresholds or {})}
+    bbox_metrics = compute_bbox_validity_metrics(
+        baseline_output,
+        image_width=image_width,
+        image_height=image_height,
+    )
+    score_metrics = compute_score_distribution_metrics(
+        baseline_output,
+        thresholds=policy,
+    )
+    return {
+        "schema_version": BASELINE_PROFILE_SCHEMA_VERSION,
+        "label": label,
+        "source": dict(source or {}),
+        "model": baseline_output.get("model"),
+        "precision": baseline_output.get("precision"),
+        "image_id": baseline_output.get("image_id"),
+        "bbox": bbox_metrics,
+        "score": score_metrics,
+        "latency_ms": latency_ms,
+        "accuracy": accuracy,
+        "thresholds": policy,
+        "created_at": created_at or _utc_now(),
+    }
 
 
 def compare_detection_quality(
@@ -59,6 +107,104 @@ def compare_detection_quality(
         image_height=image_height,
         thresholds=policy,
     )
+    baseline_summary = {
+        "label": baseline_label,
+        "model": baseline_output.get("model"),
+        "precision": baseline_output.get("precision"),
+        "bbox": metrics["baseline"]["bbox"],
+        "score": metrics["baseline"]["score"],
+        "latency_ms": baseline_latency_ms,
+        "accuracy": baseline_accuracy,
+    }
+    candidate_summary = {
+        "label": candidate_label,
+        "model": candidate_output.get("model"),
+        "precision": candidate_output.get("precision"),
+        "bbox": metrics["candidate"]["bbox"],
+        "score": metrics["candidate"]["score"],
+        "latency_ms": candidate_latency_ms,
+        "accuracy": candidate_accuracy,
+        "comparison": metrics["comparison"],
+    }
+    return _build_comparison_report(
+        metrics=metrics,
+        policy=policy,
+        source=source,
+        baseline_summary=baseline_summary,
+        candidate_summary=candidate_summary,
+    )
+
+
+def compare_guard_analysis(
+    baseline_profile: dict[str, Any],
+    candidate_output: dict[str, Any],
+    *,
+    candidate_label: str = "candidate",
+    candidate_latency_ms: float | None = None,
+    candidate_accuracy: float | None = None,
+    image_width: float | None = None,
+    image_height: float | None = None,
+    thresholds: dict[str, float] | None = None,
+    source: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Compare a candidate output against a saved Phase 2 baseline profile."""
+
+    _validate_baseline_profile_shape(baseline_profile)
+    policy = {
+        **DEFAULT_BASELINE_THRESHOLDS,
+        **baseline_profile.get("thresholds", {}),
+        **(thresholds or {}),
+    }
+    metrics = compute_candidate_against_baseline_profile(
+        baseline_profile,
+        candidate_output,
+        candidate_latency_ms=candidate_latency_ms,
+        candidate_accuracy=candidate_accuracy,
+        image_width=image_width,
+        image_height=image_height,
+        thresholds=policy,
+    )
+    merged_source = {
+        **dict(baseline_profile.get("source", {})),
+        **dict(source or {}),
+    }
+    baseline_summary = {
+        "label": baseline_profile.get("label", "baseline"),
+        "model": baseline_profile.get("model"),
+        "precision": baseline_profile.get("precision"),
+        "bbox": metrics["baseline"]["bbox"],
+        "score": metrics["baseline"]["score"],
+        "latency_ms": metrics["baseline"].get("latency_ms"),
+        "accuracy": metrics["baseline"].get("accuracy"),
+        "profile_schema_version": baseline_profile.get("schema_version"),
+    }
+    candidate_summary = {
+        "label": candidate_label,
+        "model": candidate_output.get("model"),
+        "precision": candidate_output.get("precision"),
+        "bbox": metrics["candidate"]["bbox"],
+        "score": metrics["candidate"]["score"],
+        "latency_ms": candidate_latency_ms,
+        "accuracy": candidate_accuracy,
+        "comparison": metrics["comparison"],
+    }
+    return _build_comparison_report(
+        metrics=metrics,
+        policy=policy,
+        source=merged_source,
+        baseline_summary=baseline_summary,
+        candidate_summary=candidate_summary,
+    )
+
+
+def _build_comparison_report(
+    *,
+    metrics: dict[str, Any],
+    policy: dict[str, float],
+    source: dict[str, Any] | None,
+    baseline_summary: dict[str, Any],
+    candidate_summary: dict[str, Any],
+) -> dict[str, Any]:
     evidence = [
         _factor_evidence(
             evidence_type="baseline_deviation",
@@ -139,25 +285,8 @@ def compare_detection_quality(
         confidence=_comparison_confidence(metrics),
         primary_reason=_primary_reason(evidence),
         thresholds=policy,
-        baseline_summary={
-            "label": baseline_label,
-            "model": baseline_output.get("model"),
-            "precision": baseline_output.get("precision"),
-            "bbox": metrics["baseline"]["bbox"],
-            "score": metrics["baseline"]["score"],
-            "latency_ms": baseline_latency_ms,
-            "accuracy": baseline_accuracy,
-        },
-        candidate_summary={
-            "label": candidate_label,
-            "model": candidate_output.get("model"),
-            "precision": candidate_output.get("precision"),
-            "bbox": metrics["candidate"]["bbox"],
-            "score": metrics["candidate"]["score"],
-            "latency_ms": candidate_latency_ms,
-            "accuracy": candidate_accuracy,
-            "comparison": metrics["comparison"],
-        },
+        baseline_summary=baseline_summary,
+        candidate_summary=candidate_summary,
     )
 
 
@@ -240,6 +369,104 @@ def compute_baseline_comparison_metrics(
             "accuracy": candidate_accuracy,
         },
         "comparison": comparison,
+    }
+
+
+def compute_candidate_against_baseline_profile(
+    baseline_profile: dict[str, Any],
+    candidate_output: dict[str, Any],
+    *,
+    candidate_latency_ms: float | None = None,
+    candidate_accuracy: float | None = None,
+    image_width: float | None = None,
+    image_height: float | None = None,
+    thresholds: dict[str, float] | None = None,
+) -> dict[str, Any]:
+    """Compute drift metrics using a saved baseline profile."""
+
+    _validate_baseline_profile_shape(baseline_profile)
+    policy = {
+        **DEFAULT_BASELINE_THRESHOLDS,
+        **baseline_profile.get("thresholds", {}),
+        **(thresholds or {}),
+    }
+    baseline_bbox = dict(baseline_profile["bbox"])
+    baseline_score = dict(baseline_profile["score"])
+    candidate_bbox = compute_bbox_validity_metrics(
+        candidate_output,
+        image_width=image_width,
+        image_height=image_height,
+    )
+    candidate_score = compute_score_distribution_metrics(
+        candidate_output,
+        thresholds=policy,
+    )
+    comparison = _comparison_metrics(
+        baseline_bbox=baseline_bbox,
+        candidate_bbox=candidate_bbox,
+        baseline_score=baseline_score,
+        candidate_score=candidate_score,
+        baseline_latency_ms=baseline_profile.get("latency_ms"),
+        candidate_latency_ms=candidate_latency_ms,
+        baseline_accuracy=baseline_profile.get("accuracy"),
+        candidate_accuracy=candidate_accuracy,
+    )
+    return {
+        "baseline": {
+            "bbox": baseline_bbox,
+            "score": baseline_score,
+            "latency_ms": baseline_profile.get("latency_ms"),
+            "accuracy": baseline_profile.get("accuracy"),
+        },
+        "candidate": {
+            "bbox": candidate_bbox,
+            "score": candidate_score,
+            "latency_ms": candidate_latency_ms,
+            "accuracy": candidate_accuracy,
+        },
+        "comparison": comparison,
+    }
+
+
+def _comparison_metrics(
+    *,
+    baseline_bbox: dict[str, Any],
+    candidate_bbox: dict[str, Any],
+    baseline_score: dict[str, Any],
+    candidate_score: dict[str, Any],
+    baseline_latency_ms: float | None,
+    candidate_latency_ms: float | None,
+    baseline_accuracy: float | None,
+    candidate_accuracy: float | None,
+) -> dict[str, Any]:
+    baseline_count = baseline_bbox["total_predictions"]
+    candidate_count = candidate_bbox["total_predictions"]
+    detection_delta = candidate_count - baseline_count
+    signed_delta_pct = _ratio_float(detection_delta, baseline_count)
+    detection_drop_pct = _ratio_float(baseline_count - candidate_count, baseline_count)
+    return {
+        "baseline_detection_count": baseline_count,
+        "candidate_detection_count": candidate_count,
+        "detection_count_delta": detection_delta,
+        "detection_count_delta_pct": signed_delta_pct,
+        "detection_count_drop_pct": max(0.0, detection_drop_pct),
+        "invalid_bbox_rate_factor": _factor(
+            candidate_bbox["invalid_bbox_rate"],
+            baseline_bbox["invalid_bbox_rate"],
+        ),
+        "bbox_collapse_ratio_factor": _factor(
+            candidate_bbox["bbox_collapse_ratio"],
+            baseline_bbox["bbox_collapse_ratio"],
+        ),
+        "score_saturation_factor": _factor(
+            candidate_score["saturation_ratio"],
+            baseline_score["saturation_ratio"],
+        ),
+        "latency_delta_pct": _optional_delta_pct(
+            candidate_latency_ms,
+            baseline_latency_ms,
+        ),
+        "accuracy_delta_pp": _optional_delta(candidate_accuracy, baseline_accuracy),
     }
 
 
@@ -475,3 +702,18 @@ def _fmt(value: Any) -> str:
     if isinstance(value, float):
         return f"{value:.3f}".rstrip("0").rstrip(".")
     return str(value)
+
+
+def _validate_baseline_profile_shape(profile: dict[str, Any]) -> None:
+    if profile.get("schema_version") != BASELINE_PROFILE_SCHEMA_VERSION:
+        raise ValueError(
+            "baseline_profile.schema_version must be "
+            f"{BASELINE_PROFILE_SCHEMA_VERSION}"
+        )
+    for field in ("bbox", "score"):
+        if not isinstance(profile.get(field), dict):
+            raise ValueError(f"baseline_profile.{field} must be an object")
+
+
+def _utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
