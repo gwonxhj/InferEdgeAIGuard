@@ -7,7 +7,11 @@ from shutil import copyfile
 from inferedge_aiguard.adapters import normalize_lab_compare_result
 from inferedge_aiguard.batch import analyze_directory, compare_directories
 from inferedge_aiguard.baseline import (
+    BASELINE_PROFILE_SCHEMA_VERSION,
+    build_baseline_profile,
+    compare_guard_analysis,
     compare_detection_quality,
+    compute_candidate_against_baseline_profile,
     compute_baseline_comparison_metrics,
 )
 from inferedge_aiguard.compare import compare_outputs
@@ -1941,6 +1945,86 @@ def test_baseline_comparison_passes_for_stable_candidate():
     assert report["guard_verdict"] == "pass"
     assert report["candidate_summary"]["comparison"]["detection_count_drop_pct"] == 0
     assert all(item["status"] == "passed" for item in report["evidence"])
+
+
+def test_phase2_builds_json_serializable_baseline_profile():
+    baseline = {
+        "model": "yolov8n",
+        "precision": "fp32",
+        "image_id": "baseline",
+        "detections": [
+            {"class_id": 0, "confidence": 0.61, "bbox": [10, 10, 20, 30]},
+            {"class_id": 0, "confidence": 0.52, "bbox": [50, 10, 25, 35]},
+        ],
+    }
+
+    profile = build_baseline_profile(
+        baseline,
+        label="fp32-baseline",
+        latency_ms=45.43,
+        accuracy=0.71,
+        source={"runtime_result_path": "results/baseline.json"},
+        created_at="2026-05-02T00:00:00Z",
+    )
+
+    json.dumps(profile)
+    assert profile["schema_version"] == BASELINE_PROFILE_SCHEMA_VERSION
+    assert profile["label"] == "fp32-baseline"
+    assert profile["bbox"]["total_predictions"] == 2
+    assert profile["score"]["score_range_violation_count"] == 0
+    assert profile["latency_ms"] == 45.43
+    assert profile["accuracy"] == 0.71
+
+
+def test_phase2_compare_guard_analysis_uses_saved_baseline_profile():
+    baseline = {
+        "model": "yolov8n",
+        "precision": "fp32",
+        "image_id": "baseline",
+        "detections": [
+            {"class_id": 0, "confidence": 0.64, "bbox": [0, 0, 10, 10]},
+            {"class_id": 0, "confidence": 0.58, "bbox": [20, 20, 12, 12]},
+        ],
+    }
+    candidate = {
+        "model": "yolov8n",
+        "precision": "int8",
+        "image_id": "candidate",
+        "detections": [
+            {"class_id": 0, "confidence": 0.999, "bbox": [0, 0, 0, 10]},
+            {"class_id": 0, "confidence": 0.998, "bbox": [20, 20, 0, 12]},
+        ],
+    }
+    profile = build_baseline_profile(
+        baseline,
+        latency_ms=45.43,
+        source={"baseline_profile_path": "profiles/fp32.json"},
+    )
+
+    metrics = compute_candidate_against_baseline_profile(
+        profile,
+        candidate,
+        candidate_latency_ms=17.08,
+    )
+    guard_analysis = compare_guard_analysis(
+        profile,
+        candidate,
+        candidate_latency_ms=17.08,
+        source={"candidate_result_path": "results/int8.json"},
+    )
+
+    validate_guard_analysis(guard_analysis)
+    assert metrics["comparison"]["bbox_collapse_ratio_factor"] > 10
+    assert guard_analysis["guard_verdict"] == "blocked"
+    assert guard_analysis["baseline_summary"]["profile_schema_version"] == (
+        BASELINE_PROFILE_SCHEMA_VERSION
+    )
+    assert guard_analysis["source"]["baseline_profile_path"] == "profiles/fp32.json"
+    assert guard_analysis["source"]["candidate_result_path"] == "results/int8.json"
+    assert any(
+        item["type"] == "latency_quality_tradeoff"
+        for item in guard_analysis["evidence"]
+    )
 
 
 def test_baseline_comparison_blocks_bbox_collapse_drift():
