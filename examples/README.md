@@ -56,3 +56,16 @@ python -m inferedge_aiguard.cli reason-history --input examples/lab_history/unst
 ```
 
 이 예제들은 ground truth 기반 정확도 평가가 아니라 output/result-level anomaly signal과 reasoning path 검증용입니다.
+
+## Portfolio Demo Bundle
+
+Phase 6 demo cases can be replayed as one local bundle:
+
+```bash
+python -m inferedge_aiguard.cli portfolio-demo \
+  --save-json reports/portfolio_demo/aiguard_portfolio_demo.json \
+  --save-md reports/portfolio_demo/aiguard_portfolio_demo.md
+```
+
+The bundle covers normal pass evidence, bbox collapse blocking evidence, score
+saturation evidence, and temporal instability review evidence.

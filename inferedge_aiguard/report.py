@@ -7,6 +7,10 @@ from pathlib import Path
 from typing import Any
 
 from .diagnosis import DIAGNOSIS_SCHEMA_VERSION, diagnosis_report_to_markdown
+from .portfolio_demo import (
+    PORTFOLIO_DEMO_SCHEMA_VERSION,
+    portfolio_demo_bundle_to_markdown,
+)
 
 
 def format_summary(summary: dict[str, Any]) -> str:
@@ -24,6 +28,8 @@ def format_summary(summary: dict[str, Any]) -> str:
         return _format_run_history_reasoning_summary(summary)
     if summary.get("schema_version") == DIAGNOSIS_SCHEMA_VERSION:
         return _format_diagnosis_report_summary(summary)
+    if summary.get("schema_version") == PORTFOLIO_DEMO_SCHEMA_VERSION:
+        return _format_portfolio_demo_summary(summary)
 
     lines: list[str] = []
 
@@ -220,6 +226,8 @@ def save_summary_markdown(summary: dict[str, Any], output_path: str | Path) -> N
         content = _markdown_run_history_reasoning_report(summary)
     elif summary.get("schema_version") == DIAGNOSIS_SCHEMA_VERSION:
         content = diagnosis_report_to_markdown(summary)
+    elif summary.get("schema_version") == PORTFOLIO_DEMO_SCHEMA_VERSION:
+        content = portfolio_demo_bundle_to_markdown(summary)
     else:
         content = _markdown_basic_report(summary)
     path.write_text(content, encoding="utf-8")
@@ -238,6 +246,8 @@ def _markdown_title(summary: dict[str, Any]) -> str:
         return "# InferEdgeAIGuard Run History Reasoning Report"
     if summary.get("schema_version") == DIAGNOSIS_SCHEMA_VERSION:
         return "# InferEdgeAIGuard Evidence Diagnosis Report"
+    if summary.get("schema_version") == PORTFOLIO_DEMO_SCHEMA_VERSION:
+        return "# InferEdgeAIGuard Portfolio Demo Cases"
     if "base_count" in summary:
         return "# InferEdgeAIGuard Compare Report"
     return "# InferEdgeAIGuard Analyze Report"
@@ -266,6 +276,26 @@ def _format_diagnosis_report_summary(summary: dict[str, Any]) -> str:
             )
     lines.append(f"- suspected_causes: {_format_list(summary.get('suspected_causes', []))}")
     lines.append(f"- recommendations: {_format_list(summary.get('recommendations', []))}")
+    return "\n".join(lines)
+
+
+def _format_portfolio_demo_summary(summary: dict[str, Any]) -> str:
+    lines = [
+        "InferEdgeAIGuard portfolio demo cases",
+        f"- schema_version: {summary.get('schema_version')}",
+        f"- scope: {summary.get('scope')}",
+        f"- case_count: {summary.get('case_count', 0)}",
+        "- cases:",
+    ]
+    for case in summary.get("cases", []):
+        report = case.get("guard_analysis", {})
+        lines.append(
+            "  - "
+            f"case_id={case.get('case_id')} | "
+            f"category={case.get('category')} | "
+            f"guard_verdict={report.get('guard_verdict')} | "
+            f"severity={report.get('severity')}"
+        )
     return "\n".join(lines)
 
 

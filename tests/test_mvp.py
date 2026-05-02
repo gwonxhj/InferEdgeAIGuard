@@ -30,6 +30,11 @@ from inferedge_aiguard.evidence_detectors import (
     compute_score_distribution_metrics,
 )
 from inferedge_aiguard.history import analyze_run_history
+from inferedge_aiguard.portfolio_demo import (
+    PORTFOLIO_DEMO_SCHEMA_VERSION,
+    build_portfolio_demo_bundle,
+    portfolio_demo_bundle_to_markdown,
+)
 from inferedge_aiguard.reasoning import analyze_compare_result, analyze_structured_result
 from inferedge_aiguard.report import format_summary, save_summary_json, save_summary_markdown
 from inferedge_aiguard.schema import (
@@ -2256,3 +2261,62 @@ def test_temporal_consistency_detects_center_jump_and_class_flip():
     assert jump_item["status"] == "warning"
     assert class_item["observed_value"] == 1.0
     assert class_item["status"] == "warning"
+
+
+def test_phase6_portfolio_demo_bundle_contains_required_cases():
+    bundle = build_portfolio_demo_bundle()
+
+    assert bundle["schema_version"] == PORTFOLIO_DEMO_SCHEMA_VERSION
+    assert bundle["case_count"] == 4
+    cases = {case["case_id"]: case for case in bundle["cases"]}
+    assert set(cases) == {
+        "normal_pass",
+        "bbox_collapse_blocked",
+        "score_saturation_blocked",
+        "temporal_instability_review",
+    }
+    assert cases["normal_pass"]["guard_analysis"]["guard_verdict"] == "pass"
+    assert cases["bbox_collapse_blocked"]["guard_analysis"]["guard_verdict"] == "blocked"
+    assert (
+        cases["score_saturation_blocked"]["guard_analysis"]["guard_verdict"]
+        == "blocked"
+    )
+    assert (
+        cases["temporal_instability_review"]["guard_analysis"]["guard_verdict"]
+        == "review_required"
+    )
+    for case in bundle["cases"]:
+        validate_diagnosis_report(case["guard_analysis"])
+
+
+def test_phase6_portfolio_demo_markdown_and_cli(tmp_path):
+    bundle = build_portfolio_demo_bundle()
+    markdown = portfolio_demo_bundle_to_markdown(bundle)
+
+    assert "Portfolio Demo Cases" in markdown
+    assert "Latency improvement with bbox collapse" in markdown
+    assert "Temporal instability" in markdown
+
+    json_path = tmp_path / "portfolio_demo.json"
+    md_path = tmp_path / "portfolio_demo.md"
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "portfolio-demo",
+            "--save-json",
+            str(json_path),
+            "--save-md",
+            str(md_path),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    saved = json.loads(json_path.read_text(encoding="utf-8"))
+    assert "portfolio demo cases" in result.stdout
+    assert saved["schema_version"] == PORTFOLIO_DEMO_SCHEMA_VERSION
+    assert "bbox collapse" in md_path.read_text(encoding="utf-8").lower()
