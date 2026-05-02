@@ -38,6 +38,10 @@ from inferedge_aiguard.schema import (
     validate_diagnosis_report,
     validate_guard_analysis,
 )
+from inferedge_aiguard.temporal import (
+    analyze_temporal_consistency,
+    compute_temporal_consistency_metrics,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -2126,3 +2130,129 @@ def test_baseline_comparison_explains_latency_quality_tradeoff():
     )
     assert tradeoff_item["observed_value"] < 0
     assert "latency improved" in tradeoff_item["explanation"]
+
+
+def test_temporal_consistency_passes_for_stable_sequence():
+    sequence = {
+        "sequence_id": "stable",
+        "frames": [
+            {
+                "frame_id": str(index),
+                "timestamp_ms": index * 33,
+                "detections": [
+                    {
+                        "class_id": 0,
+                        "confidence": 0.7,
+                        "bbox": [10 + index, 20, 30, 40],
+                    }
+                ],
+            }
+            for index in range(4)
+        ],
+    }
+
+    report = analyze_temporal_consistency(
+        sequence,
+        image_width=128,
+        image_height=128,
+    )
+
+    validate_guard_analysis(report)
+    assert report["guard_verdict"] == "pass"
+    assert report["candidate_summary"]["temporal"]["frame_count"] == 4
+    assert all(item["status"] == "passed" for item in report["evidence"])
+
+
+def test_temporal_consistency_detects_count_variance_review():
+    sequence = {
+        "sequence_id": "count-jitter",
+        "frames": [
+            {"frame_id": "0", "detections": []},
+            {
+                "frame_id": "1",
+                "detections": [
+                    {"class_id": 0, "bbox": [idx, idx, 10, 10]} for idx in range(10)
+                ],
+            },
+            {"frame_id": "2", "detections": []},
+            {
+                "frame_id": "3",
+                "detections": [
+                    {"class_id": 0, "bbox": [idx, idx, 10, 10]} for idx in range(10)
+                ],
+            },
+            {"frame_id": "4", "detections": []},
+        ],
+    }
+
+    metrics = compute_temporal_consistency_metrics(sequence)
+    report = analyze_temporal_consistency(
+        sequence,
+        thresholds={"zero_detection_frame_ratio_blocked": 1.0},
+    )
+
+    validate_diagnosis_report(report)
+    assert metrics["frame_to_frame_detection_count_cv"] > 1.0
+    assert report["guard_verdict"] == "review_required"
+    count_item = next(
+        item
+        for item in report["evidence"]
+        if item["metric_name"] == "frame_to_frame_detection_count_cv"
+    )
+    assert count_item["status"] == "warning"
+
+
+def test_temporal_consistency_blocks_zero_detection_frames():
+    sequence = {
+        "sequence_id": "dropout",
+        "frames": [
+            {"frame_id": "0", "detections": [{"class_id": 0, "bbox": [0, 0, 10, 10]}]},
+            {"frame_id": "1", "detections": []},
+            {"frame_id": "2", "detections": []},
+            {"frame_id": "3", "detections": [{"class_id": 0, "bbox": [1, 1, 10, 10]}]},
+        ],
+    }
+
+    report = analyze_temporal_consistency(sequence)
+
+    validate_guard_analysis(report)
+    assert report["guard_verdict"] == "blocked"
+    zero_item = next(
+        item
+        for item in report["evidence"]
+        if item["metric_name"] == "zero_detection_frame_ratio"
+    )
+    assert zero_item["observed_value"] == 0.5
+    assert zero_item["status"] == "failed"
+
+
+def test_temporal_consistency_detects_center_jump_and_class_flip():
+    sequence = {
+        "sequence_id": "jump-and-flip",
+        "frames": [
+            {"frame_id": "0", "detections": [{"class_id": 0, "bbox": [0, 0, 10, 10]}]},
+            {"frame_id": "1", "detections": [{"class_id": 1, "bbox": [90, 90, 10, 10]}]},
+            {"frame_id": "2", "detections": [{"class_id": 0, "bbox": [2, 2, 10, 10]}]},
+        ],
+    }
+
+    report = analyze_temporal_consistency(
+        sequence,
+        image_width=100,
+        image_height=100,
+    )
+
+    validate_diagnosis_report(report)
+    jump_item = next(
+        item
+        for item in report["evidence"]
+        if item["metric_name"] == "bbox_center_jump_p95"
+    )
+    class_item = next(
+        item
+        for item in report["evidence"]
+        if item["metric_name"] == "class_flip_rate"
+    )
+    assert jump_item["status"] == "warning"
+    assert class_item["observed_value"] == 1.0
+    assert class_item["status"] == "warning"
