@@ -11,6 +11,7 @@ from .batch import analyze_directory, compare_directories
 from .compare import compare_outputs
 from .detectors import summarize_failures
 from .history import analyze_run_history
+from .portfolio_demo import build_portfolio_demo_bundle
 from .reasoning import analyze_compare_result, analyze_structured_result
 from .report import format_summary, save_summary_json, save_summary_markdown
 from .schema import load_output_json
@@ -96,6 +97,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     _add_save_options(reason_history_parser)
 
+    portfolio_demo_parser = subparsers.add_parser(
+        "portfolio-demo",
+        help="Replay bundled AIGuard portfolio demo cases",
+    )
+    _add_save_options(portfolio_demo_parser)
+
     return parser
 
 
@@ -170,6 +177,14 @@ def main(argv: list[str] | None = None) -> int:
         raw = _load_json_list(args.input)
         _emit_summary(
             analyze_run_history(raw),
+            save_json=args.save_json,
+            save_md=args.save_md,
+        )
+        return 0
+
+    if args.command == "portfolio-demo":
+        _emit_summary(
+            build_portfolio_demo_bundle(),
             save_json=args.save_json,
             save_md=args.save_md,
         )
