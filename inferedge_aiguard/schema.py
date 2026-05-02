@@ -48,20 +48,25 @@ def validate_output(data: Any) -> JsonDict:
 
 
 def validate_guard_analysis(data: Any) -> JsonDict:
-    """Validate the Lab deployment_decision guard_analysis contract.
+    """Validate supported guard_analysis contracts.
 
-    InferEdgeLab intentionally treats AIGuard as optional and currently consumes
-    only guard_analysis.status for deployment decisions. AIGuard still validates
-    the surrounding evidence shape so saved reasoning output remains reviewable.
+    The legacy Lab handoff uses ``status``. The evidence-based diagnosis
+    contract uses ``schema_version`` and ``guard_verdict``. Supporting both
+    shapes keeps existing Lab integration stable while making the newer
+    Obsidian source-of-truth contract directly testable.
     """
 
     if not isinstance(data, dict):
         raise SchemaValidationError("guard_analysis must be a JSON object")
 
+    if data.get("schema_version") == DIAGNOSIS_SCHEMA_VERSION or "guard_verdict" in data:
+        return validate_diagnosis_report(data)
+
     status = data.get("status")
     if status not in {"ok", "warning", "error", "skipped"}:
         raise SchemaValidationError(
-            "guard_analysis.status must be one of: ok, warning, error, skipped"
+            "guard_analysis.status must be one of: ok, warning, error, skipped; "
+            "or guard_analysis must use the diagnosis v1 guard_verdict contract"
         )
 
     if "mode" in data and not isinstance(data["mode"], str):

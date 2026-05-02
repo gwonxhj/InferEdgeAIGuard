@@ -68,6 +68,30 @@ def analyze_detection_quality(
     )
 
 
+def analyze_guard_analysis(
+    output: dict[str, Any],
+    *,
+    image_width: float | None = None,
+    image_height: float | None = None,
+    thresholds: dict[str, float] | None = None,
+    source: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Build Phase 1 bbox/score guard_analysis from one detection output.
+
+    This is a public naming alias for the evidence-based Obsidian contract.
+    ``analyze_detection_quality`` remains available for callers that prefer the
+    implementation-oriented name.
+    """
+
+    return analyze_detection_quality(
+        output,
+        image_width=image_width,
+        image_height=image_height,
+        thresholds=thresholds,
+        source=source,
+    )
+
+
 def compute_bbox_validity_metrics(
     output: dict[str, Any],
     *,

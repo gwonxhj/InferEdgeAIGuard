@@ -20,6 +20,7 @@ from inferedge_aiguard.diagnosis import (
     map_severity,
 )
 from inferedge_aiguard.evidence_detectors import (
+    analyze_guard_analysis,
     analyze_detection_quality,
     compute_bbox_validity_metrics,
     compute_score_distribution_metrics,
@@ -1807,6 +1808,29 @@ def test_bbox_score_evidence_report_passes_for_normal_detection_output():
     assert report["candidate_summary"]["bbox"]["invalid_bbox_rate"] == 0.0
     assert report["candidate_summary"]["score"]["score_range_violation_count"] == 0
     assert all(item["status"] == "passed" for item in report["evidence"])
+
+
+def test_phase1_guard_analysis_alias_uses_diagnosis_contract():
+    output = {
+        "model": "yolov8n",
+        "precision": "fp32",
+        "image_id": "phase1",
+        "detections": [
+            {"class_id": 0, "confidence": 0.63, "bbox": [10, 20, 30, 40]},
+        ],
+    }
+
+    guard_analysis = analyze_guard_analysis(
+        output,
+        source={"runtime_result_path": "results/phase1.json"},
+    )
+
+    validated = validate_guard_analysis(guard_analysis)
+    assert validated["schema_version"] == "inferedge-aiguard-diagnosis-v1"
+    assert validated["guard_verdict"] == "pass"
+    assert validated["evidence"][0]["observed_value"] == 0.0
+    assert "explanation" in validated["evidence"][0]
+    assert "recommendation" in validated["evidence"][0]
 
 
 def test_bbox_evidence_detects_invalid_nan_and_collapse():
