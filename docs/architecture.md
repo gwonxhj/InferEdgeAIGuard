@@ -115,8 +115,7 @@ The Python schema helper `validate_guard_analysis` validates this contract witho
 Potential extensions:
 
 - `/reason` API endpoint that accepts compare/result/history JSON
-- JSON report persistence for experiment tracking
-- Markdown report generation for portfolio and paper-style summaries
+- broader JSON/Markdown report integration with Lab and Studio surfaces
 - dashboard or SaaS layer on top of saved reasoning reports
 
 Current scope remains result-based validation reasoning. It does not include model conversion, device execution, ground truth evaluation, model graph analysis, or training.

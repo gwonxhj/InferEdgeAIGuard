@@ -45,6 +45,11 @@ In that pipeline, AIGuard consumes evidence produced by Forge, Runtime, and Lab.
 Implemented today:
 
 - deterministic detector-based reasoning for Lab compare/result/history JSON
+- evidence schema, severity/verdict mapping, explanation builder, and JSON/Markdown report persistence
+- output-level bbox validity, bbox collapse, confidence distribution, detection count drift, NaN/Inf, and score range detectors
+- baseline-vs-candidate comparison for output quality drift and suspicious speed/quality trade-offs
+- initial temporal consistency evidence for detection count variance, bbox center movement, class flip rate, and track-free temporal instability signals
+- portfolio demo diagnosis bundle covering normal/pass, bbox collapse/blocked, score saturation/blocked, temporal instability/review_required, and provenance mismatch cases
 - artifact and source model provenance mismatch detection
 - Forge summary vs Runtime worker_response provenance mismatch coverage
 - `guard_analysis` schema compatibility with Lab deployment decision handoff
@@ -256,7 +261,8 @@ InferEdgeAIGuard includes a fixture-based validation report that demonstrates ho
 - Real-device Jetson inputs: `real_device/jetson/`
 - Inputs: `examples/lab_compat/`
 
-Fixture-based validation report is available now, and Jetson real-device validation is planned in [docs/jetson_validation_plan.md](docs/jetson_validation_plan.md). 초기 Jetson FP32/FP16 evidence는 [docs/jetson_validation_report.md](docs/jetson_validation_report.md)에 정리되어 있습니다.
+Fixture-based validation, Jetson real-device validation, and run-history reasoning evidence are available now.
+The execution checklist/history remains in [docs/jetson_validation_plan.md](docs/jetson_validation_plan.md), and the current Jetson FP32/FP16 evidence is summarized in [docs/jetson_validation_report.md](docs/jetson_validation_report.md).
 
 Jetson run history reasoning evidence도 추가되어, AIGuard가 repeated FP16 run에서 accuracy logging이 일관되지 않은 문제를 `partial_accuracy_missing`으로 감지할 수 있음을 보여줍니다.
 
