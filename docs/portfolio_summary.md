@@ -13,7 +13,7 @@ Forge -> Runtime -> Lab -> AIGuard
 - Forge: deployment artifact 생성
 - Runtime: edge device inference 실행
 - Lab: analysis/report/API/deployment decision owner
-- AIGuard: anomaly detection + rule/evidence diagnosis
+- AIGuard: evidence-based deterministic diagnosis provider
 
 InferEdgeLab이 Runtime result를 분석하고 report/API/deployment decision을 생성한다면, InferEdgeAIGuard는 그 결과 위에서 "이 결과를 그대로 믿어도 되는가?", "어떤 의심 신호가 있는가?", "무엇을 먼저 점검해야 하는가?"를 optional `guard_analysis` evidence로 설명합니다.
 
@@ -31,7 +31,7 @@ Edge AI inference에서는 다음과 같은 문제가 발생할 수 있다:
 -> 그 결과가 정상인지 "판단하지 않는다"
 ```
 
-InferEdgeAIGuard는 이 빈칸을 채웁니다. 모델 내부 weight나 graph를 분석하는 도구가 아니라, 실제 inference validation pipeline이 남긴 result-level evidence를 기반으로 failure/anomaly signal을 정의하고 설명합니다.
+InferEdgeAIGuard는 이 빈칸을 채웁니다. 모델 내부 weight나 graph를 분석하는 도구가 아니라, 실제 inference validation pipeline이 남긴 result-level evidence를 기반으로 failure/diagnosis signal을 정의하고 설명합니다.
 
 ## 3. 시스템이 분석하는 입력
 
@@ -152,12 +152,12 @@ InferEdgeAIGuard는 다음을 직접 수행하지 않습니다.
 
 ## 9. 다음 단계
 
-- controlled repeated-run Jetson history를 추가 수집
-- FP16/INT8 TensorRT engine build option과 precision fallback evidence 정리
+- controlled repeated-run Jetson history를 현재 FP16 사례보다 넓은 조건으로 확장
+- FP16/INT8 TensorRT engine build option과 precision fallback evidence 추가 정리
 - AIGuard rule별 validation matrix 작성
 - 향후 API/SaaS로 확장할 경우 unified `reason` entrypoint를 optional diagnosis endpoint로 연결
 
-현재 단계에서 InferEdgeAIGuard는 "Edge inference result를 측정하는 도구"가 아니라, 측정 결과를 검토하고 의심 신호를 설명하는 validation reasoning layer로 포지셔닝됩니다.
+현재 단계에서 InferEdgeAIGuard는 "Edge inference result를 측정하는 도구"가 아니라, 측정 결과를 검토하고 bbox/score/baseline/temporal/provenance evidence로 의심 신호를 설명하는 validation reasoning layer로 포지셔닝됩니다.
 
 ## 10. One-line Interview Pitch
 

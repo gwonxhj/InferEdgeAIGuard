@@ -78,7 +78,9 @@ python3 -m pytest -q
 
 ## 현재 범위와 future work
 
-현재는 fixture와 real-device evidence 기반의 deterministic diagnosis layer입니다. Lab optional contract와 provenance mismatch detector가 구현되어 있습니다.
+현재는 fixture와 real-device evidence 기반의 deterministic diagnosis layer입니다.
+Lab optional contract, provenance mismatch detector, bbox/score evidence detectors, baseline comparison, initial temporal consistency evidence, JSON/Markdown report 저장, portfolio diagnosis demo bundle이 구현되어 있습니다.
+Local Studio는 Lab에서 demo evidence를 불러와 normal/pass, bbox collapse/blocked, score saturation/blocked, temporal instability/review_required, provenance mismatch 계열 사례를 표시할 수 있습니다.
 
 Future work:
 
