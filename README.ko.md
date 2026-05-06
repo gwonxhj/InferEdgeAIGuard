@@ -82,6 +82,20 @@ python3 -m pytest -q
 Lab optional contract, provenance mismatch detector, bbox/score evidence detectors, baseline comparison, initial temporal consistency evidence, JSON/Markdown report 저장, portfolio diagnosis demo bundle이 구현되어 있습니다.
 Local Studio는 Lab에서 demo evidence를 불러와 normal/pass, bbox collapse/blocked, score saturation/blocked, temporal instability/review_required, provenance mismatch 계열 사례를 표시할 수 있습니다.
 
+## Detector Validation Matrix
+
+AIGuard detector는 deterministic evidence provider입니다. `guard_verdict`는 Lab의 최종 `deployment_decision`이 아니라, Lab이 참고할 수 있는 optional diagnosis evidence입니다.
+
+| Case | Signal | Expected `guard_verdict` | Meaning |
+|---|---|---|---|
+| normal | bbox/score/count 안정 | `pass` | AIGuard 기준 배포 위험 evidence 없음 |
+| bbox collapse | near-zero area bbox 증가 | `blocked` | decoder/postprocess/quantization 문제 가능 |
+| score saturation | score가 0 또는 1 근처에 몰림 | `blocked` | score calibration 또는 postprocess 문제 가능 |
+| temporal instability | frame 간 detection count 또는 bbox 이동이 불안정 | `review_required` | runtime output 안정성 검토 필요 |
+| provenance mismatch | Forge/Runtime source 또는 artifact identity 불일치 | `blocked` / `error` | 검토 중인 artifact와 evidence가 다를 수 있음 |
+
+전체 detector별 threshold, expected verdict, report field는 [docs/detector_validation_matrix.md](docs/detector_validation_matrix.md)에 정리되어 있습니다.
+
 Future work:
 
 - 더 넓은 detector coverage
