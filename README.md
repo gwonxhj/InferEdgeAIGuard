@@ -252,6 +252,7 @@ InferEdgeAIGuard includes a fixture-based validation report that demonstrates ho
 | Jetson history evidence | `real_device/jetson/history/yolov8n_fp16_history.json` | repeated-run logging consistency 검증 |
 
 - Portfolio summary: [docs/portfolio_summary.md](docs/portfolio_summary.md)
+- Detector validation matrix: [docs/detector_validation_matrix.md](docs/detector_validation_matrix.md)
 - Validation report: [docs/validation_report.md](docs/validation_report.md)
 - Jetson validation plan: [docs/jetson_validation_plan.md](docs/jetson_validation_plan.md)
 - Jetson validation report: [docs/jetson_validation_report.md](docs/jetson_validation_report.md)
@@ -265,6 +266,31 @@ Fixture-based validation, Jetson real-device validation, and run-history reasoni
 The execution checklist/history remains in [docs/jetson_validation_plan.md](docs/jetson_validation_plan.md), and the current Jetson FP32/FP16 evidence is summarized in [docs/jetson_validation_report.md](docs/jetson_validation_report.md).
 
 Jetson run history reasoning evidence도 추가되어, AIGuard가 repeated FP16 run에서 accuracy logging이 일관되지 않은 문제를 `partial_accuracy_missing`으로 감지할 수 있음을 보여줍니다.
+
+## Detector Validation Matrix
+
+AIGuard detectors are deterministic evidence providers. They explain why a result
+should pass, require review, or be blocked, but InferEdgeLab remains the final
+deployment decision owner.
+
+| Case | Signal | Expected `guard_verdict` | Meaning |
+|---|---|---|---|
+| normal | stable bbox, score, and detection count | `pass` | no deployment-risk evidence from AIGuard |
+| bbox collapse | near-zero area boxes increase | `blocked` | decoder, postprocess, or quantization issue possible |
+| score saturation | confidence scores concentrate near 0 or 1 | `blocked` | score calibration or postprocess issue possible |
+| temporal instability | frame-level detection count or bbox movement is unstable | `review_required` | runtime output stability should be reviewed |
+| provenance mismatch | Forge/Runtime source or artifact identity differs | `blocked` / `error` | evidence may not describe the artifact under review |
+
+| Detector | Evidence | Threshold | Normal Expected | Problem Expected | Report Field |
+|---|---|---:|---|---|---|
+| bbox validity | `invalid_bbox_rate` | `0.05` / `0.20` | `pass` | `review_required` / `blocked` | `evidence[].metric_name` |
+| bbox collapse | `bbox_collapse_ratio` | `0.05` / `0.10` | `pass` | `review_required` / `blocked` | `evidence[].observed_value` |
+| score distribution | `saturation_ratio` | `0.70` / `0.85` | `pass` | `review_required` / `blocked` | `evidence[].observed_value` |
+| score range | `score_range_violation_count` | `> 0` | `pass` | `blocked` | `evidence[].severity` |
+| detection count drift | `detection_count_drop_pct` | `0.50` / `0.80` | `pass` | `review_required` / `blocked` | `evidence[].delta_pct` |
+| temporal consistency | `frame_to_frame_detection_count_cv` | `1.0` | `pass` | `review_required` | `candidate_summary.temporal` |
+
+The full matrix is maintained in [docs/detector_validation_matrix.md](docs/detector_validation_matrix.md).
 
 ## Output JSON Schema
 
@@ -291,11 +317,13 @@ YOLO output-level detector는 다음 형식을 기준으로 합니다.
 
 ## Failure Definition
 
-현재 output-level detector는 3개입니다.
+Core output-level detector families are:
 
-- bbox collapse: bbox `w` 또는 `h`가 `threshold` 이하로 작아진 detection 감지
-- confidence saturation: confidence가 0.0 또는 1.0 근처로 과도하게 몰리는 현상 감지
-- detection count mismatch: FP32 baseline 대비 candidate detection 수가 크게 달라지는 현상 감지
+- bbox validity/collapse: invalid, NaN/Inf, out-of-bounds, or near-zero-area boxes
+- confidence distribution: score range violation and saturation
+- detection count drift: FP32 or known-good baseline 대비 detection 수 변화
+- baseline deviation: invalid bbox, collapse, saturation factor 증가
+- temporal consistency: tracking 없이 frame-level instability 감지
 
 각 detector는 `affected_count`, `total_count`, `ratio`, `threshold` 계열 필드를 함께 반환합니다. severity는 고정 문자열이 아니라 failure ratio 기반으로 산정됩니다.
 

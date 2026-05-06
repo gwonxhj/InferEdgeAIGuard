@@ -130,6 +130,7 @@ AIGuard는 단순히 latency 수치만 보는 것이 아니라, 반복 실험 ev
 | Artifact | Path |
 |---|---|
 | Fixture validation report | `docs/validation_report.md` |
+| Detector validation matrix | `docs/detector_validation_matrix.md` |
 | Jetson validation plan | `docs/jetson_validation_plan.md` |
 | Jetson validation report | `docs/jetson_validation_report.md` |
 | Real-device Jetson inputs | `real_device/jetson/` |
@@ -150,15 +151,27 @@ InferEdgeAIGuard는 다음을 직접 수행하지 않습니다.
 
 대신 AIGuard는 이미 생성된 inference result와 validation output을 읽고, 그 결과를 신뢰하기 전에 확인해야 할 anomaly signal과 suspected cause를 설명합니다.
 
-## 9. 다음 단계
+## 9. Detector Validation Matrix
+
+현재 AIGuard는 detector별 expected behavior를 문서화했습니다.
+
+| Case | Signal | Expected guard_verdict | Meaning |
+|---|---|---|---|
+| normal | stable bbox/score/count | `pass` | 배포 위험 evidence 없음 |
+| bbox collapse | near-zero area boxes 증가 | `blocked` | decoder/postprocess/quantization 문제 가능 |
+| score saturation | score가 0 또는 1 근처에 몰림 | `blocked` | score calibration 또는 postprocess 문제 가능 |
+| temporal instability | frame 간 detection count 변동 또는 bbox jump | `review_required` | output 안정성 검토 필요 |
+
+세부 threshold와 report field는 `docs/detector_validation_matrix.md`에 정리되어 있습니다.
+
+## 10. 다음 단계
 
 - controlled repeated-run Jetson history를 현재 FP16 사례보다 넓은 조건으로 확장
 - FP16/INT8 TensorRT engine build option과 precision fallback evidence 추가 정리
-- AIGuard rule별 validation matrix 작성
 - 향후 API/SaaS로 확장할 경우 unified `reason` entrypoint를 optional diagnosis endpoint로 연결
 
 현재 단계에서 InferEdgeAIGuard는 "Edge inference result를 측정하는 도구"가 아니라, 측정 결과를 검토하고 bbox/score/baseline/temporal/provenance evidence로 의심 신호를 설명하는 validation reasoning layer로 포지셔닝됩니다.
 
-## 10. One-line Interview Pitch
+## 11. One-line Interview Pitch
 
 InferEdgeAIGuard는 Jetson 기반 Edge AI inference 결과를 단순 측정에서 끝내지 않고, 결과의 신뢰성 문제를 rule-based reasoning으로 감지하고 설명하는 validation layer입니다.
