@@ -39,8 +39,8 @@ ONNX model
 -> optional InferEdgeAIGuard provenance diagnosis
 -> deploy / review / blocked decision
 
-Supporting sidecar:
-InferEdgeEnv -> local-first run evidence registry / comparability checker
+Experiment hygiene / comparability layer:
+InferEdgeEnv -> v0.1.5 v1-complete local-first run evidence registry / comparability checker
 ```
 
 In that pipeline, AIGuard consumes evidence produced by Forge, Runtime, and Lab. It can compare Forge worker/runtime summary provenance with Runtime worker_response provenance, inspect Lab result/compare context, and emit optional `guard_analysis` for Lab to preserve in reports and API bundles.
@@ -65,7 +65,7 @@ Planned later:
 
 AIGuard is not an LLM guessing layer and does not make the final deployment decision. InferEdgeLab remains the final `deployment_decision` owner; AIGuard supplies optional evidence that can support review or block decisions.
 
-Portfolio boundary: InferEdgeLab is the validation / decision layer. InferEdgeEnv is the run evidence registry / comparability layer; it records whether benchmark evidence can be trusted and compared without replacing AIGuard diagnosis evidence or Lab deployment decisions.
+Portfolio boundary: InferEdgeLab is the validation / decision layer. InferEdgeEnv is the v0.1.5 v1-complete experiment hygiene / comparability layer; it records whether benchmark evidence can be trusted and compared without replacing AIGuard diagnosis evidence or Lab deployment decisions.
 
 ## Why This Exists
 
