@@ -286,14 +286,28 @@ deployment decision owner.
 | temporal instability | frame-level detection count or bbox movement is unstable | `review_required` | runtime output stability should be reviewed |
 | provenance mismatch | Forge/Runtime source or artifact identity differs | `blocked` / `error` | evidence may not describe the artifact under review |
 
-| Detector | Evidence | Threshold | Normal Expected | Problem Expected | Report Field |
-|---|---|---:|---|---|---|
-| bbox validity | `invalid_bbox_rate` | `0.05` / `0.20` | `pass` | `review_required` / `blocked` | `evidence[].metric_name` |
-| bbox collapse | `bbox_collapse_ratio` | `0.05` / `0.10` | `pass` | `review_required` / `blocked` | `evidence[].observed_value` |
-| score distribution | `saturation_ratio` | `0.70` / `0.85` | `pass` | `review_required` / `blocked` | `evidence[].observed_value` |
-| score range | `score_range_violation_count` | `> 0` | `pass` | `blocked` | `evidence[].severity` |
-| detection count drift | `detection_count_drop_pct` | `0.50` / `0.80` | `pass` | `review_required` / `blocked` | `evidence[].delta_pct` |
-| temporal consistency | `frame_to_frame_detection_count_cv` | `1.0` | `pass` | `review_required` | `candidate_summary.temporal` |
+### Detector Verdict Matrix
+
+The table below is the reviewer-facing version of the detector policy. It is
+not a Lab deployment policy by itself; Lab may combine these signals with
+latency, accuracy, contract, and runtime evidence before producing the final
+`deployment_decision`.
+
+| Detector family | Primary evidence | Pass | Review | Block | Report field |
+|---|---|---|---|---|---|
+| bbox validity | `invalid_bbox_rate` | `<= 0.05` | `> 0.05` | `> 0.20` | `evidence[].metric_name` |
+| bbox collapse | `bbox_collapse_ratio` | `<= 0.05` | `> 0.05` or baseline factor `> 5x` | severe collapse or baseline factor `> 10x` | `evidence[].observed_value` |
+| confidence score range | `score_range_violation_count` | `0` | n/a | `> 0` | `evidence[].severity` |
+| confidence saturation | `saturation_ratio` | `< 0.70` | `>= 0.70` | `>= 0.85` with quality drift | `evidence[].observed_value` |
+| detection disappearance | `detection_count_drop_pct`, `zero_detection_frame_ratio` | stable count | drop `>= 50%` | drop `>= 80%` or zero-frame ratio `> 0.30` | `candidate_summary.comparison` |
+| baseline deviation | invalid/collapse/saturation factor | near baseline | factor `> 5x` | factor `> 10x` | `evidence[].increase_factor` |
+| temporal consistency | count CV, bbox jump, class flip | stable sequence | count CV `> 1.0`, class flip `> 0.30`, or large center jump | zero-frame ratio `> 0.30` | `candidate_summary.temporal` |
+| provenance consistency | source/artifact/backend identity | exact handoff match | warning mismatch | error mismatch | `guard_analysis.anomalies` |
+
+Planned detector extensions are intentionally still deterministic: per-class
+detection drift, stronger detection disappearance summaries, calibration drift
+for score distributions, and baseline profile stability. These are documented
+as roadmap items, not as implemented automatic root-cause proof.
 
 The full matrix is maintained in [docs/detector_validation_matrix.md](docs/detector_validation_matrix.md).
 
