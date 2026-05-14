@@ -100,6 +100,23 @@ AIGuard detector는 deterministic evidence provider입니다. `guard_verdict`는
 | temporal instability | frame 간 detection count 또는 bbox 이동이 불안정 | `review_required` | runtime output 안정성 검토 필요 |
 | provenance mismatch | Forge/Runtime source 또는 artifact identity 불일치 | `blocked` / `error` | 검토 중인 artifact와 evidence가 다를 수 있음 |
 
+### Detector Verdict Matrix
+
+아래 표는 AIGuard가 어떤 수치 근거로 pass/review/block 성격의 `guard_verdict`를 만드는지 보여주는 요약입니다. 이 표는 Lab의 최종 deployment policy가 아니며, Lab은 latency, accuracy, contract, runtime evidence와 함께 AIGuard evidence를 참고합니다.
+
+| Detector family | Primary evidence | Pass | Review | Block |
+|---|---|---|---|---|
+| bbox validity | `invalid_bbox_rate` | `<= 0.05` | `> 0.05` | `> 0.20` |
+| bbox collapse | `bbox_collapse_ratio` | `<= 0.05` | `> 0.05` 또는 baseline factor `> 5x` | severe collapse 또는 baseline factor `> 10x` |
+| confidence score range | `score_range_violation_count` | `0` | n/a | `> 0` |
+| confidence saturation | `saturation_ratio` | `< 0.70` | `>= 0.70` | `>= 0.85` and quality drift |
+| detection disappearance | `detection_count_drop_pct`, `zero_detection_frame_ratio` | stable count | drop `>= 50%` | drop `>= 80%` 또는 zero-frame ratio `> 0.30` |
+| baseline deviation | invalid/collapse/saturation factor | near baseline | factor `> 5x` | factor `> 10x` |
+| temporal consistency | count CV, bbox jump, class flip | stable sequence | count CV `> 1.0`, class flip `> 0.30`, 큰 center jump | zero-frame ratio `> 0.30` |
+| provenance consistency | source/artifact/backend identity | exact handoff match | warning mismatch | error mismatch |
+
+다음 후보 detector는 deterministic evidence 기반 roadmap입니다: per-class detection drift, detection disappearance hardening, calibration drift, baseline profile stability.
+
 전체 detector별 threshold, expected verdict, report field는 [docs/detector_validation_matrix.md](docs/detector_validation_matrix.md)에 정리되어 있습니다.
 
 Future work:

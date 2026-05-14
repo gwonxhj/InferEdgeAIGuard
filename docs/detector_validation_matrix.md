@@ -19,6 +19,23 @@ the current portfolio demo cases and local-first validation workflow.
 
 ## Detector Matrix
 
+This is the high-level pass/review/block matrix that should stay visible in
+README, portfolio material, and generated reports. It is a diagnosis policy,
+not the final Lab deployment policy.
+
+| Detector family | Primary evidence | Pass | Review | Block | Main report field |
+|---|---|---|---|---|---|
+| bbox validity | `invalid_bbox_rate` | `<= 0.05` | `> 0.05` | `> 0.20` | `evidence[].metric_name` |
+| bbox collapse | `bbox_collapse_ratio` | `<= 0.05` | `> 0.05` or baseline factor `> 5x` | severe collapse or baseline factor `> 10x` | `evidence[].observed_value` |
+| confidence score range | `score_range_violation_count` | `0` | n/a | `> 0` | `evidence[].severity` |
+| confidence saturation | `saturation_ratio` | `< 0.70` | `>= 0.70` | `>= 0.85` with quality drift | `evidence[].observed_value` |
+| detection disappearance | `detection_count_drop_pct`, `zero_detection_frame_ratio` | stable count | drop `>= 50%` | drop `>= 80%` or zero-frame ratio `> 0.30` | `candidate_summary.comparison`, `candidate_summary.temporal` |
+| baseline deviation | invalid/collapse/saturation factor | near baseline | factor `> 5x` | factor `> 10x` | `evidence[].increase_factor` |
+| temporal consistency | count CV, bbox center jump, class flip | stable sequence | count CV `> 1.0`, class flip `> 0.30`, or center jump p95 `> 0.50` image diagonal | zero-frame ratio `> 0.30` | `candidate_summary.temporal` |
+| provenance consistency | source/artifact/backend/target/precision identity | exact handoff match | warning mismatch | error mismatch | `guard_analysis.anomalies`, `guard_analysis.status` |
+
+## Implemented Detector Details
+
 | Detector | Evidence | Threshold | Normal Expected | Problem Expected | Report Field |
 |---|---|---:|---|---|---|
 | bbox validity | `invalid_bbox_rate` | review `0.05`, blocked `0.20` | `pass` | `review_required` / `blocked` | `evidence[].metric_name` |
@@ -34,6 +51,19 @@ the current portfolio demo cases and local-first validation workflow.
 | temporal consistency | `class_flip_rate` | review `0.30` | `pass` | `review_required` | `evidence[].observed_value` |
 | temporal consistency | `zero_detection_frame_ratio` | blocked `0.30` | `pass` | `blocked` | `candidate_summary.temporal` |
 | provenance | artifact/source/backend/target/precision mismatch | exact identity expected | `pass` / `ok` | `warning` / `error` | `guard_analysis.anomalies`, `guard_analysis.status` |
+
+## Next Candidate Detectors
+
+These items are documented roadmap candidates for the remaining development
+window. They should stay deterministic and evidence based; they are not LLM
+root-cause inference.
+
+| Candidate | Purpose | Suggested evidence | Expected use |
+|---|---|---|---|
+| per-class detection drift | catch class-specific disappearance even when total count looks stable | per-class count delta, per-class zero ratio | review when one important class collapses against baseline |
+| detection disappearance hardening | make empty-frame behavior more explicit in reports | zero-detection frame streak, zero-frame ratio, first missing frame | review/block depending on repeated disappearance |
+| calibration drift | detect score distribution shift against a known-good baseline | score histogram delta, mean/std shift, saturation delta | review when confidence scale changes without accuracy explanation |
+| baseline profile stability | document whether a baseline itself is stable enough to trust | baseline variance, repeated-run p95, profile sample count | warn when comparison baseline is too noisy |
 
 ## Report Contract Fields
 

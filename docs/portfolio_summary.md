@@ -153,7 +153,7 @@ InferEdgeAIGuard는 다음을 직접 수행하지 않습니다.
 
 ## 9. Detector Validation Matrix
 
-현재 AIGuard는 detector별 expected behavior를 문서화했습니다.
+현재 AIGuard는 detector별 expected behavior와 pass/review/block 근거를 문서화했습니다. 이 표는 AIGuard `guard_verdict`의 설명 기준이며, 최종 deployment decision은 InferEdgeLab이 latency, accuracy, contract, runtime evidence와 함께 통합해서 판단합니다.
 
 | Case | Signal | Expected guard_verdict | Meaning |
 |---|---|---|---|
@@ -161,8 +161,18 @@ InferEdgeAIGuard는 다음을 직접 수행하지 않습니다.
 | bbox collapse | near-zero area boxes 증가 | `blocked` | decoder/postprocess/quantization 문제 가능 |
 | score saturation | score가 0 또는 1 근처에 몰림 | `blocked` | score calibration 또는 postprocess 문제 가능 |
 | temporal instability | frame 간 detection count 변동 또는 bbox jump | `review_required` | output 안정성 검토 필요 |
+| provenance mismatch | source/artifact identity 불일치 | `blocked` / `error` | evidence가 검토 대상 artifact를 설명하지 못할 수 있음 |
 
-세부 threshold와 report field는 `docs/detector_validation_matrix.md`에 정리되어 있습니다.
+| Detector family | Primary evidence | Review trigger | Block trigger |
+|---|---|---|---|
+| bbox validity | `invalid_bbox_rate` | `> 0.05` | `> 0.20` |
+| bbox collapse | `bbox_collapse_ratio` | `> 0.05` or baseline factor `> 5x` | severe collapse or baseline factor `> 10x` |
+| score range | `score_range_violation_count` | n/a | `> 0` |
+| score saturation | `saturation_ratio` | `>= 0.70` | `>= 0.85` with quality drift |
+| detection disappearance | `detection_count_drop_pct`, `zero_detection_frame_ratio` | drop `>= 50%` | drop `>= 80%` or zero-frame ratio `> 0.30` |
+| temporal consistency | count CV, bbox jump, class flip | unstable sequence signal | zero-frame ratio `> 0.30` |
+
+세부 threshold, report field, 향후 후보 detector는 `docs/detector_validation_matrix.md`에 정리되어 있습니다. 다음 후보는 per-class detection drift, detection disappearance hardening, calibration drift, baseline profile stability입니다.
 
 ## 10. 다음 단계
 
