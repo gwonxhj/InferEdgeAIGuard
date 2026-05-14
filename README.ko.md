@@ -33,8 +33,8 @@ ONNX model
 -> InferEdgeLab compare/API/job/deployment_decision
 -> optional InferEdgeAIGuard guard_analysis
 
-Supporting sidecar:
-InferEdgeEnv -> local-first run evidence registry / comparability checker
+Experiment hygiene / comparability layer:
+InferEdgeEnv -> v0.1.5 v1-complete local-first run evidence registry / comparability checker
 ```
 
 ## 이 레포의 역할
@@ -78,9 +78,9 @@ python3 -m pytest -q
 - **InferEdgeForge:** build artifact와 source/artifact hash, backend/target/precision/shape provenance를 제공합니다.
 - **InferEdge-Runtime:** 실행/profiling result JSON과 runtime provenance를 제공합니다.
 - **InferEdgeLab:** AIGuard `guard_analysis`를 optional evidence로 보존하고 최종 deployment decision을 생성합니다.
-- **InferEdgeEnv:** benchmark run evidence를 local artifact와 SQLite registry로 고정하고 비교 가능성을 판정하는 run evidence registry / comparability layer입니다.
+- **InferEdgeEnv:** `v0.1.5` v1-complete 상태의 experiment hygiene / comparability layer로, benchmark run evidence를 local artifact와 SQLite registry로 고정하고 비교 가능성을 판정합니다.
 
-포트폴리오 경계: InferEdgeLab은 validation / decision layer이고, InferEdgeEnv는 run evidence registry / comparability layer입니다. AIGuard는 optional diagnosis evidence를 제공하고, Env는 benchmark evidence가 신뢰 가능하고 비교 가능한 형태인지 관리합니다.
+포트폴리오 경계: InferEdgeLab은 validation / decision layer이고, InferEdgeEnv는 `v0.1.5` v1-complete experiment hygiene / comparability layer입니다. AIGuard는 optional diagnosis evidence를 제공하고, Env는 benchmark evidence가 신뢰 가능하고 비교 가능한 형태인지 관리합니다.
 
 ## 현재 범위와 future work
 
