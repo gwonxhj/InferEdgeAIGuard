@@ -14,6 +14,7 @@ from .history import analyze_run_history
 from .portfolio_demo import build_portfolio_demo_bundle
 from .reasoning import analyze_compare_result, analyze_structured_result
 from .report import format_summary, save_summary_json, save_summary_markdown
+from .runtime_reliability import analyze_orchestration_summary
 from .schema import load_output_json
 
 
@@ -96,6 +97,17 @@ def build_parser() -> argparse.ArgumentParser:
         help="Path to InferEdgeLab structured result history JSON list",
     )
     _add_save_options(reason_history_parser)
+
+    reason_orchestration_parser = subparsers.add_parser(
+        "reason-orchestration",
+        help="Reason over an InferEdgeOrchestrator orchestration summary JSON file",
+    )
+    reason_orchestration_parser.add_argument(
+        "--input",
+        required=True,
+        help="Path to InferEdgeOrchestrator orchestration summary JSON",
+    )
+    _add_save_options(reason_orchestration_parser)
 
     portfolio_demo_parser = subparsers.add_parser(
         "portfolio-demo",
@@ -182,6 +194,15 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 0
 
+    if args.command == "reason-orchestration":
+        raw = _load_json_dict(args.input)
+        _emit_summary(
+            analyze_orchestration_summary(raw),
+            save_json=args.save_json,
+            save_md=args.save_md,
+        )
+        return 0
+
     if args.command == "portfolio-demo":
         _emit_summary(
             build_portfolio_demo_bundle(),
@@ -226,6 +247,9 @@ def _infer_reasoning_summary(data: object) -> dict:
     if _looks_like_structured_result(data):
         return analyze_structured_result(data)
 
+    if _looks_like_orchestration_summary(data):
+        return analyze_orchestration_summary(data)
+
     raise ValueError("Unable to infer reasoning input type from JSON object")
 
 
@@ -262,6 +286,18 @@ def _looks_like_structured_result(data: dict) -> bool:
         "extra",
     }
     return any(key in data for key in structured_keys)
+
+
+def _looks_like_orchestration_summary(data: dict) -> bool:
+    if data.get("schema_version") == "inferedge-orchestration-summary-v1":
+        return True
+    agent_runtime_summary = data.get("agent_runtime_summary")
+    if isinstance(agent_runtime_summary, dict):
+        if agent_runtime_summary.get("schema_version") == "inferedge-orchestration-summary-v1":
+            return True
+        if "policy_decision_log" in data or "policy_decisions" in data:
+            return True
+    return False
 
 
 def _load_json(path: str) -> object:
