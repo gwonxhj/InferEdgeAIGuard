@@ -52,6 +52,7 @@ Implemented today:
 - output-level bbox validity, bbox collapse, confidence distribution, detection count drift, NaN/Inf, and score range detectors
 - baseline-vs-candidate comparison for output quality drift and suspicious speed/quality trade-offs
 - initial temporal consistency evidence for detection count variance, bbox center movement, class flip rate, and track-free temporal instability signals
+- runtime reliability evidence from Orchestrator `orchestration_summary` files: deadline miss, drop rate, fallback overuse, and queue backlog policy decisions
 - portfolio demo diagnosis bundle covering normal/pass, bbox collapse/blocked, score saturation/blocked, temporal instability/review_required, and provenance mismatch cases
 - artifact and source model provenance mismatch detection
 - Forge summary vs Runtime worker_response provenance mismatch coverage
@@ -143,7 +144,8 @@ Forge metadata/manifest와 Runtime result JSON의 provenance를 비교하는 rul
 | `reason-compare` | Lab compare result JSON | Compare result reasoning |
 | `reason-result` | Lab structured result JSON | Single result reasoning |
 | `reason-history` | Lab structured result list JSON | Multi-run stability reasoning |
-| `reason` | Compare/result/history JSON | Unified auto-routing reasoning |
+| `reason-orchestration` | Orchestrator summary JSON | Runtime reliability reasoning |
+| `reason` | Compare/result/history/orchestration JSON | Unified auto-routing reasoning |
 
 ## Quick Smoke Commands
 
@@ -161,6 +163,7 @@ Forge metadata/manifest와 Runtime result JSON의 provenance를 비교하는 rul
 - JSON이 list이면 `reason-history`와 동일하게 run history reasoning을 수행합니다.
 - JSON이 Lab compare result dict로 보이면 `reason-compare`와 동일하게 adapter 정규화 후 compare reasoning을 수행합니다.
 - JSON이 Lab structured result dict로 보이면 `reason-result`와 동일하게 단일 result reasoning을 수행합니다.
+- JSON이 Orchestrator `inferedge-orchestration-summary-v1` dict로 보이면 `reason-orchestration`과 동일하게 runtime reliability reasoning을 수행합니다.
 
 ```bash
 python -m inferedge_aiguard.cli reason --input examples/lab_compat/lab_compare_realistic.json
@@ -180,6 +183,19 @@ python -m inferedge_aiguard.cli reason \
 이 구조는 향후 API나 SaaS로 확장할 때 단일 endpoint로 연결하기 좋습니다. 현재 단계에서는 SaaS/API 서버를 구현하지 않고 CLI entrypoint와 JSON/Markdown report 저장만 제공합니다.
 
 명시적 명령이 필요하면 기존 `reason-compare`, `reason-result`, `reason-history`도 그대로 사용할 수 있습니다.
+
+Orchestrator runtime reliability summary도 같은 흐름으로 분석할 수 있습니다.
+
+```bash
+python -m inferedge_aiguard.cli reason-orchestration \
+  --input reports/agent_orchestration_summary.json
+python -m inferedge_aiguard.cli reason \
+  --input reports/agent_orchestration_summary.json
+```
+
+이 경로는 `policy_decision_log`, deadline miss, drop/fallback 신호를
+`guard_analysis` evidence로 변환합니다. AIGuard는 runtime reliability risk를
+설명하고, 최종 deployment decision은 계속 InferEdgeLab이 담당합니다.
 
 ## Quick Examples
 
@@ -253,11 +269,13 @@ InferEdgeAIGuard includes a fixture-based validation report that demonstrates ho
 | Fixture validation report | `docs/validation_report.md` | Lab-like fixture 기반 reasoning 검증 |
 | Jetson validation report | `docs/jetson_validation_report.md` | Real-device evidence |
 | Portfolio summary | `docs/portfolio_summary.md` | 면접/포트폴리오 설명용 |
+| Runtime reliability signals | `docs/runtime_reliability_signals.md` | Orchestrator summary -> guard_analysis mapping |
 | Jetson compare evidence | `real_device/jetson/compare_fp32_fp16.json` | FP32 vs FP16 speedup 검증 |
 | Jetson history evidence | `real_device/jetson/history/yolov8n_fp16_history.json` | repeated-run logging consistency 검증 |
 
 - Portfolio summary: [docs/portfolio_summary.md](docs/portfolio_summary.md)
 - Detector validation matrix: [docs/detector_validation_matrix.md](docs/detector_validation_matrix.md)
+- Runtime reliability signals: [docs/runtime_reliability_signals.md](docs/runtime_reliability_signals.md)
 - Validation report: [docs/validation_report.md](docs/validation_report.md)
 - Jetson validation plan: [docs/jetson_validation_plan.md](docs/jetson_validation_plan.md)
 - Jetson validation report: [docs/jetson_validation_report.md](docs/jetson_validation_report.md)

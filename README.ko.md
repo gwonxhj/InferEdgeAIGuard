@@ -85,8 +85,31 @@ python3 -m pytest -q
 ## 현재 범위와 future work
 
 현재는 fixture와 real-device evidence 기반의 deterministic diagnosis layer입니다.
-Lab optional contract, provenance mismatch detector, bbox/score evidence detectors, baseline comparison, initial temporal consistency evidence, JSON/Markdown report 저장, portfolio diagnosis demo bundle이 구현되어 있습니다.
+Lab optional contract, provenance mismatch detector, bbox/score evidence detectors, baseline comparison, initial temporal consistency evidence, Orchestrator runtime reliability signal, JSON/Markdown report 저장, portfolio diagnosis demo bundle이 구현되어 있습니다.
 Local Studio는 Lab에서 demo evidence를 불러와 normal/pass, bbox collapse/blocked, score saturation/blocked, temporal instability/review_required, provenance mismatch 계열 사례를 표시할 수 있습니다.
+
+## Runtime Reliability Signal
+
+InferEdgeOrchestrator의 `inferedge-orchestration-summary-v1` summary를 읽어
+multi-agent scheduling evidence를 `guard_analysis`로 변환할 수 있습니다.
+
+```bash
+python -m inferedge_aiguard.cli reason-orchestration \
+  --input reports/agent_orchestration_summary.json
+python -m inferedge_aiguard.cli reason \
+  --input reports/agent_orchestration_summary.json
+```
+
+현재 분석하는 signal:
+
+- `repeated_deadline_miss`
+- `excessive_drop_rate`
+- `fallback_overuse`
+- `queue_backlog_risk`
+
+이 기능은 AIGuard를 final deployment decision owner로 바꾸지 않습니다. AIGuard는
+runtime reliability risk를 설명하는 optional evidence provider이고, 최종 판단은
+InferEdgeLab이 담당합니다.
 
 ## Detector Validation Matrix
 
@@ -114,10 +137,12 @@ AIGuard detector는 deterministic evidence provider입니다. `guard_verdict`는
 | baseline deviation | invalid/collapse/saturation factor | near baseline | factor `> 5x` | factor `> 10x` |
 | temporal consistency | count CV, bbox jump, class flip | stable sequence | count CV `> 1.0`, class flip `> 0.30`, 큰 center jump | zero-frame ratio `> 0.30` |
 | provenance consistency | source/artifact/backend identity | exact handoff match | warning mismatch | error mismatch |
+| runtime reliability | deadline miss, drop/fallback, queue backlog | stable scheduling | deadline/drop/fallback threshold 초과 | excessive drop/fallback 또는 repeated deadline miss |
 
 다음 후보 detector는 deterministic evidence 기반 roadmap입니다: per-class detection drift, detection disappearance hardening, calibration drift, baseline profile stability.
 
 전체 detector별 threshold, expected verdict, report field는 [docs/detector_validation_matrix.md](docs/detector_validation_matrix.md)에 정리되어 있습니다.
+Orchestrator summary 기반 runtime reliability mapping은 [docs/runtime_reliability_signals.ko.md](docs/runtime_reliability_signals.ko.md)에 정리되어 있습니다.
 
 Future work:
 
