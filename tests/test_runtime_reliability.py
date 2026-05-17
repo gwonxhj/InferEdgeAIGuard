@@ -114,6 +114,105 @@ def orchestration_summary() -> dict:
     }
 
 
+def multi_workload_sustained_summary() -> dict:
+    summary = orchestration_summary()
+    summary["multi_workload_sustained_summary"] = {
+        "schema_version": "inferedge-orchestrator-multi-workload-sustained-v1",
+        "scenario_mode": "sustained_high_load",
+        "evidence_scope": (
+            "local sustained workload profiles with synthetic adapters; external "
+            "YOLO/Whisper/FastAPI integrations remain optional"
+        ),
+        "workload_profiles": [
+            {
+                "agent_id": "vision_agent",
+                "agent_type": "vision",
+                "workload_type": "realtime_vision",
+                "runtime_loop": "yolo_detection_loop",
+                "ingress_profile": "frame_queue",
+                "expected_runtime_mode": "sustained",
+                "preferred_device": "gpu",
+                "executed": 18,
+                "dropped": 6,
+                "deadline_missed": 4,
+                "fallback_used": 2,
+                "mean_latency_ms": 41.5,
+                "p95_latency_ms": 74.0,
+                "max_queue_backlog": 8,
+            },
+            {
+                "agent_id": "voice_command_agent",
+                "agent_type": "voice",
+                "workload_type": "voice_command",
+                "runtime_loop": "whisper_command_burst",
+                "ingress_profile": "fastapi_concurrent_request",
+                "expected_runtime_mode": "burst",
+                "preferred_device": "cpu",
+                "executed": 4,
+                "dropped": 1,
+                "deadline_missed": 1,
+                "fallback_used": 1,
+                "mean_latency_ms": 122.0,
+                "p95_latency_ms": 180.0,
+                "max_queue_backlog": 3,
+            },
+            {
+                "agent_id": "safety_monitor_agent",
+                "agent_type": "safety",
+                "workload_type": "telemetry_monitor",
+                "runtime_loop": "safety_monitor_loop",
+                "ingress_profile": "periodic_monitor",
+                "expected_runtime_mode": "periodic",
+                "preferred_device": "cpu",
+                "executed": 8,
+                "dropped": 0,
+                "deadline_missed": 0,
+                "fallback_used": 0,
+                "mean_latency_ms": 8.0,
+                "p95_latency_ms": 11.0,
+                "max_queue_backlog": 0,
+            },
+        ],
+        "observed_runtime_signals": {
+            "max_total_queue_depth": 11,
+            "executed_count": 30,
+            "dropped_count": 7,
+            "deadline_missed_count": 5,
+            "fallback_count": 3,
+            "policy_decision_count": 5,
+            "policy_decision_reasons": [
+                "stale_frame_drop_due_to_queue_latency",
+                "fallback_activated_due_to_overload_risk",
+            ],
+            "tegrastats_sample_count": 2,
+        },
+    }
+    summary["tegrastats_timeline"] = {
+        "source": "sample",
+        "sample_count": 2,
+        "samples": [
+            {
+                "sample_index": 0,
+                "ram_used_mb": 2048,
+                "gpu_percent": 42,
+                "temperatures_c": {"cpu": 66.5, "gpu": 68.1},
+            },
+            {
+                "sample_index": 1,
+                "ram_used_mb": 2304,
+                "gpu_percent": 91,
+                "temperatures_c": {"cpu": 76.2, "gpu": 74.0},
+            },
+        ],
+        "summary": {
+            "max_gpu_percent": 91,
+            "max_ram_used_mb": 2304,
+            "max_temperature_c": 76.2,
+        },
+    }
+    return summary
+
+
 def test_compute_runtime_reliability_metrics_from_orchestration_summary():
     metrics = compute_runtime_reliability_metrics(orchestration_summary())
 
@@ -130,6 +229,25 @@ def test_compute_runtime_reliability_metrics_from_orchestration_summary():
         "queue_backlog_threshold_exceeded": 1
     }
     assert metrics["affected_agents"] == ["safety_monitor_agent", "vision_agent"]
+
+
+def test_multi_workload_sustained_summary_adds_profile_and_thermal_metrics():
+    metrics = compute_runtime_reliability_metrics(multi_workload_sustained_summary())
+
+    assert metrics["scenario_mode"] == "sustained_high_load"
+    assert metrics["executed_count"] == 30
+    assert metrics["dropped_count"] == 14
+    assert metrics["deadline_missed_count"] == 5
+    assert metrics["fallback_count"] == 14
+    assert metrics["max_total_queue_depth"] == 11
+    assert metrics["workload_profile_count"] == 3
+    assert metrics["profiled_workload_risk_count"] == 2
+    assert metrics["tegrastats_sample_count"] == 2
+    assert metrics["max_temperature_c"] == 76.2
+    assert metrics["max_gpu_percent"] == 91
+    assert {
+        item["runtime_loop"] for item in metrics["affected_workload_profiles"]
+    } == {"yolo_detection_loop", "whisper_command_burst"}
 
 
 def test_analyze_orchestration_summary_returns_diagnosis_report():
@@ -161,6 +279,34 @@ def test_analyze_orchestration_summary_returns_diagnosis_report():
     )
     assert queue_evidence["raw_context"]["top_policy_decision_reason"] == (
         "queue_backlog_threshold_exceeded"
+    )
+
+
+def test_analyze_multi_workload_sustained_summary_adds_runtime_evidence():
+    report = analyze_orchestration_summary(multi_workload_sustained_summary())
+
+    validate_diagnosis_report(report)
+    evidence_types = {item["type"] for item in report["evidence"]}
+    assert "profiled_workload_pressure" in evidence_types
+    assert "thermal_resource_pressure" in evidence_types
+    profile_evidence = next(
+        item for item in report["evidence"] if item["type"] == "profiled_workload_pressure"
+    )
+    assert profile_evidence["observed_value"] == 2
+    assert profile_evidence["status"] == "failed"
+    assert {
+        item["agent_id"]
+        for item in profile_evidence["raw_context"]["affected_workload_profiles"]
+    } == {"vision_agent", "voice_command_agent"}
+
+    thermal_evidence = next(
+        item for item in report["evidence"] if item["type"] == "thermal_resource_pressure"
+    )
+    assert thermal_evidence["observed_value"] == 76.2
+    assert thermal_evidence["status"] == "failed"
+    assert (
+        report["candidate_summary"]["runtime_reliability"]["max_temperature_c"]
+        == 76.2
     )
 
 

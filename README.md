@@ -52,7 +52,7 @@ Implemented today:
 - output-level bbox validity, bbox collapse, confidence distribution, detection count drift, NaN/Inf, and score range detectors
 - baseline-vs-candidate comparison for output quality drift and suspicious speed/quality trade-offs
 - initial temporal consistency evidence for detection count variance, bbox center movement, class flip rate, and track-free temporal instability signals
-- runtime reliability evidence from Orchestrator `orchestration_summary` files: deadline miss, drop rate, fallback overuse, and queue backlog policy decisions
+- runtime reliability evidence from Orchestrator `orchestration_summary` files: deadline miss, drop/fallback, queue backlog, sustained workload profile pressure, and optional tegrastats thermal/resource signals
 - portfolio demo diagnosis bundle covering normal/pass, bbox collapse/blocked, score saturation/blocked, temporal instability/review_required, and provenance mismatch cases
 - artifact and source model provenance mismatch detection
 - Forge summary vs Runtime worker_response provenance mismatch coverage
@@ -270,7 +270,7 @@ InferEdgeAIGuard includes a fixture-based validation report that demonstrates ho
 | Fixture validation report | `docs/validation_report.md` | Lab-like fixture 기반 reasoning 검증 |
 | Jetson validation report | `docs/jetson_validation_report.md` | Real-device evidence |
 | Portfolio summary | `docs/portfolio_summary.md` | 면접/포트폴리오 설명용 |
-| Runtime reliability signals | `docs/runtime_reliability_signals.md` | Orchestrator summary -> guard_analysis mapping |
+| Runtime reliability signals | `docs/runtime_reliability_signals.md` | Orchestrator scheduling/sustained telemetry -> guard_analysis mapping |
 | Jetson compare evidence | `real_device/jetson/compare_fp32_fp16.json` | FP32 vs FP16 speedup 검증 |
 | Jetson history evidence | `real_device/jetson/history/yolov8n_fp16_history.json` | repeated-run logging consistency 검증 |
 

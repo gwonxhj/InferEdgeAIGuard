@@ -25,6 +25,10 @@ DEFAULT_RUNTIME_RELIABILITY_THRESHOLDS = {
     "queue_backlog_policy_decision_count_review": 1,
     "max_total_queue_depth_review": 3,
     "max_total_queue_depth_blocked": 8,
+    "profiled_workload_risk_count_review": 1,
+    "profiled_workload_risk_count_blocked": 3,
+    "thermal_pressure_temperature_c_review": 70.0,
+    "thermal_pressure_temperature_c_blocked": 85.0,
 }
 
 
@@ -48,6 +52,12 @@ def analyze_orchestration_summary(
         _queue_backlog_evidence(metrics, totals, policy),
         _sustained_overload_evidence(metrics, totals, policy),
     ]
+    workload_evidence = _profiled_workload_evidence(metrics, totals, policy)
+    if workload_evidence is not None:
+        evidence.append(workload_evidence)
+    thermal_evidence = _thermal_pressure_evidence(metrics, totals, policy)
+    if thermal_evidence is not None:
+        evidence.append(thermal_evidence)
 
     return build_diagnosis_report(
         evidence=evidence,
@@ -75,21 +85,38 @@ def compute_runtime_reliability_metrics(summary: dict[str, Any]) -> dict[str, An
 
     runtime_summary = _runtime_summary(summary)
     sustained_summary = _sustained_summary(summary)
+    multi_workload_summary = _multi_workload_summary(summary)
+    observed_signals = _observed_runtime_signals(multi_workload_summary)
+    tegrastats_timeline = _tegrastats_timeline(summary)
+    tegrastats_summary = _mapping(tegrastats_timeline.get("summary"))
     totals = _totals(runtime_summary)
     latency_timeline = _list(summary.get("latency_timeline"))
     queue_depth_timeline = _list(summary.get("queue_depth_timeline"))
 
-    executed_count = _non_negative_number(totals.get("executed_count"))
-    dropped_count = _non_negative_number(totals.get("dropped_count"))
+    executed_count = max(
+        _non_negative_number(totals.get("executed_count")),
+        _non_negative_number(observed_signals.get("executed_count")),
+    )
+    dropped_count = max(
+        _non_negative_number(totals.get("dropped_count")),
+        _non_negative_number(observed_signals.get("dropped_count")),
+    )
     timeline_deadline_missed_count = sum(
         1 for item in latency_timeline if bool(item.get("deadline_missed"))
     )
     deadline_missed_count = max(
         _non_negative_number(totals.get("deadline_missed_count")),
+        _non_negative_number(observed_signals.get("deadline_missed_count")),
         float(timeline_deadline_missed_count),
     )
-    fallback_count = _non_negative_number(totals.get("fallback_count"))
-    policy_decision_count = _non_negative_number(totals.get("policy_decision_count"))
+    fallback_count = max(
+        _non_negative_number(totals.get("fallback_count")),
+        _non_negative_number(observed_signals.get("fallback_count")),
+    )
+    policy_decision_count = max(
+        _non_negative_number(totals.get("policy_decision_count")),
+        _non_negative_number(observed_signals.get("policy_decision_count")),
+    )
     overload_event_count = _non_negative_number(totals.get("overload_event_count"))
     if executed_count <= 0 and latency_timeline:
         executed_count = float(len(latency_timeline))
@@ -98,6 +125,10 @@ def compute_runtime_reliability_metrics(summary: dict[str, Any]) -> dict[str, An
     if not policy_decision_log:
         policy_decision_log = _list(summary.get("policy_decisions"))
     policy_decision_reasons = _policy_decision_reasons(policy_decision_log)
+    if not policy_decision_reasons:
+        policy_decision_reasons = _policy_decision_reasons_from_values(
+            observed_signals.get("policy_decision_reasons")
+        )
     queue_backlog_decisions = [
         item
         for item in policy_decision_log
@@ -107,12 +138,18 @@ def compute_runtime_reliability_metrics(summary: dict[str, Any]) -> dict[str, An
     ]
     max_total_queue_depth = max(
         _non_negative_number(sustained_summary.get("max_total_queue_depth")),
+        _non_negative_number(observed_signals.get("max_total_queue_depth")),
         _max_total_queue_depth(queue_depth_timeline),
     )
+    workload_profiles = _workload_profiles(multi_workload_summary)
+    affected_workload_profiles = _affected_workload_profiles(workload_profiles)
+    if affected_workload_profiles:
+        overload_event_count = max(overload_event_count, float(len(affected_workload_profiles)))
 
     total_task_events = executed_count + dropped_count
     return {
         "scenario_mode": _scenario_mode(summary),
+        "evidence_scope": multi_workload_summary.get("evidence_scope"),
         "executed_count": executed_count,
         "dropped_count": dropped_count,
         "deadline_missed_count": deadline_missed_count,
@@ -131,6 +168,22 @@ def compute_runtime_reliability_metrics(summary: dict[str, Any]) -> dict[str, An
         "latency_sample_count": len(latency_timeline),
         "max_total_queue_depth": max_total_queue_depth,
         "affected_agents": sorted(_affected_agents(summary)),
+        "workload_profile_count": len(workload_profiles),
+        "profiled_workload_risk_count": len(affected_workload_profiles),
+        "workload_profiles": workload_profiles,
+        "affected_workload_profiles": affected_workload_profiles,
+        "tegrastats_sample_count": _non_negative_number(
+            tegrastats_timeline.get("sample_count")
+        ),
+        "max_temperature_c": _optional_non_negative_number(
+            tegrastats_summary.get("max_temperature_c")
+        ),
+        "max_gpu_percent": _optional_non_negative_number(
+            tegrastats_summary.get("max_gpu_percent")
+        ),
+        "max_ram_used_mb": _optional_non_negative_number(
+            tegrastats_summary.get("max_ram_used_mb")
+        ),
     }
 
 
@@ -360,6 +413,109 @@ def _sustained_overload_evidence(
     )
 
 
+def _profiled_workload_evidence(
+    metrics: dict[str, Any],
+    totals: dict[str, Any],
+    thresholds: dict[str, float],
+) -> dict[str, Any] | None:
+    if metrics.get("workload_profile_count", 0) <= 0:
+        return None
+    risk_count = metrics["profiled_workload_risk_count"]
+    severity = _rate_severity(
+        value=risk_count,
+        review=thresholds["profiled_workload_risk_count_review"],
+        blocked=thresholds["profiled_workload_risk_count_blocked"],
+    )
+    status = _status_for_runtime_metric(severity)
+    return build_evidence_item(
+        evidence_type="profiled_workload_pressure",
+        metric_name="profiled_workload_risk_count",
+        observed_value=risk_count,
+        baseline_value=None,
+        threshold=thresholds["profiled_workload_risk_count_review"],
+        delta=None,
+        delta_pct=None,
+        increase_factor=None,
+        severity=severity,
+        status=status,
+        why_it_matters=(
+            "Per-workload pressure shows which sustained demo profiles are "
+            "missing deadlines, dropping work, using fallback, or building queue "
+            "backlog under the same edge-device scenario."
+        ),
+        suspected_causes=[
+            "workload_contention",
+            "producer_rate_exceeds_profile_budget",
+            "runtime_loop_capacity_shortfall",
+        ]
+        if status != "passed"
+        else [],
+        recommendation=(
+            "Inspect affected_workload_profiles and tune frame rate, burst "
+            "frequency, scheduling profile, or fallback policy before deployment."
+            if status != "passed"
+            else "No per-workload pressure signals were observed."
+        ),
+        raw_context={
+            "totals": totals,
+            "evidence_scope": metrics.get("evidence_scope"),
+            "workload_profiles": metrics.get("workload_profiles", []),
+            "affected_workload_profiles": metrics.get("affected_workload_profiles", []),
+        },
+    )
+
+
+def _thermal_pressure_evidence(
+    metrics: dict[str, Any],
+    totals: dict[str, Any],
+    thresholds: dict[str, float],
+) -> dict[str, Any] | None:
+    max_temperature = metrics.get("max_temperature_c")
+    if max_temperature is None:
+        return None
+    severity = _rate_severity(
+        value=max_temperature,
+        review=thresholds["thermal_pressure_temperature_c_review"],
+        blocked=thresholds["thermal_pressure_temperature_c_blocked"],
+    )
+    status = _status_for_runtime_metric(severity)
+    return build_evidence_item(
+        evidence_type="thermal_resource_pressure",
+        metric_name="max_temperature_c",
+        observed_value=max_temperature,
+        baseline_value=None,
+        threshold=thresholds["thermal_pressure_temperature_c_review"],
+        delta=None,
+        delta_pct=None,
+        increase_factor=None,
+        severity=severity,
+        status=status,
+        why_it_matters=(
+            "High tegrastats temperature or resource pressure can cause sustained "
+            "latency degradation on Jetson-class edge devices."
+        ),
+        suspected_causes=[
+            "thermal_pressure",
+            "gpu_or_cpu_resource_contention",
+            "sustained_high_load_runtime_degradation",
+        ]
+        if status != "passed"
+        else [],
+        recommendation=(
+            "Review power mode, cooling, frame rate, and workload placement before "
+            "treating the sustained run as deployment-ready."
+            if status != "passed"
+            else "Tegrastats temperature stayed within the configured threshold."
+        ),
+        raw_context={
+            "totals": totals,
+            "tegrastats_sample_count": metrics.get("tegrastats_sample_count"),
+            "max_gpu_percent": metrics.get("max_gpu_percent"),
+            "max_ram_used_mb": metrics.get("max_ram_used_mb"),
+        },
+    )
+
+
 def _runtime_summary(summary: dict[str, Any]) -> dict[str, Any]:
     value = summary.get("agent_runtime_summary")
     return value if isinstance(value, dict) else {}
@@ -370,8 +526,27 @@ def _sustained_summary(summary: dict[str, Any]) -> dict[str, Any]:
     return value if isinstance(value, dict) else {}
 
 
+def _multi_workload_summary(summary: dict[str, Any]) -> dict[str, Any]:
+    value = summary.get("multi_workload_sustained_summary")
+    return value if isinstance(value, dict) else {}
+
+
+def _observed_runtime_signals(multi_workload_summary: dict[str, Any]) -> dict[str, Any]:
+    value = multi_workload_summary.get("observed_runtime_signals")
+    return value if isinstance(value, dict) else {}
+
+
+def _tegrastats_timeline(summary: dict[str, Any]) -> dict[str, Any]:
+    value = summary.get("tegrastats_timeline")
+    return value if isinstance(value, dict) else {}
+
+
 def _totals(runtime_summary: dict[str, Any]) -> dict[str, Any]:
     value = runtime_summary.get("totals")
+    return value if isinstance(value, dict) else {}
+
+
+def _mapping(value: Any) -> dict[str, Any]:
     return value if isinstance(value, dict) else {}
 
 
@@ -379,6 +554,12 @@ def _non_negative_number(value: Any) -> float:
     if isinstance(value, (int, float)) and not isinstance(value, bool):
         return max(float(value), 0.0)
     return 0.0
+
+
+def _optional_non_negative_number(value: Any) -> float | None:
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return max(float(value), 0.0)
+    return None
 
 
 def _ratio(numerator: float, denominator: float) -> float:
@@ -440,6 +621,9 @@ def _scenario_mode(summary: dict[str, Any]) -> str:
     run = summary.get("run")
     if isinstance(run, dict) and isinstance(run.get("scenario_mode"), str):
         return run["scenario_mode"]
+    multi_workload_summary = _multi_workload_summary(summary)
+    if isinstance(multi_workload_summary.get("scenario_mode"), str):
+        return multi_workload_summary["scenario_mode"]
     sustained_summary = _sustained_summary(summary)
     if isinstance(sustained_summary.get("scenario_mode"), str):
         return sustained_summary["scenario_mode"]
@@ -453,6 +637,20 @@ def _policy_decision_reasons(policy_decision_log: list[dict[str, Any]]) -> dict[
         if not isinstance(reason, str) or not reason:
             reason = "unknown"
         counts[reason] = counts.get(reason, 0) + 1
+    return counts
+
+
+def _policy_decision_reasons_from_values(value: Any) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    if isinstance(value, dict):
+        for reason, count in value.items():
+            if not isinstance(reason, str) or not reason:
+                reason = "unknown"
+            counts[reason] = counts.get(reason, 0) + int(_non_negative_number(count))
+    elif isinstance(value, list):
+        for item in value:
+            reason = item if isinstance(item, str) and item else "unknown"
+            counts[reason] = counts.get(reason, 0) + 1
     return counts
 
 
@@ -473,6 +671,52 @@ def _max_total_queue_depth(queue_depth_timeline: list[dict[str, Any]]) -> float:
                 sum(_non_negative_number(value) for value in queue_depth.values()),
             )
     return max_depth
+
+
+def _workload_profiles(multi_workload_summary: dict[str, Any]) -> list[dict[str, Any]]:
+    profiles: list[dict[str, Any]] = []
+    for item in _list(multi_workload_summary.get("workload_profiles")):
+        profiles.append(
+            {
+                "agent_id": item.get("agent_id"),
+                "agent_type": item.get("agent_type"),
+                "workload_type": item.get("workload_type"),
+                "runtime_loop": item.get("runtime_loop"),
+                "ingress_profile": item.get("ingress_profile"),
+                "expected_runtime_mode": item.get("expected_runtime_mode"),
+                "preferred_device": item.get("preferred_device"),
+                "executed": _non_negative_number(item.get("executed")),
+                "dropped": _non_negative_number(item.get("dropped")),
+                "deadline_missed": _non_negative_number(item.get("deadline_missed")),
+                "fallback_used": _non_negative_number(item.get("fallback_used")),
+                "mean_latency_ms": _optional_non_negative_number(
+                    item.get("mean_latency_ms")
+                ),
+                "p95_latency_ms": _optional_non_negative_number(item.get("p95_latency_ms")),
+                "max_queue_backlog": _non_negative_number(item.get("max_queue_backlog")),
+            }
+        )
+    return profiles
+
+
+def _affected_workload_profiles(
+    workload_profiles: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    affected: list[dict[str, Any]] = []
+    for profile in workload_profiles:
+        reasons: list[str] = []
+        if profile["dropped"] > 0:
+            reasons.append("dropped_work")
+        if profile["deadline_missed"] > 0:
+            reasons.append("deadline_missed")
+        if profile["fallback_used"] > 0:
+            reasons.append("fallback_used")
+        if profile["max_queue_backlog"] > 0:
+            reasons.append("queue_backlog")
+        if not reasons:
+            continue
+        affected.append({**profile, "risk_reasons": reasons})
+    return affected
 
 
 def _list(value: Any) -> list[dict[str, Any]]:
