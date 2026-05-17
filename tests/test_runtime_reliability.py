@@ -16,6 +16,11 @@ ROOT = Path(__file__).resolve().parents[1]
 def orchestration_summary() -> dict:
     return {
         "schema_version": "inferedge-orchestration-summary-v1",
+        "run": {
+            "name": "agent_3_workload_sustained_high_load",
+            "scenario_mode": "sustained_high_load",
+            "frame_interval_ms": 5.0,
+        },
         "agent_runtime_summary": {
             "schema_version": "inferedge-orchestration-summary-v1",
             "source_contracts": {
@@ -47,12 +52,48 @@ def orchestration_summary() -> dict:
                 "overload_event_count": 14,
             },
         },
+        "sustained_runtime_summary": {
+            "schema_version": "inferedge-orchestrator-sustained-summary-v1",
+            "scenario_mode": "sustained_high_load",
+            "queue_depth_sample_count": 3,
+            "latency_sample_count": 2,
+            "max_total_queue_depth": 6,
+        },
+        "queue_depth_timeline": [
+            {
+                "cycle": 1,
+                "stage": "before_policy",
+                "queue_depth": {
+                    "vision_agent": 4,
+                    "voice_command_agent": 2,
+                    "safety_monitor_agent": 0,
+                },
+                "total_queue_depth": 6,
+            }
+        ],
+        "latency_timeline": [
+            {
+                "agent_id": "vision_agent",
+                "task_id": "task_vision_agent",
+                "latency_ms": 41.0,
+                "latency_budget_ms": 33.0,
+                "deadline_missed": True,
+            }
+        ],
         "policy_decision_log": [
             {
                 "agent_id": "vision_agent",
                 "task_id": "task_vision_agent",
                 "decision": "load_shedding",
                 "reason": "queue_backlog_threshold_exceeded",
+                "decision_reason": "queue_backlog_threshold_exceeded",
+                "total_backlog_before": 6,
+                "backlog_threshold": 3,
+                "queue_depth_snapshot": {
+                    "vision_agent": 4,
+                    "voice_command_agent": 2,
+                    "safety_monitor_agent": 0,
+                },
                 "fallback_used": True,
                 "protected_agent_id": "safety_monitor_agent",
             }
@@ -80,6 +121,14 @@ def test_compute_runtime_reliability_metrics_from_orchestration_summary():
     assert metrics["drop_rate"] == 14 / 24
     assert metrics["fallback_rate"] == 14 / 24
     assert metrics["queue_backlog_policy_decision_count"] == 1
+    assert metrics["scenario_mode"] == "sustained_high_load"
+    assert metrics["max_total_queue_depth"] == 6
+    assert metrics["queue_depth_sample_count"] == 1
+    assert metrics["latency_sample_count"] == 1
+    assert metrics["top_policy_decision_reason"] == "queue_backlog_threshold_exceeded"
+    assert metrics["policy_decision_reasons"] == {
+        "queue_backlog_threshold_exceeded": 1
+    }
     assert metrics["affected_agents"] == ["safety_monitor_agent", "vision_agent"]
 
 
@@ -100,8 +149,19 @@ def test_analyze_orchestration_summary_returns_diagnosis_report():
         "excessive_drop_rate",
         "fallback_overuse",
         "queue_backlog_risk",
+        "sustained_overload_risk",
     }
     assert report["candidate_summary"]["runtime_reliability"]["drop_rate"] == 14 / 24
+    assert (
+        report["candidate_summary"]["runtime_reliability"]["max_total_queue_depth"]
+        == 6
+    )
+    queue_evidence = next(
+        item for item in report["evidence"] if item["type"] == "queue_backlog_risk"
+    )
+    assert queue_evidence["raw_context"]["top_policy_decision_reason"] == (
+        "queue_backlog_threshold_exceeded"
+    )
 
 
 def test_cli_reason_orchestration_and_unified_reason_route(tmp_path):

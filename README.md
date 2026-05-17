@@ -193,9 +193,10 @@ python -m inferedge_aiguard.cli reason \
   --input reports/agent_orchestration_summary.json
 ```
 
-이 경로는 `policy_decision_log`, deadline miss, drop/fallback 신호를
-`guard_analysis` evidence로 변환합니다. AIGuard는 runtime reliability risk를
-설명하고, 최종 deployment decision은 계속 InferEdgeLab이 담당합니다.
+이 경로는 `policy_decision_log`, `decision_reason`, `queue_depth_timeline`,
+deadline miss, drop/fallback 신호를 `guard_analysis` evidence로 변환합니다.
+AIGuard는 runtime reliability risk를 설명하고, 최종 deployment decision은
+계속 InferEdgeLab이 담당합니다.
 
 ## Quick Examples
 

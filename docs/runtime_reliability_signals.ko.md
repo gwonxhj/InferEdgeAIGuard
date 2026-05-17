@@ -16,6 +16,9 @@ InferEdgeAIGuard는 InferEdgeOrchestrator의
 - `agent_runtime_summary.totals`
 - `policy_decision_log` 또는 `policy_decisions`
 - optional `drop_events` / `overload_events`
+- optional `sustained_runtime_summary`
+- optional `queue_depth_timeline`
+- optional `latency_timeline`
 
 이 summary는 InferEdgeOrchestrator의 3-agent scheduling demo에서 생성되며,
 Forge `agent_manifest.json`과 Runtime `result.agent` metadata를 runtime
@@ -29,9 +32,26 @@ policy evidence로 이어줍니다.
 | `excessive_drop_rate` | `drop_rate` | `>= 0.20` | `>= 0.50` | 시스템 보호를 위해 workload가 많이 drop됨 |
 | `fallback_overuse` | `fallback_rate` | `>= 0.20` | `>= 0.50` | fallback path가 과도하게 사용됨 |
 | `queue_backlog_risk` | `queue_backlog_policy_decision_count` | `>= 1` | n/a | backlog 때문에 scheduler가 개입함 |
+| `sustained_overload_risk` | `max_total_queue_depth` | `>= 3` | `>= 8` | sustained queue depth가 multi-agent overload 압력을 보여줌 |
 
 이 threshold는 local-first deterministic review signal입니다. production SLO로
 해석하지 않습니다.
+
+## Sustained Scenario Fields
+
+Orchestrator가 sustained demo telemetry를 내보내면 AIGuard는 다음 값도
+보존합니다.
+
+- `run.scenario_mode` 또는 `sustained_runtime_summary`의 `scenario_mode`
+- `sustained_runtime_summary` 또는 `queue_depth_timeline` 기반
+  `max_total_queue_depth`
+- `decision_reason`, `reason`, `decision` 기반 `policy_decision_reasons`
+- `queue_depth_sample_count`
+- `latency_sample_count`
+
+따라서 report는 workload가 drop되었다는 사실뿐 아니라, scheduler가 왜
+개입했는지와 sustained multi-agent load에서 queue depth가 얼마나 커졌는지도
+설명할 수 있습니다.
 
 ## CLI
 
@@ -64,6 +84,14 @@ python -m inferedge_aiguard.cli reason \
       "observed_value": 0.58,
       "threshold": 0.2,
       "severity": "high",
+      "status": "failed"
+    },
+    {
+      "type": "sustained_overload_risk",
+      "metric_name": "max_total_queue_depth",
+      "observed_value": 6,
+      "threshold": 3,
+      "severity": "medium",
       "status": "failed"
     }
   ]
