@@ -18,13 +18,14 @@ Expected input:
 - optional `sustained_runtime_summary`
 - optional `queue_depth_timeline`
 - optional `latency_timeline`
+- optional `multi_workload_sustained_summary`
+- optional `tegrastats_timeline`
 
-The summary is produced by InferEdgeOrchestrator's synthetic/dummy 3-agent
-scheduling demo and connects Forge `agent_manifest.json` and Runtime
-`result.agent` metadata to runtime policy evidence. AIGuard interprets the
-deterministic scheduling signals that are present in the summary; it does not
-infer real hardware bottlenecks unless those signals are provided by runtime
-telemetry.
+The summary is produced by InferEdgeOrchestrator's 3-agent scheduling and
+sustained workload demos. It connects Forge `agent_manifest.json` and Runtime
+`result.agent` metadata to runtime policy evidence. AIGuard interprets only the
+deterministic signals that are present in the summary; it does not infer real
+hardware bottlenecks unless those signals are provided by runtime telemetry.
 
 ## Evidence Mapping
 
@@ -35,6 +36,8 @@ telemetry.
 | `fallback_overuse` | `fallback_rate` | `>= 0.20` | `>= 0.50` | Fallback path is used too often |
 | `queue_backlog_risk` | `queue_backlog_policy_decision_count` | `>= 1` | n/a | Scheduler had to intervene because backlog grew |
 | `sustained_overload_risk` | `max_total_queue_depth` | `>= 3` | `>= 8` | Sustained queue depth indicates multi-agent overload pressure |
+| `profiled_workload_pressure` | `profiled_workload_risk_count` | `>= 1` | `>= 3` | Sustained workload profiles show which runtime loops are under pressure |
+| `thermal_resource_pressure` | `max_temperature_c` | `>= 70.0` | `>= 85.0` | Tegrastats indicates thermal/resource pressure during sustained execution |
 
 These thresholds are intentionally deterministic and local-first. They are
 review signals, not production SLOs.
@@ -53,6 +56,39 @@ When Orchestrator emits sustained demo telemetry, AIGuard also preserves:
 This lets the report explain not only that work was dropped, but also why the
 scheduler intervened and whether queue depth kept growing under sustained
 multi-agent load.
+
+## Multi-Workload Sustained Fields
+
+When Orchestrator emits `multi_workload_sustained_summary`, AIGuard preserves
+and reasons over:
+
+- `workload_profiles` for Vision / Voice-Command / Safety-Monitor profiles
+- `runtime_loop` such as `yolo_detection_loop`, `whisper_command_burst`, or
+  `safety_monitor_loop`
+- `ingress_profile` such as `frame_queue`, `fastapi_concurrent_request`, or
+  `periodic_monitor`
+- per-workload `dropped`, `deadline_missed`, `fallback_used`, and
+  `max_queue_backlog`
+- `observed_runtime_signals` such as executed/drop/deadline/fallback counts,
+  policy decision reasons, and max total queue depth
+
+If any workload profile shows dropped work, deadline misses, fallback usage, or
+queue backlog, AIGuard emits `profiled_workload_pressure`. This explains which
+runtime loop was affected instead of only reporting an aggregate drop or
+deadline miss rate.
+
+## Tegrastats Fields
+
+When Orchestrator includes `tegrastats_timeline.summary`, AIGuard records:
+
+- `tegrastats_sample_count`
+- `max_temperature_c`
+- `max_gpu_percent`
+- `max_ram_used_mb`
+
+`thermal_resource_pressure` is emitted only when temperature evidence is
+present. This keeps synthetic local demos compatible while allowing Jetson
+sustained runs to explain thermal/resource degradation signals.
 
 ## CLI
 
@@ -92,6 +128,22 @@ The output uses the existing diagnosis report schema:
       "metric_name": "max_total_queue_depth",
       "observed_value": 6,
       "threshold": 3,
+      "severity": "medium",
+      "status": "failed"
+    },
+    {
+      "type": "profiled_workload_pressure",
+      "metric_name": "profiled_workload_risk_count",
+      "observed_value": 2,
+      "threshold": 1,
+      "severity": "medium",
+      "status": "failed"
+    },
+    {
+      "type": "thermal_resource_pressure",
+      "metric_name": "max_temperature_c",
+      "observed_value": 76.2,
+      "threshold": 70.0,
       "severity": "medium",
       "status": "failed"
     }
