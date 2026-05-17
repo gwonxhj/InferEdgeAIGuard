@@ -15,6 +15,9 @@ Expected input:
 - `agent_runtime_summary.totals`
 - `policy_decision_log` or `policy_decisions`
 - optional `drop_events` / `overload_events`
+- optional `sustained_runtime_summary`
+- optional `queue_depth_timeline`
+- optional `latency_timeline`
 
 The summary is produced by InferEdgeOrchestrator's 3-agent scheduling demo and
 connects Forge `agent_manifest.json` and Runtime `result.agent` metadata to
@@ -28,9 +31,25 @@ runtime policy evidence.
 | `excessive_drop_rate` | `drop_rate` | `>= 0.20` | `>= 0.50` | Work is being dropped to protect the system |
 | `fallback_overuse` | `fallback_rate` | `>= 0.20` | `>= 0.50` | Fallback path is used too often |
 | `queue_backlog_risk` | `queue_backlog_policy_decision_count` | `>= 1` | n/a | Scheduler had to intervene because backlog grew |
+| `sustained_overload_risk` | `max_total_queue_depth` | `>= 3` | `>= 8` | Sustained queue depth indicates multi-agent overload pressure |
 
 These thresholds are intentionally deterministic and local-first. They are
 review signals, not production SLOs.
+
+## Sustained Scenario Fields
+
+When Orchestrator emits sustained demo telemetry, AIGuard also preserves:
+
+- `scenario_mode` from `run.scenario_mode` or `sustained_runtime_summary`
+- `max_total_queue_depth` from `sustained_runtime_summary` or
+  `queue_depth_timeline`
+- `policy_decision_reasons` from `decision_reason`, `reason`, or `decision`
+- `queue_depth_sample_count`
+- `latency_sample_count`
+
+This lets the report explain not only that work was dropped, but also why the
+scheduler intervened and whether queue depth kept growing under sustained
+multi-agent load.
 
 ## CLI
 
@@ -63,6 +82,14 @@ The output uses the existing diagnosis report schema:
       "observed_value": 0.58,
       "threshold": 0.2,
       "severity": "high",
+      "status": "failed"
+    },
+    {
+      "type": "sustained_overload_risk",
+      "metric_name": "max_total_queue_depth",
+      "observed_value": 6,
+      "threshold": 3,
+      "severity": "medium",
       "status": "failed"
     }
   ]
