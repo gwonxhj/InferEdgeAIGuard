@@ -20,9 +20,11 @@ InferEdgeAIGuard는 InferEdgeOrchestrator의
 - optional `queue_depth_timeline`
 - optional `latency_timeline`
 
-이 summary는 InferEdgeOrchestrator의 3-agent scheduling demo에서 생성되며,
-Forge `agent_manifest.json`과 Runtime `result.agent` metadata를 runtime
-policy evidence로 이어줍니다.
+이 summary는 InferEdgeOrchestrator의 synthetic/dummy 3-agent scheduling
+demo에서 생성되며, Forge `agent_manifest.json`과 Runtime `result.agent`
+metadata를 runtime policy evidence로 이어줍니다. AIGuard는 summary에
+존재하는 deterministic scheduling signal을 해석하며, 실제 hardware
+bottleneck은 runtime telemetry로 제공된 경우에만 근거로 사용합니다.
 
 ## Evidence Mapping
 
