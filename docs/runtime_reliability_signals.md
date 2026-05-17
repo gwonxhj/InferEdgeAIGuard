@@ -19,9 +19,12 @@ Expected input:
 - optional `queue_depth_timeline`
 - optional `latency_timeline`
 
-The summary is produced by InferEdgeOrchestrator's 3-agent scheduling demo and
-connects Forge `agent_manifest.json` and Runtime `result.agent` metadata to
-runtime policy evidence.
+The summary is produced by InferEdgeOrchestrator's synthetic/dummy 3-agent
+scheduling demo and connects Forge `agent_manifest.json` and Runtime
+`result.agent` metadata to runtime policy evidence. AIGuard interprets the
+deterministic scheduling signals that are present in the summary; it does not
+infer real hardware bottlenecks unless those signals are provided by runtime
+telemetry.
 
 ## Evidence Mapping
 
