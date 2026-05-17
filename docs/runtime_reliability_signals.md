@@ -70,10 +70,14 @@ and reasons over:
 - per-workload `dropped`, `deadline_missed`, `fallback_used`, and
   `max_queue_backlog`
 - `observed_runtime_signals` such as executed/drop/deadline/fallback counts,
-  policy decision reasons, and max total queue depth
+  policy decision reasons, max total queue depth, `local_profile_adapter_count`,
+  `local_profile_elapsed_ms`, and `local_profile_kinds`
 
 If any workload profile shows dropped work, deadline misses, fallback usage, or
-queue backlog, AIGuard emits `profiled_workload_pressure`. This explains which
+queue backlog, AIGuard emits `profiled_workload_pressure`. When Orchestrator
+uses lightweight local CPU profile adapters, AIGuard preserves adapter count,
+elapsed profile time, implementation, work units, and profile kinds in the raw
+context. This explains which
 runtime loop was affected instead of only reporting an aggregate drop or
 deadline miss rate.
 

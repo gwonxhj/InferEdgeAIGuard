@@ -120,8 +120,8 @@ def multi_workload_sustained_summary() -> dict:
         "schema_version": "inferedge-orchestrator-multi-workload-sustained-v1",
         "scenario_mode": "sustained_high_load",
         "evidence_scope": (
-            "local sustained workload profiles with synthetic adapters; external "
-            "YOLO/Whisper/FastAPI integrations remain optional"
+            "local sustained workload profiles with lightweight CPU profile "
+            "adapters; external YOLO/Whisper/FastAPI integrations remain optional"
         ),
         "workload_profiles": [
             {
@@ -129,6 +129,8 @@ def multi_workload_sustained_summary() -> dict:
                 "agent_type": "vision",
                 "workload_type": "realtime_vision",
                 "runtime_loop": "yolo_detection_loop",
+                "implementation": "local_profile_adapter",
+                "profile_work_units": 24000,
                 "ingress_profile": "frame_queue",
                 "expected_runtime_mode": "sustained",
                 "preferred_device": "gpu",
@@ -145,6 +147,8 @@ def multi_workload_sustained_summary() -> dict:
                 "agent_type": "voice",
                 "workload_type": "voice_command",
                 "runtime_loop": "whisper_command_burst",
+                "implementation": "local_profile_adapter",
+                "profile_work_units": 16000,
                 "ingress_profile": "fastapi_concurrent_request",
                 "expected_runtime_mode": "burst",
                 "preferred_device": "cpu",
@@ -161,6 +165,8 @@ def multi_workload_sustained_summary() -> dict:
                 "agent_type": "safety",
                 "workload_type": "telemetry_monitor",
                 "runtime_loop": "safety_monitor_loop",
+                "implementation": "local_profile_adapter",
+                "profile_work_units": 6000,
                 "ingress_profile": "periodic_monitor",
                 "expected_runtime_mode": "periodic",
                 "preferred_device": "cpu",
@@ -185,6 +191,13 @@ def multi_workload_sustained_summary() -> dict:
                 "fallback_activated_due_to_overload_risk",
             ],
             "tegrastats_sample_count": 2,
+            "local_profile_adapter_count": 30,
+            "local_profile_elapsed_ms": 124.5,
+            "local_profile_kinds": [
+                "safety_monitor_loop",
+                "vision_frame_loop",
+                "voice_command_burst",
+            ],
         },
     }
     summary["tegrastats_timeline"] = {
@@ -242,12 +255,22 @@ def test_multi_workload_sustained_summary_adds_profile_and_thermal_metrics():
     assert metrics["max_total_queue_depth"] == 11
     assert metrics["workload_profile_count"] == 3
     assert metrics["profiled_workload_risk_count"] == 2
+    assert metrics["local_profile_adapter_count"] == 30
+    assert metrics["local_profile_elapsed_ms"] == 124.5
+    assert metrics["local_profile_kinds"] == [
+        "safety_monitor_loop",
+        "vision_frame_loop",
+        "voice_command_burst",
+    ]
     assert metrics["tegrastats_sample_count"] == 2
     assert metrics["max_temperature_c"] == 76.2
     assert metrics["max_gpu_percent"] == 91
     assert {
         item["runtime_loop"] for item in metrics["affected_workload_profiles"]
     } == {"yolo_detection_loop", "whisper_command_burst"}
+    assert {
+        item["implementation"] for item in metrics["affected_workload_profiles"]
+    } == {"local_profile_adapter"}
 
 
 def test_analyze_orchestration_summary_returns_diagnosis_report():
@@ -298,6 +321,13 @@ def test_analyze_multi_workload_sustained_summary_adds_runtime_evidence():
         item["agent_id"]
         for item in profile_evidence["raw_context"]["affected_workload_profiles"]
     } == {"vision_agent", "voice_command_agent"}
+    assert profile_evidence["raw_context"]["local_profile_adapter_count"] == 30
+    assert profile_evidence["raw_context"]["local_profile_elapsed_ms"] == 124.5
+    assert profile_evidence["raw_context"]["local_profile_kinds"] == [
+        "safety_monitor_loop",
+        "vision_frame_loop",
+        "voice_command_burst",
+    ]
 
     thermal_evidence = next(
         item for item in report["evidence"] if item["type"] == "thermal_resource_pressure"
