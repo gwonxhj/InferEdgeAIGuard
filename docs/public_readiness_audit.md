@@ -44,7 +44,7 @@ This verdict covers the repository contents and documentation posture. GitHub vi
 ## Test Results
 
 - `python3 -m pytest -q`: not available in the system Python environment because `pytest` is not installed.
-- Available pytest environment with `PYTHONPATH=.`: 110 passed, 1 warning.
+- Available pytest environment with `PYTHONPATH=.`: 139 passed.
 
 ## Public Release Checklist
 
