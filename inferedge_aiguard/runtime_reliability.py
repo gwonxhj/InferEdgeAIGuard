@@ -170,6 +170,15 @@ def compute_runtime_reliability_metrics(summary: dict[str, Any]) -> dict[str, An
         "affected_agents": sorted(_affected_agents(summary)),
         "workload_profile_count": len(workload_profiles),
         "profiled_workload_risk_count": len(affected_workload_profiles),
+        "local_profile_adapter_count": _non_negative_number(
+            observed_signals.get("local_profile_adapter_count")
+        ),
+        "local_profile_elapsed_ms": _non_negative_number(
+            observed_signals.get("local_profile_elapsed_ms")
+        ),
+        "local_profile_kinds": _string_list(
+            observed_signals.get("local_profile_kinds")
+        ),
         "workload_profiles": workload_profiles,
         "affected_workload_profiles": affected_workload_profiles,
         "tegrastats_sample_count": _non_negative_number(
@@ -461,6 +470,9 @@ def _profiled_workload_evidence(
             "evidence_scope": metrics.get("evidence_scope"),
             "workload_profiles": metrics.get("workload_profiles", []),
             "affected_workload_profiles": metrics.get("affected_workload_profiles", []),
+            "local_profile_adapter_count": metrics.get("local_profile_adapter_count"),
+            "local_profile_elapsed_ms": metrics.get("local_profile_elapsed_ms"),
+            "local_profile_kinds": metrics.get("local_profile_kinds", []),
         },
     )
 
@@ -534,6 +546,12 @@ def _multi_workload_summary(summary: dict[str, Any]) -> dict[str, Any]:
 def _observed_runtime_signals(multi_workload_summary: dict[str, Any]) -> dict[str, Any]:
     value = multi_workload_summary.get("observed_runtime_signals")
     return value if isinstance(value, dict) else {}
+
+
+def _string_list(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [item for item in value if isinstance(item, str) and item]
 
 
 def _tegrastats_timeline(summary: dict[str, Any]) -> dict[str, Any]:
@@ -682,6 +700,8 @@ def _workload_profiles(multi_workload_summary: dict[str, Any]) -> list[dict[str,
                 "agent_type": item.get("agent_type"),
                 "workload_type": item.get("workload_type"),
                 "runtime_loop": item.get("runtime_loop"),
+                "implementation": item.get("implementation"),
+                "profile_work_units": item.get("profile_work_units"),
                 "ingress_profile": item.get("ingress_profile"),
                 "expected_runtime_mode": item.get("expected_runtime_mode"),
                 "preferred_device": item.get("preferred_device"),

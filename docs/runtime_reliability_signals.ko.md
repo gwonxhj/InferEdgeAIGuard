@@ -72,10 +72,14 @@ Orchestrator가 `multi_workload_sustained_summary`를 내보내면 AIGuard는
 - workload별 `dropped`, `deadline_missed`, `fallback_used`,
   `max_queue_backlog`
 - executed/drop/deadline/fallback count, policy decision reason, max total
-  queue depth 같은 `observed_runtime_signals`
+  queue depth, `local_profile_adapter_count`, `local_profile_elapsed_ms`,
+  `local_profile_kinds` 같은 `observed_runtime_signals`
 
 workload profile 중 drop, deadline miss, fallback, queue backlog가 관측되면
-AIGuard는 `profiled_workload_pressure` evidence를 생성합니다. 이를 통해
+AIGuard는 `profiled_workload_pressure` evidence를 생성합니다. Orchestrator가
+lightweight local CPU profile adapter를 사용하면 AIGuard는 adapter count,
+elapsed profile time, implementation, work units, profile kinds를 raw context에
+보존합니다. 이를 통해
 aggregate drop rate만 보여주는 대신 어떤 runtime loop가 영향을 받았는지
 설명할 수 있습니다.
 
