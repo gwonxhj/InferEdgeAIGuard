@@ -5,7 +5,9 @@ from pathlib import Path
 
 from inferedge_aiguard.runtime_reliability import (
     analyze_orchestration_summary,
+    analyze_runtime_result,
     compute_runtime_reliability_metrics,
+    compute_runtime_operation_metrics,
 )
 from inferedge_aiguard.schema import validate_diagnosis_report
 
@@ -226,6 +228,45 @@ def multi_workload_sustained_summary() -> dict:
     return summary
 
 
+def runtime_result_with_operation_signals() -> dict:
+    return {
+        "schema_version": "inferedge-runtime-result-v1",
+        "model": "models/yolov8n.onnx",
+        "engine": "tensorrt",
+        "device": "jetson",
+        "mean_ms": 72.5,
+        "runtime_health_snapshot": {
+            "engine_available": False,
+            "engine_status_message": "TensorRT engine load failed",
+            "latency_budget_ms": 50.0,
+            "latency_budget_exceeded": True,
+            "deadline_missed": True,
+            "tegrastats_status": "not_collected",
+            "tegrastats_sample_count": 0,
+            "thermal_memory_evidence_available": False,
+        },
+        "runtime_error_classification": {
+            "category": "runtime_execution_skipped",
+            "severity": "high",
+            "observed_mean_ms": 72.5,
+            "timeout_budget_ms": 50.0,
+            "retry_hint": "check_backend_availability",
+        },
+        "runtime_events": [
+            {
+                "schema_version": "inferedge-runtime-event-v1",
+                "event_index": 0,
+                "event_type": "runtime_health_snapshot",
+                "latency_budget_ms": 50.0,
+                "latency_budget_exceeded": True,
+                "deadline_missed": True,
+                "retry_hint": "check_backend_availability",
+                "tegrastats_sample_count": 0,
+            }
+        ],
+    }
+
+
 def test_compute_runtime_reliability_metrics_from_orchestration_summary():
     metrics = compute_runtime_reliability_metrics(orchestration_summary())
 
@@ -242,6 +283,22 @@ def test_compute_runtime_reliability_metrics_from_orchestration_summary():
         "queue_backlog_threshold_exceeded": 1
     }
     assert metrics["affected_agents"] == ["safety_monitor_agent", "vision_agent"]
+
+
+def test_compute_runtime_operation_metrics_from_runtime_result():
+    metrics = compute_runtime_operation_metrics(runtime_result_with_operation_signals())
+
+    assert metrics["schema_version"] == "inferedge-runtime-result-v1"
+    assert metrics["engine_available"] is False
+    assert metrics["latency_budget_exceeded"] is True
+    assert metrics["deadline_missed"] is True
+    assert metrics["latency_budget_ms"] == 50.0
+    assert metrics["observed_mean_ms"] == 72.5
+    assert metrics["runtime_error_category"] == "runtime_execution_skipped"
+    assert metrics["runtime_error_severity"] == "high"
+    assert metrics["retry_hint"] == "check_backend_availability"
+    assert metrics["thermal_memory_evidence_available"] is False
+    assert metrics["runtime_event_count"] == 1
 
 
 def test_multi_workload_sustained_summary_adds_profile_and_thermal_metrics():
@@ -340,6 +397,55 @@ def test_analyze_multi_workload_sustained_summary_adds_runtime_evidence():
     )
 
 
+def test_analyze_runtime_result_returns_operation_evidence():
+    report = analyze_runtime_result(runtime_result_with_operation_signals())
+
+    validate_diagnosis_report(report)
+    assert report["schema_version"] == "inferedge-aiguard-diagnosis-v1"
+    assert report["guard_verdict"] == "blocked"
+    assert report["severity"] == "high"
+    assert report["source"]["runtime_result_schema_version"] == (
+        "inferedge-runtime-result-v1"
+    )
+    evidence_types = {item["type"] for item in report["evidence"]}
+    assert evidence_types == {
+        "runtime_backend_unavailable",
+        "runtime_latency_budget_overrun",
+        "runtime_error_classification",
+        "runtime_thermal_memory_evidence_missing",
+    }
+    latency_evidence = next(
+        item
+        for item in report["evidence"]
+        if item["type"] == "runtime_latency_budget_overrun"
+    )
+    assert latency_evidence["observed_value"] == 1
+    assert latency_evidence["threshold"] == 50.0
+    assert latency_evidence["delta"] == 22.5
+    assert (
+        report["candidate_summary"]["runtime_operation"]["runtime_event_count"]
+        == 1
+    )
+
+
+def test_orchestration_summary_can_include_runtime_result_operation_evidence():
+    summary = orchestration_summary()
+    summary["runtime_results"] = [runtime_result_with_operation_signals()]
+
+    report = analyze_orchestration_summary(summary)
+
+    validate_diagnosis_report(report)
+    evidence_types = {item["type"] for item in report["evidence"]}
+    assert "runtime_backend_unavailable" in evidence_types
+    assert "runtime_latency_budget_overrun" in evidence_types
+    assert (
+        report["candidate_summary"]["runtime_operation_results"][0][
+            "runtime_error_category"
+        ]
+        == "runtime_execution_skipped"
+    )
+
+
 def test_cli_reason_orchestration_and_unified_reason_route(tmp_path):
     input_path = tmp_path / "orchestration_summary.json"
     input_path.write_text(json.dumps(orchestration_summary()), encoding="utf-8")
@@ -376,3 +482,44 @@ def test_cli_reason_orchestration_and_unified_reason_route(tmp_path):
         text=True,
     )
     assert "fallback_overuse" in unified.stdout
+
+
+def test_cli_reason_runtime_and_unified_runtime_route(tmp_path):
+    input_path = tmp_path / "runtime_result.json"
+    input_path.write_text(
+        json.dumps(runtime_result_with_operation_signals()),
+        encoding="utf-8",
+    )
+
+    explicit = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "reason-runtime",
+            "--input",
+            str(input_path),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert "runtime_backend_unavailable" in explicit.stdout
+    assert "guard_verdict: blocked" in explicit.stdout
+
+    unified = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "reason",
+            "--input",
+            str(input_path),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert "runtime_latency_budget_overrun" in unified.stdout

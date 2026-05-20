@@ -1,9 +1,10 @@
 # Runtime Reliability Signals
 
 InferEdgeAIGuard는 InferEdgeOrchestrator의
-`inferedge-orchestration-summary-v1` 결과를 읽고 scheduling telemetry를
-기존 `inferedge-aiguard-diagnosis-v1` guard analysis contract로 변환할 수
-있습니다.
+`inferedge-orchestration-summary-v1` 결과와 InferEdge Runtime의 additive
+`inferedge-runtime-result-v1` operation evidence 필드를 읽고, deterministic
+signal을 기존 `inferedge-aiguard-diagnosis-v1` guard analysis contract로
+변환할 수 있습니다.
 
 이 경로는 optional evidence입니다. AIGuard는 deployment decision owner가
 아니며, 최종 deployment decision은 계속 InferEdgeLab이 담당합니다.
@@ -21,12 +22,23 @@ InferEdgeAIGuard는 InferEdgeOrchestrator의
 - optional `latency_timeline`
 - optional `multi_workload_sustained_summary`
 - optional `tegrastats_timeline`
+- optional embedded `runtime_result` / `runtime_results`
 
 이 summary는 InferEdgeOrchestrator의 3-agent scheduling 및 sustained
 workload demo에서 생성되며, Forge `agent_manifest.json`과 Runtime
 `result.agent` metadata를 runtime policy evidence로 이어줍니다. AIGuard는
 summary에 존재하는 deterministic signal만 해석하며, 실제 hardware
 bottleneck은 runtime telemetry로 제공된 경우에만 근거로 사용합니다.
+
+Runtime result도 아래 필드가 있으면 직접 입력으로 분석할 수 있습니다.
+
+- `schema_version: inferedge-runtime-result-v1`
+- optional `runtime_health_snapshot`
+- optional `runtime_error_classification`
+- optional `runtime_events`
+
+AIGuard는 이 필드를 Runtime이 제공한 operation evidence로만 해석합니다.
+누락된 log를 바탕으로 root cause를 추측하지 않습니다.
 
 ## Evidence Mapping
 
@@ -39,6 +51,10 @@ bottleneck은 runtime telemetry로 제공된 경우에만 근거로 사용합니
 | `sustained_overload_risk` | `max_total_queue_depth` | `>= 3` | `>= 8` | sustained queue depth가 multi-agent overload 압력을 보여줌 |
 | `profiled_workload_pressure` | `profiled_workload_risk_count` | `>= 1` | `>= 3` | sustained workload profile 중 어떤 runtime loop가 압력을 받는지 표시 |
 | `thermal_resource_pressure` | `max_temperature_c` | `>= 70.0` | `>= 85.0` | sustained 실행 중 tegrastats가 thermal/resource pressure를 보여줌 |
+| `runtime_backend_unavailable` | `engine_available` | `0` | n/a | Runtime이 backend/engine availability를 확인하지 못함 |
+| `runtime_latency_budget_overrun` | `latency_budget_exceeded` | `true` | n/a | Runtime이 latency budget을 초과했거나 deadline을 놓침 |
+| `runtime_error_classification` | `runtime_error_severity` | present | n/a | Runtime이 retry hint와 함께 execution warning/error를 분류함 |
+| `runtime_thermal_memory_evidence_missing` | `thermal_memory_evidence_available` | `false` on Jetson | n/a | Jetson 결과에 sustained review용 thermal/memory context가 없음 |
 
 이 threshold는 local-first deterministic review signal입니다. production SLO로
 해석하지 않습니다.
@@ -97,11 +113,40 @@ Orchestrator가 `tegrastats_timeline.summary`를 포함하면 AIGuard는 다음 
 따라서 synthetic local demo와 호환성을 유지하면서도 Jetson sustained run에서는
 thermal/resource degradation signal을 설명할 수 있습니다.
 
+## Runtime Operation Fields
+
+Runtime이 additive health/error/event 필드를 내보내면 AIGuard는 다음 값을
+보존하고 해석합니다.
+
+- `runtime_health_snapshot.engine_available`
+- `runtime_health_snapshot.latency_budget_ms`
+- `runtime_health_snapshot.latency_budget_exceeded`
+- `runtime_health_snapshot.deadline_missed`
+- `runtime_health_snapshot.thermal_memory_evidence_available`
+- `runtime_error_classification.category`
+- `runtime_error_classification.severity`
+- `runtime_error_classification.retry_hint`
+- `runtime_events[].latency_budget_exceeded`
+- `runtime_events[].deadline_missed`
+
+이 필드는 operation evidence로 해석됩니다. 예를 들어 Runtime result에
+`engine_available: false`, `latency_budget_exceeded: true`, `retry_hint`가
+있으면 AIGuard는 `runtime_backend_unavailable`,
+`runtime_latency_budget_overrun`, `runtime_error_classification` 같은
+deterministic guard evidence를 생성합니다.
+
 ## CLI
 
 ```bash
 python -m inferedge_aiguard.cli reason-orchestration \
   --input reports/agent_orchestration_summary.json
+```
+
+Runtime operation result도 직접 분석할 수 있습니다.
+
+```bash
+python -m inferedge_aiguard.cli reason-runtime \
+  --input reports/runtime_result.json
 ```
 
 unified `reason` 명령도 Orchestrator summary를 자동 라우팅합니다.
@@ -110,6 +155,9 @@ unified `reason` 명령도 Orchestrator summary를 자동 라우팅합니다.
 python -m inferedge_aiguard.cli reason \
   --input reports/agent_orchestration_summary.json
 ```
+
+`schema_version: inferedge-runtime-result-v1` 또는 Runtime operation 필드가
+있는 Runtime result도 unified `reason` 명령이 자동 라우팅합니다.
 
 ## 출력
 

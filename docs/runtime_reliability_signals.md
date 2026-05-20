@@ -1,8 +1,10 @@
 # Runtime Reliability Signals
 
 InferEdgeAIGuard can read InferEdgeOrchestrator's
-`inferedge-orchestration-summary-v1` output and convert scheduling telemetry
-into the existing `inferedge-aiguard-diagnosis-v1` guard analysis contract.
+`inferedge-orchestration-summary-v1` output and InferEdge Runtime's additive
+`inferedge-runtime-result-v1` operation evidence fields, then convert the
+deterministic signals into the existing `inferedge-aiguard-diagnosis-v1` guard
+analysis contract.
 
 This is an optional evidence path. AIGuard does not become the deployment
 decision owner; InferEdgeLab still owns the final deployment decision.
@@ -20,12 +22,23 @@ Expected input:
 - optional `latency_timeline`
 - optional `multi_workload_sustained_summary`
 - optional `tegrastats_timeline`
+- optional embedded `runtime_result` / `runtime_results`
 
 The summary is produced by InferEdgeOrchestrator's 3-agent scheduling and
 sustained workload demos. It connects Forge `agent_manifest.json` and Runtime
 `result.agent` metadata to runtime policy evidence. AIGuard interprets only the
 deterministic signals that are present in the summary; it does not infer real
 hardware bottlenecks unless those signals are provided by runtime telemetry.
+
+Runtime result input is also supported directly when the JSON includes:
+
+- `schema_version: inferedge-runtime-result-v1`
+- optional `runtime_health_snapshot`
+- optional `runtime_error_classification`
+- optional `runtime_events`
+
+AIGuard treats these fields as Runtime-provided operation evidence. It does not
+guess a root cause from missing logs.
 
 ## Evidence Mapping
 
@@ -38,6 +51,10 @@ hardware bottlenecks unless those signals are provided by runtime telemetry.
 | `sustained_overload_risk` | `max_total_queue_depth` | `>= 3` | `>= 8` | Sustained queue depth indicates multi-agent overload pressure |
 | `profiled_workload_pressure` | `profiled_workload_risk_count` | `>= 1` | `>= 3` | Sustained workload profiles show which runtime loops are under pressure |
 | `thermal_resource_pressure` | `max_temperature_c` | `>= 70.0` | `>= 85.0` | Tegrastats indicates thermal/resource pressure during sustained execution |
+| `runtime_backend_unavailable` | `engine_available` | `0` | n/a | Runtime could not confirm backend/engine availability |
+| `runtime_latency_budget_overrun` | `latency_budget_exceeded` | `true` | n/a | Runtime exceeded the latency budget or missed a deadline |
+| `runtime_error_classification` | `runtime_error_severity` | present | n/a | Runtime classified an execution warning/error with a retry hint |
+| `runtime_thermal_memory_evidence_missing` | `thermal_memory_evidence_available` | `false` on Jetson | n/a | Jetson result lacks thermal/memory context for sustained review |
 
 These thresholds are intentionally deterministic and local-first. They are
 review signals, not production SLOs.
@@ -94,11 +111,40 @@ When Orchestrator includes `tegrastats_timeline.summary`, AIGuard records:
 present. This keeps synthetic local demos compatible while allowing Jetson
 sustained runs to explain thermal/resource degradation signals.
 
+## Runtime Operation Fields
+
+When Runtime emits additive health/error/event fields, AIGuard preserves and
+reasons over:
+
+- `runtime_health_snapshot.engine_available`
+- `runtime_health_snapshot.latency_budget_ms`
+- `runtime_health_snapshot.latency_budget_exceeded`
+- `runtime_health_snapshot.deadline_missed`
+- `runtime_health_snapshot.thermal_memory_evidence_available`
+- `runtime_error_classification.category`
+- `runtime_error_classification.severity`
+- `runtime_error_classification.retry_hint`
+- `runtime_events[].latency_budget_exceeded`
+- `runtime_events[].deadline_missed`
+
+These fields are interpreted as operation evidence. For example, a Runtime
+result with `engine_available: false`, `latency_budget_exceeded: true`, and a
+`retry_hint` produces deterministic guard evidence such as
+`runtime_backend_unavailable`, `runtime_latency_budget_overrun`, and
+`runtime_error_classification`.
+
 ## CLI
 
 ```bash
 python -m inferedge_aiguard.cli reason-orchestration \
   --input reports/agent_orchestration_summary.json
+```
+
+Runtime operation results can be analyzed directly:
+
+```bash
+python -m inferedge_aiguard.cli reason-runtime \
+  --input reports/runtime_result.json
 ```
 
 The unified `reason` command also auto-routes Orchestrator summaries:
@@ -107,6 +153,9 @@ The unified `reason` command also auto-routes Orchestrator summaries:
 python -m inferedge_aiguard.cli reason \
   --input reports/agent_orchestration_summary.json
 ```
+
+It also auto-routes Runtime results that include `schema_version:
+inferedge-runtime-result-v1` or the additive Runtime operation fields.
 
 ## Output
 

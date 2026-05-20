@@ -14,6 +14,7 @@ from .diagnosis import build_diagnosis_report, build_evidence_item
 
 
 ORCHESTRATION_SCHEMA_VERSION = "inferedge-orchestration-summary-v1"
+RUNTIME_RESULT_SCHEMA_VERSION = "inferedge-runtime-result-v1"
 
 DEFAULT_RUNTIME_RELIABILITY_THRESHOLDS = {
     "deadline_miss_rate_review": 0.05,
@@ -29,6 +30,10 @@ DEFAULT_RUNTIME_RELIABILITY_THRESHOLDS = {
     "profiled_workload_risk_count_blocked": 3,
     "thermal_pressure_temperature_c_review": 70.0,
     "thermal_pressure_temperature_c_blocked": 85.0,
+    "runtime_latency_budget_overrun_review": 1,
+    "runtime_deadline_missed_review": 1,
+    "runtime_backend_unavailable_review": 1,
+    "runtime_error_severity_review": 1,
 }
 
 
@@ -44,6 +49,10 @@ def analyze_orchestration_summary(
     runtime_summary = _runtime_summary(summary)
     totals = _totals(runtime_summary)
     metrics = compute_runtime_reliability_metrics(summary)
+    runtime_operation_metrics = [
+        compute_runtime_operation_metrics(runtime_result)
+        for runtime_result in _runtime_results(summary)
+    ]
 
     evidence = [
         _deadline_miss_evidence(metrics, totals, policy),
@@ -52,6 +61,8 @@ def analyze_orchestration_summary(
         _queue_backlog_evidence(metrics, totals, policy),
         _sustained_overload_evidence(metrics, totals, policy),
     ]
+    for runtime_metrics in runtime_operation_metrics:
+        evidence.extend(_runtime_operation_evidence(runtime_metrics, policy))
     workload_evidence = _profiled_workload_evidence(metrics, totals, policy)
     if workload_evidence is not None:
         evidence.append(workload_evidence)
@@ -76,6 +87,44 @@ def analyze_orchestration_summary(
             "agents": runtime_summary.get("agents", {}),
             "totals": totals,
             "runtime_reliability": metrics,
+            "runtime_operation_results": runtime_operation_metrics,
+        },
+    )
+
+
+def analyze_runtime_result(
+    runtime_result: dict[str, Any],
+    *,
+    thresholds: dict[str, float] | None = None,
+    source: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Build guard_analysis from a Runtime result JSON object.
+
+    This consumes additive Runtime health/error/event fields. It is intentionally
+    separate from Lab's final deployment decision and only produces deterministic
+    runtime operation warning evidence.
+    """
+
+    policy = {**DEFAULT_RUNTIME_RELIABILITY_THRESHOLDS, **(thresholds or {})}
+    metrics = compute_runtime_operation_metrics(runtime_result)
+    evidence = _runtime_operation_evidence(metrics, policy)
+
+    return build_diagnosis_report(
+        evidence=evidence,
+        source={
+            "runtime_result_schema_version": runtime_result.get("schema_version"),
+            "runtime_operation_evidence": True,
+            **(source or {}),
+        },
+        confidence=_confidence_from_evidence(evidence),
+        primary_reason=_primary_reason(evidence),
+        thresholds=policy,
+        candidate_summary={
+            "schema_version": runtime_result.get("schema_version"),
+            "model": runtime_result.get("model"),
+            "engine": runtime_result.get("engine"),
+            "device": runtime_result.get("device"),
+            "runtime_operation": metrics,
         },
     )
 
@@ -193,6 +242,87 @@ def compute_runtime_reliability_metrics(summary: dict[str, Any]) -> dict[str, An
         "max_ram_used_mb": _optional_non_negative_number(
             tegrastats_summary.get("max_ram_used_mb")
         ),
+    }
+
+
+def compute_runtime_operation_metrics(runtime_result: dict[str, Any]) -> dict[str, Any]:
+    """Compute deterministic operation metrics from a Runtime result JSON object."""
+
+    health = _runtime_health_snapshot(runtime_result)
+    error = _runtime_error_classification(runtime_result)
+    events = _runtime_events(runtime_result)
+    latency_budget_ms = _first_number(
+        health.get("latency_budget_ms"),
+        runtime_result.get("latency_budget_ms"),
+        *[event.get("latency_budget_ms") for event in events],
+    )
+    observed_mean_ms = _first_number(
+        error.get("observed_mean_ms"),
+        runtime_result.get("mean_ms"),
+        health.get("observed_mean_ms"),
+    )
+    latency_budget_exceeded = (
+        _bool_value(health.get("latency_budget_exceeded"))
+        or any(_bool_value(event.get("latency_budget_exceeded")) for event in events)
+    )
+    deadline_missed = (
+        _bool_value(health.get("deadline_missed"))
+        or any(_bool_value(event.get("deadline_missed")) for event in events)
+    )
+    retry_hint = _first_string(
+        error.get("retry_hint"),
+        *[event.get("retry_hint") for event in events],
+    )
+    error_severity = _first_string(
+        error.get("severity"),
+        error.get("runtime_error_severity"),
+        *[event.get("severity") for event in events],
+    )
+    engine_available = _optional_bool(health.get("engine_available"))
+    thermal_memory_evidence_available = _optional_bool(
+        health.get("thermal_memory_evidence_available")
+    )
+    tegrastats_sample_count = max(
+        _non_negative_number(health.get("tegrastats_sample_count")),
+        *[
+            _non_negative_number(event.get("tegrastats_sample_count"))
+            for event in events
+        ],
+        0.0,
+    )
+    return {
+        "schema_version": runtime_result.get("schema_version"),
+        "model": runtime_result.get("model"),
+        "engine": runtime_result.get("engine"),
+        "device": runtime_result.get("device"),
+        "execution_status": _first_string(
+            runtime_result.get("execution_status"),
+            health.get("execution_status"),
+            error.get("execution_status"),
+        ),
+        "engine_available": engine_available,
+        "engine_status_message": health.get("engine_status_message"),
+        "latency_budget_ms": latency_budget_ms,
+        "observed_mean_ms": observed_mean_ms,
+        "latency_budget_exceeded": latency_budget_exceeded,
+        "deadline_missed": deadline_missed,
+        "runtime_error_category": _first_string(
+            error.get("category"),
+            error.get("error_category"),
+            error.get("classification"),
+        ),
+        "runtime_error_severity": error_severity,
+        "retry_hint": retry_hint,
+        "timeout_budget_ms": _first_number(
+            error.get("timeout_budget_ms"),
+            error.get("latency_budget_ms"),
+            latency_budget_ms,
+        ),
+        "tegrastats_status": health.get("tegrastats_status"),
+        "tegrastats_sample_count": tegrastats_sample_count,
+        "thermal_memory_evidence_available": thermal_memory_evidence_available,
+        "runtime_event_count": len(events),
+        "runtime_events": events,
     }
 
 
@@ -528,6 +658,197 @@ def _thermal_pressure_evidence(
     )
 
 
+def _runtime_operation_evidence(
+    metrics: dict[str, Any],
+    thresholds: dict[str, float],
+) -> list[dict[str, Any]]:
+    evidence: list[dict[str, Any]] = []
+
+    if metrics.get("engine_available") is False:
+        evidence.append(_runtime_backend_unavailable_evidence(metrics, thresholds))
+
+    if metrics.get("latency_budget_exceeded") or metrics.get("deadline_missed"):
+        evidence.append(_runtime_latency_budget_evidence(metrics, thresholds))
+
+    if metrics.get("runtime_error_category") or metrics.get("retry_hint"):
+        evidence.append(_runtime_error_classification_evidence(metrics, thresholds))
+
+    if (
+        metrics.get("device") == "jetson"
+        and metrics.get("thermal_memory_evidence_available") is False
+    ):
+        evidence.append(_runtime_thermal_evidence_gap(metrics))
+
+    if not evidence:
+        evidence.append(_runtime_operation_pass_evidence(metrics))
+    return evidence
+
+
+def _runtime_backend_unavailable_evidence(
+    metrics: dict[str, Any],
+    thresholds: dict[str, float],
+) -> dict[str, Any]:
+    return build_evidence_item(
+        evidence_type="runtime_backend_unavailable",
+        metric_name="engine_available",
+        observed_value=0,
+        baseline_value=None,
+        threshold=thresholds["runtime_backend_unavailable_review"],
+        delta=None,
+        delta_pct=None,
+        increase_factor=None,
+        severity="high",
+        status="failed",
+        why_it_matters=(
+            "A Runtime result that cannot confirm backend availability cannot be "
+            "treated as reliable device execution evidence."
+        ),
+        suspected_causes=[
+            "backend_runtime_unavailable",
+            "runtime_artifact_or_engine_load_failure",
+            "device_environment_mismatch",
+        ],
+        recommendation=(
+            "Check backend installation, runtime artifact path, engine load logs, "
+            "and device target before using this result as deployment evidence."
+        ),
+        raw_context={"runtime_operation": metrics},
+    )
+
+
+def _runtime_latency_budget_evidence(
+    metrics: dict[str, Any],
+    thresholds: dict[str, float],
+) -> dict[str, Any]:
+    deadline_missed = bool(metrics.get("deadline_missed"))
+    latency_budget_exceeded = bool(metrics.get("latency_budget_exceeded"))
+    severity = "medium"
+    if deadline_missed and latency_budget_exceeded:
+        severity = "high"
+    observed = metrics.get("observed_mean_ms")
+    threshold = metrics.get("latency_budget_ms")
+    return build_evidence_item(
+        evidence_type="runtime_latency_budget_overrun",
+        metric_name="latency_budget_exceeded",
+        observed_value=1 if latency_budget_exceeded else 0,
+        baseline_value=None,
+        threshold=threshold
+        if threshold is not None
+        else thresholds["runtime_latency_budget_overrun_review"],
+        delta=(observed - threshold)
+        if isinstance(observed, (int, float)) and isinstance(threshold, (int, float))
+        else None,
+        delta_pct=_ratio(observed - threshold, threshold)
+        if isinstance(observed, (int, float))
+        and isinstance(threshold, (int, float))
+        and threshold > 0
+        else None,
+        increase_factor=None,
+        severity=severity,
+        status="failed",
+        why_it_matters=(
+            "Latency budget overrun or deadline miss means the runtime evidence "
+            "does not satisfy the timing contract expected by the edge workload."
+        ),
+        suspected_causes=[
+            "runtime_latency_spike",
+            "insufficient_latency_budget",
+            "device_resource_contention",
+        ],
+        recommendation=(
+            "Review latency_budget_ms, deadline_missed runtime events, worker load, "
+            "and fallback policy before deployment."
+        ),
+        raw_context={"runtime_operation": metrics},
+    )
+
+
+def _runtime_error_classification_evidence(
+    metrics: dict[str, Any],
+    thresholds: dict[str, float],
+) -> dict[str, Any]:
+    raw_severity = str(metrics.get("runtime_error_severity") or "").lower()
+    severity = "high" if raw_severity in {"high", "critical"} else "medium"
+    return build_evidence_item(
+        evidence_type="runtime_error_classification",
+        metric_name="runtime_error_severity",
+        observed_value=metrics.get("runtime_error_severity") or "unknown",
+        baseline_value=None,
+        threshold=thresholds["runtime_error_severity_review"],
+        delta=None,
+        delta_pct=None,
+        increase_factor=None,
+        severity=severity,
+        status="failed",
+        why_it_matters=(
+            "Runtime classified the execution path as needing operator attention. "
+            "AIGuard preserves this deterministic warning instead of guessing a "
+            "root cause."
+        ),
+        suspected_causes=[
+            cause
+            for cause in [
+                metrics.get("runtime_error_category"),
+                metrics.get("retry_hint"),
+            ]
+            if isinstance(cause, str) and cause
+        ],
+        recommendation=(
+            f"Follow Runtime retry hint: {metrics.get('retry_hint')}."
+            if metrics.get("retry_hint")
+            else "Inspect Runtime error classification and event log before deployment."
+        ),
+        raw_context={"runtime_operation": metrics},
+    )
+
+
+def _runtime_thermal_evidence_gap(metrics: dict[str, Any]) -> dict[str, Any]:
+    return build_evidence_item(
+        evidence_type="runtime_thermal_memory_evidence_missing",
+        metric_name="thermal_memory_evidence_available",
+        observed_value=0,
+        baseline_value=None,
+        threshold=1,
+        delta=None,
+        delta_pct=None,
+        increase_factor=None,
+        severity="medium",
+        status="warning",
+        why_it_matters=(
+            "Jetson runtime evidence without thermal or memory context is weaker "
+            "for sustained deployment review."
+        ),
+        suspected_causes=["tegrastats_not_collected", "runtime_telemetry_gap"],
+        recommendation=(
+            "Collect tegrastats or runtime health telemetry for sustained Jetson "
+            "validation when possible."
+        ),
+        raw_context={"runtime_operation": metrics},
+    )
+
+
+def _runtime_operation_pass_evidence(metrics: dict[str, Any]) -> dict[str, Any]:
+    return build_evidence_item(
+        evidence_type="runtime_operation_health",
+        metric_name="runtime_operation_signal_count",
+        observed_value=0,
+        baseline_value=None,
+        threshold=0,
+        delta=None,
+        delta_pct=None,
+        increase_factor=None,
+        severity="low",
+        status="passed",
+        why_it_matters=(
+            "Runtime operation health fields were present without latency, "
+            "deadline, backend, or classified error risk signals."
+        ),
+        suspected_causes=[],
+        recommendation="Runtime operation evidence is within configured thresholds.",
+        raw_context={"runtime_operation": metrics},
+    )
+
+
 def _runtime_summary(summary: dict[str, Any]) -> dict[str, Any]:
     value = summary.get("agent_runtime_summary")
     return value if isinstance(value, dict) else {}
@@ -559,6 +880,33 @@ def _tegrastats_timeline(summary: dict[str, Any]) -> dict[str, Any]:
     return value if isinstance(value, dict) else {}
 
 
+def _runtime_health_snapshot(runtime_result: dict[str, Any]) -> dict[str, Any]:
+    value = runtime_result.get("runtime_health_snapshot")
+    return value if isinstance(value, dict) else {}
+
+
+def _runtime_error_classification(runtime_result: dict[str, Any]) -> dict[str, Any]:
+    value = runtime_result.get("runtime_error_classification")
+    return value if isinstance(value, dict) else {}
+
+
+def _runtime_events(runtime_result: dict[str, Any]) -> list[dict[str, Any]]:
+    return _list(runtime_result.get("runtime_events"))
+
+
+def _runtime_results(summary: dict[str, Any]) -> list[dict[str, Any]]:
+    results: list[dict[str, Any]] = []
+    for key in ("runtime_result", "runtime_result_context"):
+        value = summary.get(key)
+        if isinstance(value, dict):
+            results.append(value)
+    for key in ("runtime_results", "runtime_result_contexts"):
+        value = summary.get(key)
+        if isinstance(value, list):
+            results.extend(item for item in value if isinstance(item, dict))
+    return results
+
+
 def _totals(runtime_summary: dict[str, Any]) -> dict[str, Any]:
     value = runtime_summary.get("totals")
     return value if isinstance(value, dict) else {}
@@ -578,6 +926,28 @@ def _optional_non_negative_number(value: Any) -> float | None:
     if isinstance(value, (int, float)) and not isinstance(value, bool):
         return max(float(value), 0.0)
     return None
+
+
+def _first_number(*values: Any) -> float | None:
+    for value in values:
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            return float(value)
+    return None
+
+
+def _first_string(*values: Any) -> str | None:
+    for value in values:
+        if isinstance(value, str) and value:
+            return value
+    return None
+
+
+def _bool_value(value: Any) -> bool:
+    return bool(value) if isinstance(value, bool) else False
+
+
+def _optional_bool(value: Any) -> bool | None:
+    return value if isinstance(value, bool) else None
 
 
 def _ratio(numerator: float, denominator: float) -> float:
