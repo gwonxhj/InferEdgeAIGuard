@@ -168,8 +168,12 @@ The unified `reason` command auto-routes `schema_version:
 inferedge-remote-dispatch-result-v1` as well. AIGuard interprets worker
 selection status and explicit HTTP/SSH starter execution status as
 `remote_execution_plan_only`, `remote_execution_starter_success`, or
-`remote_execution_failed` evidence. This remains starter evidence, not a claim
-of production remote execution.
+`remote_execution_failed` evidence. If Orchestrator includes additive
+`fallback_execution_result` evidence, AIGuard also emits
+`remote_execution_recovered_by_fallback` or `remote_fallback_execution_failed`.
+Recovered fallback remains review evidence because it proves the resilience path
+worked, but also shows that the primary worker path was unstable. This remains
+starter evidence, not a claim of production remote execution.
 
 ## Output
 

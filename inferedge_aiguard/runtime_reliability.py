@@ -298,6 +298,8 @@ def compute_remote_dispatch_metrics(remote_dispatch_result: dict[str, Any]) -> d
     remote_plan = _mapping(remote_dispatch_result.get("remote_execution_plan"))
     remote_result = _mapping(remote_dispatch_result.get("remote_execution_result"))
     retry_plan = _mapping(remote_dispatch_result.get("retry_fallback_plan"))
+    fallback_result = _mapping(remote_dispatch_result.get("fallback_execution_result"))
+    fallback_attempts = _list(fallback_result.get("attempts"))
     runtime_events = _list(remote_dispatch_result.get("runtime_events"))
     dispatch_status = _first_string(remote_dispatch_result.get("dispatch_status")) or "unknown"
     execution_status = _first_string(remote_result.get("status")) or "unknown"
@@ -310,6 +312,16 @@ def compute_remote_dispatch_metrics(remote_dispatch_result: dict[str, Any]) -> d
     transport = _first_string(remote_result.get("transport"), remote_plan.get("transport"))
     http_status = _optional_non_negative_number(remote_result.get("http_status"))
     exit_code = _optional_non_negative_number(remote_result.get("exit_code"))
+    fallback_final_status = _first_string(
+        fallback_result.get("final_status"),
+        retry_plan.get("fallback_final_status"),
+    )
+    fallback_execution_performed = _bool_value(
+        retry_plan.get("fallback_execution_performed")
+    ) or any(_bool_value(attempt.get("execution_performed")) for attempt in fallback_attempts)
+    fallback_attempted_worker_ids = _string_list(
+        fallback_result.get("attempted_worker_ids")
+    ) or _string_list(retry_plan.get("fallback_attempted_worker_ids"))
     return {
         "schema_version": remote_dispatch_result.get("schema_version"),
         "dispatch_status": dispatch_status,
@@ -330,8 +342,19 @@ def compute_remote_dispatch_metrics(remote_dispatch_result: dict[str, Any]) -> d
         "http_status": http_status,
         "exit_code": exit_code,
         "fallback_worker_ids": retry_plan.get("fallback_worker_ids", []),
-        "fallback_execution_performed": _bool_value(
-            retry_plan.get("fallback_execution_performed")
+        "fallback_execution_performed": fallback_execution_performed,
+        "fallback_attempted_worker_ids": fallback_attempted_worker_ids,
+        "fallback_attempt_count": len(fallback_attempts),
+        "fallback_final_status": fallback_final_status,
+        "fallback_primary_worker_id": _first_string(
+            fallback_result.get("primary_worker_id")
+        ),
+        "fallback_reason": _first_string(fallback_result.get("fallback_reason")),
+        "fallback_recovered": (
+            fallback_execution_performed and fallback_final_status == "succeeded"
+        ),
+        "fallback_failed": (
+            fallback_execution_performed and fallback_final_status == "failed"
         ),
         "runtime_event_count": len(runtime_events),
         "runtime_events": runtime_events,
@@ -791,6 +814,10 @@ def _remote_dispatch_evidence(
 
     if metrics.get("execution_requested") and metrics.get("execution_failed"):
         evidence.append(_remote_execution_failure_evidence(metrics, thresholds))
+        if metrics.get("fallback_recovered"):
+            evidence.append(_remote_execution_recovered_evidence(metrics))
+        elif metrics.get("fallback_failed"):
+            evidence.append(_remote_fallback_execution_failed_evidence(metrics, thresholds))
     elif metrics.get("execution_requested") and metrics.get("execution_status") == "succeeded":
         evidence.append(_remote_execution_success_evidence(metrics))
     elif not metrics.get("execution_requested"):
@@ -840,7 +867,12 @@ def _remote_execution_failure_evidence(
     thresholds: dict[str, float],
 ) -> dict[str, Any]:
     error_category = metrics.get("error_category") or "remote_execution_failed"
-    severity = "medium" if str(error_category).startswith("missing_") else "high"
+    fallback_recovered = bool(metrics.get("fallback_recovered"))
+    severity = (
+        "medium"
+        if fallback_recovered or str(error_category).startswith("missing_")
+        else "high"
+    )
     return build_evidence_item(
         evidence_type="remote_execution_failed",
         metric_name="remote_execution_status",
@@ -854,7 +886,8 @@ def _remote_execution_failure_evidence(
         status="failed",
         why_it_matters=(
             "A selected remote worker that fails explicit starter execution is an "
-            "operation reliability risk even if worker selection itself succeeded."
+            "operation reliability risk. If fallback recovered the task, this still "
+            "indicates primary worker instability rather than a clean pass."
         ),
         suspected_causes=[
             cause
@@ -871,7 +904,82 @@ def _remote_execution_failure_evidence(
         ],
         recommendation=(
             "Inspect remote_execution_result, endpoint metadata, timeout budget, "
-            "and worker logs before treating this path as deployment-ready."
+            "worker logs, and fallback usage before treating this path as "
+            "deployment-ready."
+        ),
+        raw_context={"remote_dispatch": metrics},
+    )
+
+
+def _remote_execution_recovered_evidence(metrics: dict[str, Any]) -> dict[str, Any]:
+    return build_evidence_item(
+        evidence_type="remote_execution_recovered_by_fallback",
+        metric_name="fallback_final_status",
+        observed_value=metrics.get("fallback_final_status"),
+        baseline_value="primary_execution_succeeded_without_fallback",
+        threshold="succeeded",
+        delta=None,
+        delta_pct=None,
+        increase_factor=None,
+        severity="medium",
+        status="warning",
+        why_it_matters=(
+            "Fallback recovered explicit starter execution after the primary remote "
+            "worker failed. This shows resilience evidence, but also means the "
+            "primary worker path is not stable enough to treat as clean operation."
+        ),
+        suspected_causes=[
+            cause
+            for cause in [
+                "primary_worker_unstable",
+                metrics.get("fallback_reason"),
+                metrics.get("error_category"),
+                "remote_worker_endpoint_unreachable"
+                if metrics.get("error_category") in {"connection_error", "timeout"}
+                else None,
+            ]
+            if isinstance(cause, str) and cause
+        ],
+        recommendation=(
+            "Keep fallback enabled, inspect the primary worker, and validate this "
+            "path with real device telemetry before relying on it for deployment."
+        ),
+        raw_context={"remote_dispatch": metrics},
+    )
+
+
+def _remote_fallback_execution_failed_evidence(
+    metrics: dict[str, Any],
+    thresholds: dict[str, float],
+) -> dict[str, Any]:
+    return build_evidence_item(
+        evidence_type="remote_fallback_execution_failed",
+        metric_name="fallback_final_status",
+        observed_value=metrics.get("fallback_final_status"),
+        baseline_value="succeeded",
+        threshold=thresholds["remote_execution_failure_review"],
+        delta=None,
+        delta_pct=None,
+        increase_factor=None,
+        severity="high",
+        status="failed",
+        why_it_matters=(
+            "Fallback execution was attempted but did not recover the remote task. "
+            "This means both the selected primary path and resilience path require "
+            "review before remote edge operation is trusted."
+        ),
+        suspected_causes=[
+            cause
+            for cause in [
+                "fallback_worker_unavailable",
+                metrics.get("fallback_reason"),
+                metrics.get("error_category"),
+            ]
+            if isinstance(cause, str) and cause
+        ],
+        recommendation=(
+            "Inspect fallback worker health, endpoint contracts, timeout budget, "
+            "and retry policy before running remote dispatch in a reliability demo."
         ),
         raw_context={"remote_dispatch": metrics},
     )

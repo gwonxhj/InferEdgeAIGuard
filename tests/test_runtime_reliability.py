@@ -341,6 +341,52 @@ def remote_dispatch_failure_result() -> dict:
     return result
 
 
+def remote_dispatch_fallback_recovered_result() -> dict:
+    result = remote_dispatch_failure_result()
+    result["retry_fallback_plan"].update(
+        {
+            "fallback_execution_performed": True,
+            "fallback_attempted_worker_ids": ["jetson-fallback"],
+            "fallback_final_status": "succeeded",
+            "last_execution_status": "succeeded",
+        }
+    )
+    result["fallback_execution_result"] = {
+        "schema_version": "inferedge-remote-fallback-execution-v1",
+        "fallback_requested": True,
+        "fallback_reason": "connection_error",
+        "primary_worker_id": "jetson-nano-01",
+        "attempted_worker_ids": ["jetson-fallback"],
+        "final_status": "succeeded",
+        "attempts": [
+            {
+                "schema_version": "inferedge-remote-execution-result-v1",
+                "execution_requested": True,
+                "execution_performed": True,
+                "production_remote_execution": False,
+                "status": "succeeded",
+                "transport": "http",
+                "selected_worker_id": "jetson-fallback",
+                "task_id": "remote_task_001",
+                "agent_id": "vision_agent",
+                "http_status": 200,
+                "fallback_attempt": 1,
+                "fallback_for_worker_id": "jetson-nano-01",
+                "response_json": {"status": "ok"},
+            }
+        ],
+        "production_remote_execution": False,
+    }
+    result["runtime_events"].append(
+        {
+            "event": "remote_fallback_execution_completed",
+            "status": "succeeded",
+            "selected_worker_id": "jetson-fallback",
+        }
+    )
+    return result
+
+
 def remote_dispatch_plan_only_result() -> dict:
     result = remote_dispatch_success_result()
     result["remote_execution"]["execution_requested"] = False
@@ -409,6 +455,21 @@ def test_compute_remote_dispatch_metrics_from_execution_result():
     assert metrics["transport"] == "http"
     assert metrics["error_category"] == "connection_error"
     assert metrics["runtime_event_count"] == 2
+
+
+def test_compute_remote_dispatch_metrics_from_fallback_recovery():
+    metrics = compute_remote_dispatch_metrics(remote_dispatch_fallback_recovered_result())
+
+    assert metrics["execution_failed"] is True
+    assert metrics["fallback_execution_performed"] is True
+    assert metrics["fallback_attempted_worker_ids"] == ["jetson-fallback"]
+    assert metrics["fallback_attempt_count"] == 1
+    assert metrics["fallback_final_status"] == "succeeded"
+    assert metrics["fallback_recovered"] is True
+    assert metrics["fallback_failed"] is False
+    assert metrics["fallback_primary_worker_id"] == "jetson-nano-01"
+    assert metrics["fallback_reason"] == "connection_error"
+    assert metrics["runtime_event_count"] == 3
 
 
 def test_multi_workload_sustained_summary_adds_profile_and_thermal_metrics():
@@ -577,6 +638,32 @@ def test_analyze_remote_dispatch_result_blocks_on_connection_failure():
     assert evidence["type"] == "remote_execution_failed"
     assert evidence["status"] == "failed"
     assert "connection_error" in evidence["suspected_causes"]
+
+
+def test_analyze_remote_dispatch_result_warns_when_fallback_recovers_primary_failure():
+    report = analyze_remote_dispatch_result(remote_dispatch_fallback_recovered_result())
+
+    validate_diagnosis_report(report)
+    assert report["guard_verdict"] == "review_required"
+    assert report["severity"] == "medium"
+    evidence_types = {item["type"] for item in report["evidence"]}
+    assert "remote_execution_failed" in evidence_types
+    assert "remote_execution_recovered_by_fallback" in evidence_types
+    primary_failure = next(
+        item for item in report["evidence"] if item["type"] == "remote_execution_failed"
+    )
+    recovery = next(
+        item
+        for item in report["evidence"]
+        if item["type"] == "remote_execution_recovered_by_fallback"
+    )
+    assert primary_failure["status"] == "failed"
+    assert recovery["status"] == "warning"
+    assert "primary_worker_unstable" in recovery["suspected_causes"]
+    assert (
+        report["candidate_summary"]["remote_dispatch"]["fallback_recovered"]
+        is True
+    )
 
 
 def test_orchestration_summary_can_include_runtime_result_operation_evidence():
