@@ -170,8 +170,11 @@ unified `reason` 명령은 `schema_version: inferedge-remote-dispatch-result-v1`
 자동 라우팅합니다. AIGuard는 worker selection 상태와 explicit HTTP/SSH starter
 execution 상태를 `remote_execution_plan_only`,
 `remote_execution_starter_success`, `remote_execution_failed` evidence로
-해석합니다. 이는 starter evidence이며 production remote execution을 완료했다는
-의미가 아닙니다.
+해석합니다. Orchestrator가 additive `fallback_execution_result`를 제공하면
+`remote_execution_recovered_by_fallback` 또는
+`remote_fallback_execution_failed`도 생성합니다. fallback이 성공해도 primary
+worker path가 불안정했다는 뜻이므로 review evidence로 남깁니다. 이는 starter
+evidence이며 production remote execution을 완료했다는 의미가 아닙니다.
 
 ## 출력
 

@@ -210,8 +210,10 @@ python -m inferedge_aiguard.cli reason \
 이 경로는 `inferedge-remote-dispatch-result-v1`의 worker selection,
 `remote_execution_result.status`, `error_category`, HTTP/SSH starter 성공/실패를
 `remote_execution_plan_only`, `remote_execution_starter_success`,
-`remote_execution_failed` 같은 evidence로 변환합니다. 이는 production remote
-execution 판정이 아니라 explicit starter execution evidence입니다.
+`remote_execution_failed`, `remote_execution_recovered_by_fallback` 같은
+evidence로 변환합니다. fallback이 성공해도 primary worker instability는
+review evidence로 남깁니다. 이는 production remote execution 판정이 아니라
+explicit starter execution evidence입니다.
 
 ## Quick Examples
 
