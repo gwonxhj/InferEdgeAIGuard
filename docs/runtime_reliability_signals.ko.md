@@ -159,6 +159,20 @@ python -m inferedge_aiguard.cli reason \
 `schema_version: inferedge-runtime-result-v1` 또는 Runtime operation 필드가
 있는 Runtime result도 unified `reason` 명령이 자동 라우팅합니다.
 
+Remote dispatch starter result도 직접 분석할 수 있습니다.
+
+```bash
+python -m inferedge_aiguard.cli reason-remote-dispatch \
+  --input reports/remote_dispatch_result.json
+```
+
+unified `reason` 명령은 `schema_version: inferedge-remote-dispatch-result-v1`도
+자동 라우팅합니다. AIGuard는 worker selection 상태와 explicit HTTP/SSH starter
+execution 상태를 `remote_execution_plan_only`,
+`remote_execution_starter_success`, `remote_execution_failed` evidence로
+해석합니다. 이는 starter evidence이며 production remote execution을 완료했다는
+의미가 아닙니다.
+
 ## 출력
 
 출력은 기존 diagnosis report schema를 사용합니다.

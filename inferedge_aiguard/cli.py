@@ -14,7 +14,11 @@ from .history import analyze_run_history
 from .portfolio_demo import build_portfolio_demo_bundle
 from .reasoning import analyze_compare_result, analyze_structured_result
 from .report import format_summary, save_summary_json, save_summary_markdown
-from .runtime_reliability import analyze_orchestration_summary, analyze_runtime_result
+from .runtime_reliability import (
+    analyze_orchestration_summary,
+    analyze_remote_dispatch_result,
+    analyze_runtime_result,
+)
 from .schema import load_output_json
 
 
@@ -120,6 +124,17 @@ def build_parser() -> argparse.ArgumentParser:
     )
     _add_save_options(reason_runtime_parser)
 
+    reason_remote_dispatch_parser = subparsers.add_parser(
+        "reason-remote-dispatch",
+        help="Reason over an InferEdgeOrchestrator remote dispatch result JSON",
+    )
+    reason_remote_dispatch_parser.add_argument(
+        "--input",
+        required=True,
+        help="Path to InferEdgeOrchestrator remote dispatch result JSON",
+    )
+    _add_save_options(reason_remote_dispatch_parser)
+
     portfolio_demo_parser = subparsers.add_parser(
         "portfolio-demo",
         help="Replay bundled AIGuard portfolio demo cases",
@@ -223,6 +238,15 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 0
 
+    if args.command == "reason-remote-dispatch":
+        raw = _load_json_dict(args.input)
+        _emit_summary(
+            analyze_remote_dispatch_result(raw),
+            save_json=args.save_json,
+            save_md=args.save_md,
+        )
+        return 0
+
     if args.command == "portfolio-demo":
         _emit_summary(
             build_portfolio_demo_bundle(),
@@ -263,6 +287,9 @@ def _infer_reasoning_summary(data: object) -> dict:
 
     if _looks_like_compare_result(data):
         return analyze_compare_result(normalize_lab_compare_result(data))
+
+    if _looks_like_remote_dispatch_result(data):
+        return analyze_remote_dispatch_result(data)
 
     if _looks_like_runtime_operation_result(data):
         return analyze_runtime_result(data)
@@ -322,6 +349,10 @@ def _looks_like_runtime_operation_result(data: dict) -> bool:
             "runtime_events",
         }
     )
+
+
+def _looks_like_remote_dispatch_result(data: dict) -> bool:
+    return data.get("schema_version") == "inferedge-remote-dispatch-result-v1"
 
 
 def _looks_like_orchestration_summary(data: dict) -> bool:

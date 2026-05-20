@@ -198,6 +198,21 @@ deadline miss, drop/fallback 신호를 `guard_analysis` evidence로 변환합니
 AIGuard는 runtime reliability risk를 설명하고, 최종 deployment decision은
 계속 InferEdgeLab이 담당합니다.
 
+Remote dispatch starter 결과도 deterministic evidence로 해석할 수 있습니다.
+
+```bash
+python -m inferedge_aiguard.cli reason-remote-dispatch \
+  --input reports/remote_dispatch_result.json
+python -m inferedge_aiguard.cli reason \
+  --input reports/remote_dispatch_result.json
+```
+
+이 경로는 `inferedge-remote-dispatch-result-v1`의 worker selection,
+`remote_execution_result.status`, `error_category`, HTTP/SSH starter 성공/실패를
+`remote_execution_plan_only`, `remote_execution_starter_success`,
+`remote_execution_failed` 같은 evidence로 변환합니다. 이는 production remote
+execution 판정이 아니라 explicit starter execution evidence입니다.
+
 ## Quick Examples
 
 YOLO output 하나를 분석합니다.

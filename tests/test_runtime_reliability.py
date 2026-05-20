@@ -5,7 +5,9 @@ from pathlib import Path
 
 from inferedge_aiguard.runtime_reliability import (
     analyze_orchestration_summary,
+    analyze_remote_dispatch_result,
     analyze_runtime_result,
+    compute_remote_dispatch_metrics,
     compute_runtime_reliability_metrics,
     compute_runtime_operation_metrics,
 )
@@ -267,6 +269,100 @@ def runtime_result_with_operation_signals() -> dict:
     }
 
 
+def remote_dispatch_success_result() -> dict:
+    return {
+        "schema_version": "inferedge-remote-dispatch-result-v1",
+        "dispatch_status": "accepted",
+        "selected_worker_id": "jetson-nano-01",
+        "decision_reason": "selected online worker matching backend/device requirements",
+        "remote_execution": {
+            "mode": "file_contract_starter",
+            "production_remote_execution": False,
+            "execution_requested": True,
+        },
+        "remote_execution_plan": {
+            "schema_version": "inferedge-remote-execution-plan-v1",
+            "mode": "starter_execute",
+            "network_execution_performed": True,
+            "transport": "http",
+            "endpoint_type": "http_request",
+            "selected_worker_id": "jetson-nano-01",
+            "task_id": "remote_task_001",
+            "agent_id": "vision_agent",
+        },
+        "remote_execution_result": {
+            "schema_version": "inferedge-remote-execution-result-v1",
+            "execution_requested": True,
+            "execution_performed": True,
+            "production_remote_execution": False,
+            "status": "succeeded",
+            "transport": "http",
+            "selected_worker_id": "jetson-nano-01",
+            "task_id": "remote_task_001",
+            "agent_id": "vision_agent",
+            "http_status": 200,
+            "response_json": {"status": "ok"},
+        },
+        "retry_fallback_plan": {
+            "schema_version": "inferedge-remote-retry-fallback-plan-v1",
+            "fallback_worker_ids": ["jetson-fallback"],
+            "fallback_execution_performed": False,
+            "last_execution_status": "succeeded",
+        },
+        "runtime_events": [
+            {"event": "remote_dispatch_selected"},
+            {"event": "remote_execution_completed", "status": "succeeded"},
+        ],
+    }
+
+
+def remote_dispatch_failure_result() -> dict:
+    result = remote_dispatch_success_result()
+    result["remote_execution_plan"]["network_execution_performed"] = False
+    result["remote_execution_result"] = {
+        "schema_version": "inferedge-remote-execution-result-v1",
+        "execution_requested": True,
+        "execution_performed": True,
+        "production_remote_execution": False,
+        "status": "failed",
+        "transport": "http",
+        "selected_worker_id": "jetson-nano-01",
+        "task_id": "remote_task_001",
+        "agent_id": "vision_agent",
+        "error_category": "connection_error",
+        "error_message": "connection refused",
+    }
+    result["retry_fallback_plan"]["last_execution_status"] = "failed"
+    result["runtime_events"][-1] = {
+        "event": "remote_execution_failed",
+        "status": "failed",
+        "error_category": "connection_error",
+    }
+    return result
+
+
+def remote_dispatch_plan_only_result() -> dict:
+    result = remote_dispatch_success_result()
+    result["remote_execution"]["execution_requested"] = False
+    result["remote_execution_plan"]["mode"] = "plan_only"
+    result["remote_execution_plan"]["network_execution_performed"] = False
+    result["remote_execution_result"] = {
+        "schema_version": "inferedge-remote-execution-result-v1",
+        "execution_requested": False,
+        "execution_performed": False,
+        "production_remote_execution": False,
+        "status": "skipped",
+        "transport": "file_contract",
+        "selected_worker_id": "jetson-nano-01",
+        "task_id": "remote_task_001",
+        "agent_id": "vision_agent",
+        "error_category": "execution_not_requested",
+    }
+    result["retry_fallback_plan"]["last_execution_status"] = "skipped"
+    result["runtime_events"] = [{"event": "remote_dispatch_selected"}]
+    return result
+
+
 def test_compute_runtime_reliability_metrics_from_orchestration_summary():
     metrics = compute_runtime_reliability_metrics(orchestration_summary())
 
@@ -299,6 +395,20 @@ def test_compute_runtime_operation_metrics_from_runtime_result():
     assert metrics["retry_hint"] == "check_backend_availability"
     assert metrics["thermal_memory_evidence_available"] is False
     assert metrics["runtime_event_count"] == 1
+
+
+def test_compute_remote_dispatch_metrics_from_execution_result():
+    metrics = compute_remote_dispatch_metrics(remote_dispatch_failure_result())
+
+    assert metrics["schema_version"] == "inferedge-remote-dispatch-result-v1"
+    assert metrics["dispatch_status"] == "accepted"
+    assert metrics["selected_worker_id"] == "jetson-nano-01"
+    assert metrics["execution_requested"] is True
+    assert metrics["execution_performed"] is True
+    assert metrics["execution_failed"] is True
+    assert metrics["transport"] == "http"
+    assert metrics["error_category"] == "connection_error"
+    assert metrics["runtime_event_count"] == 2
 
 
 def test_multi_workload_sustained_summary_adds_profile_and_thermal_metrics():
@@ -428,6 +538,47 @@ def test_analyze_runtime_result_returns_operation_evidence():
     )
 
 
+def test_analyze_remote_dispatch_result_warns_on_plan_only():
+    report = analyze_remote_dispatch_result(remote_dispatch_plan_only_result())
+
+    validate_diagnosis_report(report)
+    assert report["guard_verdict"] == "pass"
+    assert report["severity"] == "low"
+    assert report["source"]["remote_dispatch_schema_version"] == (
+        "inferedge-remote-dispatch-result-v1"
+    )
+    evidence = report["evidence"][0]
+    assert evidence["type"] == "remote_execution_plan_only"
+    assert evidence["status"] == "skipped"
+    assert (
+        report["candidate_summary"]["remote_dispatch"]["execution_requested"]
+        is False
+    )
+
+
+def test_analyze_remote_dispatch_result_passes_on_success():
+    report = analyze_remote_dispatch_result(remote_dispatch_success_result())
+
+    validate_diagnosis_report(report)
+    assert report["guard_verdict"] == "pass"
+    evidence = report["evidence"][0]
+    assert evidence["type"] == "remote_execution_starter_success"
+    assert evidence["status"] == "passed"
+    assert report["candidate_summary"]["remote_dispatch"]["http_status"] == 200
+
+
+def test_analyze_remote_dispatch_result_blocks_on_connection_failure():
+    report = analyze_remote_dispatch_result(remote_dispatch_failure_result())
+
+    validate_diagnosis_report(report)
+    assert report["guard_verdict"] == "blocked"
+    assert report["severity"] == "high"
+    evidence = report["evidence"][0]
+    assert evidence["type"] == "remote_execution_failed"
+    assert evidence["status"] == "failed"
+    assert "connection_error" in evidence["suspected_causes"]
+
+
 def test_orchestration_summary_can_include_runtime_result_operation_evidence():
     summary = orchestration_summary()
     summary["runtime_results"] = [runtime_result_with_operation_signals()]
@@ -443,6 +594,21 @@ def test_orchestration_summary_can_include_runtime_result_operation_evidence():
             "runtime_error_category"
         ]
         == "runtime_execution_skipped"
+    )
+
+
+def test_orchestration_summary_can_include_remote_dispatch_evidence():
+    summary = orchestration_summary()
+    summary["remote_dispatch_results"] = [remote_dispatch_failure_result()]
+
+    report = analyze_orchestration_summary(summary)
+
+    validate_diagnosis_report(report)
+    evidence_types = {item["type"] for item in report["evidence"]}
+    assert "remote_execution_failed" in evidence_types
+    assert (
+        report["candidate_summary"]["remote_dispatch_results"][0]["error_category"]
+        == "connection_error"
     )
 
 
@@ -523,3 +689,44 @@ def test_cli_reason_runtime_and_unified_runtime_route(tmp_path):
         text=True,
     )
     assert "runtime_latency_budget_overrun" in unified.stdout
+
+
+def test_cli_reason_remote_dispatch_and_unified_route(tmp_path):
+    input_path = tmp_path / "remote_dispatch_result.json"
+    input_path.write_text(
+        json.dumps(remote_dispatch_failure_result()),
+        encoding="utf-8",
+    )
+
+    explicit = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "reason-remote-dispatch",
+            "--input",
+            str(input_path),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert "remote_execution_failed" in explicit.stdout
+    assert "guard_verdict: blocked" in explicit.stdout
+
+    unified = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "reason",
+            "--input",
+            str(input_path),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert "connection_error" in unified.stdout
