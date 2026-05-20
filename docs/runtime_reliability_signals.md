@@ -157,6 +157,20 @@ python -m inferedge_aiguard.cli reason \
 It also auto-routes Runtime results that include `schema_version:
 inferedge-runtime-result-v1` or the additive Runtime operation fields.
 
+Remote dispatch starter results can also be analyzed directly:
+
+```bash
+python -m inferedge_aiguard.cli reason-remote-dispatch \
+  --input reports/remote_dispatch_result.json
+```
+
+The unified `reason` command auto-routes `schema_version:
+inferedge-remote-dispatch-result-v1` as well. AIGuard interprets worker
+selection status and explicit HTTP/SSH starter execution status as
+`remote_execution_plan_only`, `remote_execution_starter_success`, or
+`remote_execution_failed` evidence. This remains starter evidence, not a claim
+of production remote execution.
+
 ## Output
 
 The output uses the existing diagnosis report schema:
