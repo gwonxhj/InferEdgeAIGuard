@@ -157,15 +157,19 @@ Runtime이 additive health/error/event 필드를 내보내면 AIGuard는 다음 
 - `runtime_health_snapshot.thermal_memory_evidence_available`
 - `runtime_error_classification.category`
 - `runtime_error_classification.severity`
+- `runtime_error_classification.retryable`
 - `runtime_error_classification.retry_hint`
+- `runtime_events[].retryable`
 - `runtime_events[].latency_budget_exceeded`
 - `runtime_events[].deadline_missed`
 
 이 필드는 operation evidence로 해석됩니다. 예를 들어 Runtime result에
-`engine_available: false`, `latency_budget_exceeded: true`, `retry_hint`가
-있으면 AIGuard는 `runtime_backend_unavailable`,
+`engine_available: false`, `latency_budget_exceeded: true`, retryable
+`retry_hint`가 있으면 AIGuard는 `runtime_backend_unavailable`,
 `runtime_latency_budget_overrun`, `runtime_error_classification` 같은
-deterministic guard evidence를 생성합니다.
+deterministic guard evidence를 생성합니다. AIGuard는 `retryable`을 Lab
+review를 위한 Runtime-side failure evidence로 보존할 뿐, 직접 retry를
+수행하거나 production worker behavior를 주장하지 않습니다.
 
 ## CLI
 

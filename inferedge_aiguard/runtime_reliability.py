@@ -451,6 +451,9 @@ def compute_runtime_operation_metrics(runtime_result: dict[str, Any]) -> dict[st
         error.get("retry_hint"),
         *[event.get("retry_hint") for event in events],
     )
+    retryable = _bool_value(error.get("retryable")) or any(
+        _bool_value(event.get("retryable")) for event in events
+    )
     error_severity = _first_string(
         error.get("severity"),
         error.get("runtime_error_severity"),
@@ -490,6 +493,7 @@ def compute_runtime_operation_metrics(runtime_result: dict[str, Any]) -> dict[st
             error.get("classification"),
         ),
         "runtime_error_severity": error_severity,
+        "runtime_error_retryable": retryable,
         "retry_hint": retry_hint,
         "timeout_budget_ms": _first_number(
             error.get("timeout_budget_ms"),
@@ -1354,11 +1358,19 @@ def _runtime_error_classification_evidence(
             for cause in [
                 metrics.get("runtime_error_category"),
                 metrics.get("retry_hint"),
+                "runtime_retryable_error"
+                if metrics.get("runtime_error_retryable")
+                else None,
             ]
             if isinstance(cause, str) and cause
         ],
         recommendation=(
-            f"Follow Runtime retry hint: {metrics.get('retry_hint')}."
+            (
+                f"Follow Runtime retry hint: {metrics.get('retry_hint')} "
+                "and treat this as retryable Runtime-side failure evidence for Lab review."
+            )
+            if metrics.get("retry_hint") and metrics.get("runtime_error_retryable")
+            else f"Follow Runtime retry hint: {metrics.get('retry_hint')}."
             if metrics.get("retry_hint")
             else "Inspect Runtime error classification and event log before deployment."
         ),

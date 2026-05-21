@@ -355,6 +355,7 @@ def runtime_result_with_operation_signals() -> dict:
             "severity": "high",
             "observed_mean_ms": 72.5,
             "timeout_budget_ms": 50.0,
+            "retryable": True,
             "retry_hint": "check_backend_availability",
         },
         "runtime_events": [
@@ -365,6 +366,7 @@ def runtime_result_with_operation_signals() -> dict:
                 "latency_budget_ms": 50.0,
                 "latency_budget_exceeded": True,
                 "deadline_missed": True,
+                "retryable": True,
                 "retry_hint": "check_backend_availability",
                 "tegrastats_sample_count": 0,
             }
@@ -541,6 +543,7 @@ def test_compute_runtime_operation_metrics_from_runtime_result():
     assert metrics["observed_mean_ms"] == 72.5
     assert metrics["runtime_error_category"] == "runtime_execution_skipped"
     assert metrics["runtime_error_severity"] == "high"
+    assert metrics["runtime_error_retryable"] is True
     assert metrics["retry_hint"] == "check_backend_availability"
     assert metrics["thermal_memory_evidence_available"] is False
     assert metrics["runtime_event_count"] == 1
@@ -752,6 +755,16 @@ def test_analyze_runtime_result_returns_operation_evidence():
     assert latency_evidence["observed_value"] == 1
     assert latency_evidence["threshold"] == 50.0
     assert latency_evidence["delta"] == 22.5
+    error_evidence = next(
+        item
+        for item in report["evidence"]
+        if item["type"] == "runtime_error_classification"
+    )
+    runtime_operation = error_evidence["raw_context"]["runtime_operation"]
+    assert runtime_operation["runtime_error_retryable"] is True
+    assert runtime_operation["retry_hint"] == "check_backend_availability"
+    assert "runtime_retryable_error" in error_evidence["suspected_causes"]
+    assert "retryable Runtime-side failure evidence" in error_evidence["recommendation"]
     assert (
         report["candidate_summary"]["runtime_operation"]["runtime_event_count"]
         == 1
