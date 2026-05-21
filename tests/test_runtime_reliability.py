@@ -426,6 +426,30 @@ def runtime_result_with_operation_signals() -> dict:
             "retryable": True,
             "retry_hint": "check_backend_availability",
         },
+        "runtime_operation_summary": {
+            "schema_version": "inferedge-runtime-operation-summary-v1",
+            "observation_scope": "single_runtime_result",
+            "decision_owner": "lab",
+            "scheduler_owner": "orchestrator",
+            "production_cancellation": False,
+            "health_status": "degraded",
+            "health_reason": "backend_unavailable_or_not_enabled",
+            "error_category": "runtime_execution_skipped",
+            "retryable": True,
+            "recommended_action": "check_backend_availability",
+            "risk_labels": [
+                "runtime_execution_skipped",
+                "backend_unavailable",
+            ],
+            "evidence_gaps": [
+                "timeout_policy_not_configured",
+                "thermal_memory_evidence_missing",
+            ],
+            "timeout_observed": False,
+            "latency_budget_exceeded": True,
+            "deadline_missed": True,
+            "thermal_memory_evidence_available": False,
+        },
         "runtime_events": [
             {
                 "schema_version": "inferedge-runtime-event-v1",
@@ -437,6 +461,22 @@ def runtime_result_with_operation_signals() -> dict:
                 "retryable": True,
                 "retry_hint": "check_backend_availability",
                 "tegrastats_sample_count": 0,
+            },
+            {
+                "schema_version": "inferedge-runtime-event-v1",
+                "event_index": 1,
+                "type": "runtime_operation_summary_recorded",
+                "status": "degraded",
+                "health_reason": "backend_unavailable_or_not_enabled",
+                "recommended_action": "check_backend_availability",
+                "risk_labels": [
+                    "runtime_execution_skipped",
+                    "backend_unavailable",
+                ],
+                "evidence_gaps": [
+                    "timeout_policy_not_configured",
+                    "thermal_memory_evidence_missing",
+                ],
             }
         ],
     }
@@ -614,7 +654,26 @@ def test_compute_runtime_operation_metrics_from_runtime_result():
     assert metrics["runtime_error_retryable"] is True
     assert metrics["retry_hint"] == "check_backend_availability"
     assert metrics["thermal_memory_evidence_available"] is False
-    assert metrics["runtime_event_count"] == 1
+    assert metrics["runtime_event_count"] == 2
+    assert metrics["runtime_operation_summary_schema"] == (
+        "inferedge-runtime-operation-summary-v1"
+    )
+    assert metrics["runtime_operation_health_reason"] == (
+        "backend_unavailable_or_not_enabled"
+    )
+    assert metrics["runtime_operation_recommended_action"] == (
+        "check_backend_availability"
+    )
+    assert metrics["runtime_operation_risk_labels"] == [
+        "runtime_execution_skipped",
+        "backend_unavailable",
+    ]
+    assert metrics["runtime_operation_evidence_gaps"] == [
+        "timeout_policy_not_configured",
+        "thermal_memory_evidence_missing",
+    ]
+    assert metrics["runtime_operation_decision_owner"] == "lab"
+    assert metrics["runtime_operation_scheduler_owner"] == "orchestrator"
 
 
 def test_compute_remote_dispatch_metrics_from_execution_result():
@@ -910,6 +969,7 @@ def test_analyze_runtime_result_returns_operation_evidence():
         "runtime_backend_unavailable",
         "runtime_latency_budget_overrun",
         "runtime_error_classification",
+        "runtime_operation_health",
         "runtime_thermal_memory_evidence_missing",
     }
     latency_evidence = next(
@@ -928,11 +988,34 @@ def test_analyze_runtime_result_returns_operation_evidence():
     runtime_operation = error_evidence["raw_context"]["runtime_operation"]
     assert runtime_operation["runtime_error_retryable"] is True
     assert runtime_operation["retry_hint"] == "check_backend_availability"
+    assert runtime_operation["runtime_operation_summary_schema"] == (
+        "inferedge-runtime-operation-summary-v1"
+    )
+    assert runtime_operation["runtime_operation_health_reason"] == (
+        "backend_unavailable_or_not_enabled"
+    )
+    assert runtime_operation["runtime_operation_recommended_action"] == (
+        "check_backend_availability"
+    )
+    assert runtime_operation["runtime_operation_risk_labels"] == [
+        "runtime_execution_skipped",
+        "backend_unavailable",
+    ]
     assert "runtime_retryable_error" in error_evidence["suspected_causes"]
     assert "retryable Runtime-side failure evidence" in error_evidence["recommendation"]
+    operation_evidence = next(
+        item for item in report["evidence"] if item["type"] == "runtime_operation_health"
+    )
+    assert operation_evidence["metric_name"] == "runtime_operation_summary_risk_count"
+    assert operation_evidence["observed_value"] == 2
+    assert operation_evidence["status"] == "warning"
+    assert operation_evidence["recommendation"] == "check_backend_availability"
+    assert "backend_unavailable" in operation_evidence["suspected_causes"]
+    assert operation_evidence["raw_context"]["decision_owner"] == "lab"
+    assert operation_evidence["raw_context"]["scheduler_owner"] == "orchestrator"
     assert (
         report["candidate_summary"]["runtime_operation"]["runtime_event_count"]
-        == 1
+        == 2
     )
 
 
