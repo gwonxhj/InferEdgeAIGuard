@@ -42,6 +42,10 @@ DEFAULT_RUNTIME_RELIABILITY_THRESHOLDS = {
     "worker_constrained_count_review": 1,
     "scheduler_delay_event_count_review": 1,
     "scheduler_delay_event_count_blocked": 3,
+    "queue_pressure_reason_count_review": 1,
+    "worker_operation_risk_count_review": 1,
+    "worker_operation_risk_count_blocked": 3,
+    "device_local_event_count_review": 1,
 }
 
 
@@ -83,6 +87,21 @@ def analyze_orchestration_summary(
     )
     if scheduler_delay_evidence is not None:
         evidence.append(scheduler_delay_evidence)
+    queue_pressure_evidence = _queue_pressure_context_evidence(
+        metrics, totals, policy
+    )
+    if queue_pressure_evidence is not None:
+        evidence.append(queue_pressure_evidence)
+    worker_operation_evidence = _worker_operation_risk_summary_evidence(
+        metrics, totals, policy
+    )
+    if worker_operation_evidence is not None:
+        evidence.append(worker_operation_evidence)
+    device_local_evidence = _device_local_operation_context_evidence(
+        metrics, totals, policy
+    )
+    if device_local_evidence is not None:
+        evidence.append(device_local_evidence)
     for runtime_metrics in runtime_operation_metrics:
         evidence.extend(_runtime_operation_evidence(runtime_metrics, policy))
     for remote_metrics in remote_dispatch_metrics:
@@ -200,6 +219,7 @@ def compute_runtime_reliability_metrics(summary: dict[str, Any]) -> dict[str, An
     tegrastats_timeline = _tegrastats_timeline(summary)
     tegrastats_summary = _mapping(tegrastats_timeline.get("summary"))
     worker_health_snapshot = _worker_health_snapshot(summary)
+    queue_state_summary = _queue_state_summary(summary)
     runtime_event_summary = _runtime_event_summary(summary)
     runtime_event_timeline = _runtime_event_timeline(summary)
     totals = _totals(runtime_summary)
@@ -250,6 +270,9 @@ def compute_runtime_reliability_metrics(summary: dict[str, Any]) -> dict[str, An
     drop_reason_counts = _count_mapping(runtime_event_summary.get("drop_reason_counts"))
     runtime_event_reason_counts = _count_mapping(
         runtime_event_summary.get("reason_counts")
+    )
+    queue_pressure_reason_counts = _count_mapping(
+        runtime_event_summary.get("queue_pressure_reason_counts")
     )
     runtime_event_type_counts = _count_mapping(
         runtime_event_summary.get("event_type_counts")
@@ -302,6 +325,7 @@ def compute_runtime_reliability_metrics(summary: dict[str, Any]) -> dict[str, An
         "policy_decision_reason_counts": policy_decision_reason_counts,
         "drop_reason_counts": drop_reason_counts,
         "runtime_event_reason_counts": runtime_event_reason_counts,
+        "queue_pressure_reason_counts": queue_pressure_reason_counts,
         "runtime_event_type_counts": runtime_event_type_counts,
         "top_policy_decision_reason": _top_reason(policy_decision_reasons),
         "queue_backlog_policy_decision_count": queue_backlog_decision_count,
@@ -318,6 +342,28 @@ def compute_runtime_reliability_metrics(summary: dict[str, Any]) -> dict[str, An
         "latest_runtime_event_index": _optional_non_negative_number(
             runtime_event_summary.get("latest_event_index")
         ),
+        "latest_runtime_event_type": _first_string(
+            runtime_event_summary.get("latest_event_type")
+        ),
+        "runtime_event_producer_sources": _string_list(
+            runtime_event_summary.get("producer_sources")
+        ),
+        "producer_event_count": _non_negative_number(
+            runtime_event_summary.get("producer_event_count")
+        ),
+        "device_local_event_count": _non_negative_number(
+            runtime_event_summary.get("device_local_event_count")
+        ),
+        "queue_pressure_state": queue_state_summary.get("queue_pressure_state"),
+        "queue_pressure_reason": queue_state_summary.get("queue_pressure_reason"),
+        "max_pressure_task": queue_state_summary.get("max_pressure_task"),
+        "device_local_task_count": _non_negative_number(
+            queue_state_summary.get("device_local_task_count")
+        ),
+        "device_local_producer_sources": _string_list(
+            queue_state_summary.get("device_local_producer_sources")
+        ),
+        "producer_sources_by_task": _producer_sources_by_task(queue_state_summary),
         "max_total_queue_depth": max_total_queue_depth,
         "affected_agents": sorted(_affected_agents(summary)),
         "worker_health": worker_health_metrics,
@@ -837,6 +883,174 @@ def _scheduler_delay_pattern_evidence(
             "runtime_event_reason_counts": metrics.get(
                 "runtime_event_reason_counts", {}
             ),
+        },
+    )
+
+
+def _queue_pressure_context_evidence(
+    metrics: dict[str, Any],
+    totals: dict[str, Any],
+    thresholds: dict[str, float],
+) -> dict[str, Any] | None:
+    pressure_counts = _count_mapping(metrics.get("queue_pressure_reason_counts"))
+    concerning_count = sum(
+        count
+        for reason, count in pressure_counts.items()
+        if _queue_pressure_reason_is_concerning(reason)
+    )
+    queue_pressure_reason = _first_string(metrics.get("queue_pressure_reason"))
+    if (
+        concerning_count < thresholds["queue_pressure_reason_count_review"]
+        and not _queue_pressure_reason_is_concerning(queue_pressure_reason)
+    ):
+        return None
+    observed = max(float(concerning_count), 1.0)
+    severity = "medium"
+    if _queue_pressure_reason_is_blocking(queue_pressure_reason) or any(
+        _queue_pressure_reason_is_blocking(reason) for reason in pressure_counts
+    ):
+        severity = "medium"
+    return build_evidence_item(
+        evidence_type="queue_pressure_context",
+        metric_name="queue_pressure_reason_count",
+        observed_value=observed,
+        baseline_value=0,
+        threshold=thresholds["queue_pressure_reason_count_review"],
+        delta=None,
+        delta_pct=None,
+        increase_factor=None,
+        severity=severity,
+        status="warning",
+        why_it_matters=(
+            "Queue pressure reason fields explain whether backlog was below, near, "
+            "or beyond the configured overload threshold. This is deterministic "
+            "operation context for Lab review, not an inferred root cause."
+        ),
+        suspected_causes=_queue_pressure_suspected_causes(
+            queue_pressure_reason,
+            pressure_counts,
+        ),
+        recommendation=(
+            "Inspect queue_state_summary, queue_pressure_reason_counts, max pressure "
+            "task, and policy/drop reason rollups before treating this operation path "
+            "as stable."
+        ),
+        raw_context={
+            "totals": totals,
+            "queue_pressure_state": metrics.get("queue_pressure_state"),
+            "queue_pressure_reason": queue_pressure_reason,
+            "queue_pressure_reason_counts": pressure_counts,
+            "max_pressure_task": metrics.get("max_pressure_task"),
+            "policy_decision_reason_counts": metrics.get(
+                "policy_decision_reason_counts", {}
+            ),
+            "drop_reason_counts": metrics.get("drop_reason_counts", {}),
+        },
+    )
+
+
+def _worker_operation_risk_summary_evidence(
+    metrics: dict[str, Any],
+    totals: dict[str, Any],
+    thresholds: dict[str, float],
+) -> dict[str, Any] | None:
+    worker_health = _mapping(metrics.get("worker_health"))
+    risk_counts = _count_mapping(worker_health.get("operation_risk_summary_counts"))
+    risk_counts = {
+        risk: count
+        for risk, count in risk_counts.items()
+        if risk not in {"healthy_without_runtime_risk", "unknown"}
+    }
+    risk_count = float(sum(risk_counts.values()))
+    if risk_count < thresholds["worker_operation_risk_count_review"]:
+        return None
+    severity = _rate_severity(
+        value=risk_count,
+        review=thresholds["worker_operation_risk_count_review"],
+        blocked=thresholds["worker_operation_risk_count_blocked"],
+    )
+    status = "failed" if severity == "high" else "warning"
+    return build_evidence_item(
+        evidence_type="worker_operation_risk_summary",
+        metric_name="worker_operation_risk_count",
+        observed_value=risk_count,
+        baseline_value=0,
+        threshold=thresholds["worker_operation_risk_count_review"],
+        delta=None,
+        delta_pct=None,
+        increase_factor=None,
+        severity=severity,
+        status=status,
+        why_it_matters=(
+            "Worker operation risk summaries preserve Orchestrator's deterministic "
+            "per-worker risk labels, such as latency/fallback risk or queue-pressure "
+            "watch, so reviewers can see which runtime loops need attention."
+        ),
+        suspected_causes=sorted(risk_counts),
+        recommendation=(
+            "Inspect worker primary_health_reason, operation_risk_summary, producer "
+            "context, and per-worker drop/deadline/fallback rates before deployment."
+        ),
+        raw_context={
+            "totals": totals,
+            "worker_health": worker_health,
+            "operation_risk_summary_counts": risk_counts,
+            "primary_health_reason_counts": worker_health.get(
+                "primary_health_reason_counts", {}
+            ),
+        },
+    )
+
+
+def _device_local_operation_context_evidence(
+    metrics: dict[str, Any],
+    totals: dict[str, Any],
+    thresholds: dict[str, float],
+) -> dict[str, Any] | None:
+    task_count = metrics.get("device_local_task_count", 0.0)
+    if task_count <= 0:
+        return None
+    event_count = metrics.get("device_local_event_count", 0.0)
+    producer_sources = _string_list(metrics.get("device_local_producer_sources"))
+    runtime_sources = _string_list(metrics.get("runtime_event_producer_sources"))
+    has_coverage = (
+        event_count >= thresholds["device_local_event_count_review"]
+        and bool(producer_sources or runtime_sources)
+    )
+    severity = "low" if has_coverage else "medium"
+    status = "passed" if has_coverage else "warning"
+    return build_evidence_item(
+        evidence_type="device_local_operation_context",
+        metric_name="device_local_event_count",
+        observed_value=event_count,
+        baseline_value=None,
+        threshold=thresholds["device_local_event_count_review"],
+        delta=None,
+        delta_pct=None,
+        increase_factor=None,
+        severity=severity,
+        status=status,
+        why_it_matters=(
+            "Device-local starter evidence is stronger when Orchestrator records "
+            "actual local producer sources and runtime events for the device-local "
+            "tasks under review."
+        ),
+        suspected_causes=[] if has_coverage else ["device_local_evidence_gap"],
+        recommendation=(
+            "Device-local producer/event coverage is present; preserve it as local "
+            "operation evidence for Lab review."
+            if has_coverage
+            else "Rerun the device-local starter with local input overrides or producer "
+            "fixtures so Orchestrator records producer source and runtime event coverage."
+        ),
+        raw_context={
+            "totals": totals,
+            "device_local_task_count": task_count,
+            "device_local_event_count": event_count,
+            "producer_event_count": metrics.get("producer_event_count"),
+            "device_local_producer_sources": producer_sources,
+            "runtime_event_producer_sources": runtime_sources,
+            "producer_sources_by_task": metrics.get("producer_sources_by_task", {}),
         },
     )
 
@@ -1461,6 +1675,11 @@ def _worker_health_snapshot(summary: dict[str, Any]) -> dict[str, Any]:
     return value if isinstance(value, dict) else {}
 
 
+def _queue_state_summary(summary: dict[str, Any]) -> dict[str, Any]:
+    value = summary.get("queue_state_summary")
+    return value if isinstance(value, dict) else {}
+
+
 def _runtime_event_summary(summary: dict[str, Any]) -> dict[str, Any]:
     value = summary.get("runtime_event_summary")
     return value if isinstance(value, dict) else {}
@@ -1659,6 +1878,47 @@ def _count_mapping(value: Any) -> dict[str, int]:
     return counts
 
 
+def _producer_sources_by_task(queue_state_summary: dict[str, Any]) -> dict[str, list[str]]:
+    raw_value = queue_state_summary.get("producer_sources_by_task")
+    if not isinstance(raw_value, dict):
+        return {}
+    result: dict[str, list[str]] = {}
+    for task_name, sources in raw_value.items():
+        if not isinstance(task_name, str) or not task_name:
+            continue
+        result[task_name] = _string_list(sources)
+    return result
+
+
+def _queue_pressure_reason_is_concerning(reason: Any) -> bool:
+    if not isinstance(reason, str) or not reason:
+        return False
+    return any(token in reason for token in ("exceeded", "elevated", "overloaded"))
+
+
+def _queue_pressure_reason_is_blocking(reason: Any) -> bool:
+    if not isinstance(reason, str) or not reason:
+        return False
+    return "exceeded" in reason or "overloaded" in reason
+
+
+def _queue_pressure_suspected_causes(
+    queue_pressure_reason: str | None,
+    pressure_counts: dict[str, int],
+) -> list[str]:
+    causes: list[str] = []
+    for reason in [queue_pressure_reason, *pressure_counts.keys()]:
+        if not isinstance(reason, str):
+            continue
+        if "backlog" in reason and "queue_backlog" not in causes:
+            causes.append("queue_backlog")
+        if "threshold" in reason and "overload_threshold_pressure" not in causes:
+            causes.append("overload_threshold_pressure")
+        if "elevated" in reason and "queue_pressure_elevated" not in causes:
+            causes.append("queue_pressure_elevated")
+    return causes or ["queue_pressure_context"]
+
+
 def _top_reason(reasons: dict[str, int]) -> str | None:
     if not reasons:
         return None
@@ -1731,12 +1991,33 @@ def _worker_health_metrics(snapshot: dict[str, Any]) -> dict[str, Any]:
     workers = workers_raw if isinstance(workers_raw, dict) else {}
     worker_metrics: list[dict[str, Any]] = []
     reason_counts: dict[str, int] = {}
+    primary_reason_counts: dict[str, int] = {}
+    operation_risk_counts: dict[str, int] = {}
+    producer_sources: list[str] = []
+    device_local_worker_count = 0
     for worker_id, worker in workers.items():
         if not isinstance(worker, dict):
             continue
         health_reasons = _string_list(worker.get("health_reasons"))
         for reason in health_reasons:
             reason_counts[reason] = reason_counts.get(reason, 0) + 1
+        primary_reason = _first_string(worker.get("primary_health_reason"))
+        if primary_reason:
+            primary_reason_counts[primary_reason] = (
+                primary_reason_counts.get(primary_reason, 0) + 1
+            )
+        operation_risk = _first_string(worker.get("operation_risk_summary"))
+        if operation_risk:
+            operation_risk_counts[operation_risk] = (
+                operation_risk_counts.get(operation_risk, 0) + 1
+            )
+        worker_producer_sources = _string_list(worker.get("producer_sources"))
+        for source in worker_producer_sources:
+            if source not in producer_sources:
+                producer_sources.append(source)
+        device_local_validation = _bool_value(worker.get("device_local_validation"))
+        if device_local_validation:
+            device_local_worker_count += 1
         worker_metrics.append(
             {
                 "worker_id": worker_id,
@@ -1744,6 +2025,8 @@ def _worker_health_metrics(snapshot: dict[str, Any]) -> dict[str, Any]:
                 "agent_type": worker.get("agent_type"),
                 "health_state": worker.get("health_state"),
                 "health_reasons": health_reasons,
+                "primary_health_reason": primary_reason,
+                "operation_risk_summary": operation_risk,
                 "drop_rate": _non_negative_number(worker.get("drop_rate")),
                 "deadline_miss_rate": _non_negative_number(
                     worker.get("deadline_miss_rate")
@@ -1754,6 +2037,12 @@ def _worker_health_metrics(snapshot: dict[str, Any]) -> dict[str, Any]:
                 ),
                 "runtime_loop": worker.get("runtime_loop"),
                 "ingress_profile": worker.get("ingress_profile"),
+                "device_local_validation": device_local_validation,
+                "producer_stage": worker.get("producer_stage"),
+                "producer_sources": worker_producer_sources,
+                "producer_event_count": _non_negative_number(
+                    worker.get("producer_event_count")
+                ),
             }
         )
     health_state_counts = _count_mapping(snapshot.get("health_state_counts"))
@@ -1774,6 +2063,10 @@ def _worker_health_metrics(snapshot: dict[str, Any]) -> dict[str, Any]:
             float(len(constrained_workers)),
         ),
         "health_reason_counts": reason_counts,
+        "primary_health_reason_counts": primary_reason_counts,
+        "operation_risk_summary_counts": operation_risk_counts,
+        "device_local_worker_count": device_local_worker_count,
+        "producer_sources": producer_sources,
         "workers": worker_metrics,
     }
 

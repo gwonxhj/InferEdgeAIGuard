@@ -243,12 +243,18 @@ def operation_telemetry_summary() -> dict:
                 "agent_type": "safety",
                 "health_state": "healthy",
                 "health_reasons": ["healthy_without_runtime_risk"],
+                "primary_health_reason": "healthy_without_runtime_risk",
+                "operation_risk_summary": "healthy_without_runtime_risk",
                 "drop_rate": 0.0,
                 "deadline_miss_rate": 0.0,
                 "fallback_rate": 0.0,
                 "queue_pressure_ratio": 0.25,
                 "runtime_loop": "safety_monitor_loop",
                 "ingress_profile": "periodic_monitor",
+                "device_local_validation": True,
+                "producer_stage": "device_local_starter",
+                "producer_sources": ["resource_snapshot_fixture"],
+                "producer_event_count": 3,
             },
             "vision_agent": {
                 "agent_id": "vision_agent",
@@ -259,12 +265,18 @@ def operation_telemetry_summary() -> dict:
                     "frames_dropped",
                     "queue_reached_capacity",
                 ],
+                "primary_health_reason": "fallback_policy_used",
+                "operation_risk_summary": "latency_or_fallback_risk",
                 "drop_rate": 0.25,
                 "deadline_miss_rate": 0.10,
                 "fallback_rate": 0.25,
                 "queue_pressure_ratio": 1.0,
                 "runtime_loop": "yolo_detection_loop",
                 "ingress_profile": "frame_queue",
+                "device_local_validation": True,
+                "producer_stage": "device_local_starter",
+                "producer_sources": ["image_file"],
+                "producer_event_count": 8,
             },
             "voice_command_agent": {
                 "agent_id": "voice_command_agent",
@@ -275,13 +287,57 @@ def operation_telemetry_summary() -> dict:
                     "frames_dropped",
                     "queue_reached_capacity",
                 ],
+                "primary_health_reason": "fallback_policy_used",
+                "operation_risk_summary": "drop_or_queue_pressure_risk",
                 "drop_rate": 0.75,
                 "deadline_miss_rate": 0.0,
                 "fallback_rate": 0.75,
                 "queue_pressure_ratio": 1.0,
                 "runtime_loop": "whisper_command_burst",
                 "ingress_profile": "fastapi_concurrent_request",
+                "device_local_validation": True,
+                "producer_stage": "device_local_starter",
+                "producer_sources": ["fastapi_request_fixture"],
+                "producer_event_count": 2,
             },
+        },
+    }
+    summary["queue_state_summary"] = {
+        "schema_version": "inferedge-orchestrator-queue-state-v1",
+        "sample_count": 2,
+        "overload_backlog_threshold": 3,
+        "max_total_queue_depth": 11,
+        "average_total_queue_depth": 7.5,
+        "final_queue_depth": {
+            "vision_agent": 4,
+            "voice_command_agent": 2,
+            "safety_monitor_agent": 0,
+        },
+        "max_queue_depth_by_task": {
+            "vision_agent": 8,
+            "voice_command_agent": 3,
+            "safety_monitor_agent": 1,
+        },
+        "max_pressure_task": "vision_agent",
+        "queue_pressure_state": "overloaded",
+        "queue_pressure_reason": (
+            "max_total_queue_depth_exceeded_overload_threshold"
+        ),
+        "device_local_task_count": 3,
+        "device_local_tasks": [
+            "safety_monitor_agent",
+            "vision_agent",
+            "voice_command_agent",
+        ],
+        "device_local_producer_sources": [
+            "resource_snapshot_fixture",
+            "image_file",
+            "fastapi_request_fixture",
+        ],
+        "producer_sources_by_task": {
+            "safety_monitor_agent": ["resource_snapshot_fixture"],
+            "vision_agent": ["image_file"],
+            "voice_command_agent": ["fastapi_request_fixture"],
         },
     }
     summary["runtime_event_summary"] = {
@@ -307,10 +363,22 @@ def operation_telemetry_summary() -> dict:
         "drop_reason_counts": {
             "load_shedding_backlog_threshold_exceeded": 2
         },
+        "queue_pressure_reason_counts": {
+            "queue_backlog_threshold_exceeded": 1,
+            "queue_pressure_elevated": 2,
+        },
         "fallback_decision_count": 2,
         "deadline_missed_count": 1,
         "scheduler_delay_event_count": 2,
+        "producer_sources": [
+            "resource_snapshot_fixture",
+            "image_file",
+            "fastapi_request_fixture",
+        ],
+        "producer_event_count": 13,
+        "device_local_event_count": 9,
         "latest_event_index": 8,
+        "latest_event_type": "execution",
     }
     summary["runtime_event_timeline"] = [
         {
@@ -617,9 +685,33 @@ def test_operation_telemetry_summary_preserves_phase2_metrics():
         "load_shedding_backlog_threshold_exceeded": 2
     }
     assert metrics["runtime_event_reason_counts"]["scheduler_delay_observed"] == 1
+    assert metrics["queue_pressure_reason_counts"] == {
+        "queue_backlog_threshold_exceeded": 1,
+        "queue_pressure_elevated": 2,
+    }
     assert metrics["scheduler_delay_event_count"] == 2
     assert metrics["fallback_decision_count"] == 2
     assert metrics["runtime_event_count"] == 9
+    assert metrics["latest_runtime_event_type"] == "execution"
+    assert metrics["queue_pressure_state"] == "overloaded"
+    assert metrics["queue_pressure_reason"] == (
+        "max_total_queue_depth_exceeded_overload_threshold"
+    )
+    assert metrics["max_pressure_task"] == "vision_agent"
+    assert metrics["device_local_task_count"] == 3
+    assert metrics["device_local_event_count"] == 9
+    assert metrics["producer_event_count"] == 13
+    assert metrics["runtime_event_producer_sources"] == [
+        "resource_snapshot_fixture",
+        "image_file",
+        "fastapi_request_fixture",
+    ]
+    assert metrics["device_local_producer_sources"] == [
+        "resource_snapshot_fixture",
+        "image_file",
+        "fastapi_request_fixture",
+    ]
+    assert metrics["producer_sources_by_task"]["vision_agent"] == ["image_file"]
     assert metrics["worker_health"]["degraded_worker_count"] == 2
     assert metrics["worker_health"]["health_reason_counts"] == {
         "healthy_without_runtime_risk": 1,
@@ -627,6 +719,21 @@ def test_operation_telemetry_summary_preserves_phase2_metrics():
         "frames_dropped": 2,
         "queue_reached_capacity": 2,
     }
+    assert metrics["worker_health"]["primary_health_reason_counts"] == {
+        "healthy_without_runtime_risk": 1,
+        "fallback_policy_used": 2,
+    }
+    assert metrics["worker_health"]["operation_risk_summary_counts"] == {
+        "healthy_without_runtime_risk": 1,
+        "latency_or_fallback_risk": 1,
+        "drop_or_queue_pressure_risk": 1,
+    }
+    assert metrics["worker_health"]["device_local_worker_count"] == 3
+    assert metrics["worker_health"]["producer_sources"] == [
+        "resource_snapshot_fixture",
+        "image_file",
+        "fastapi_request_fixture",
+    ]
 
 
 def test_analyze_orchestration_summary_returns_diagnosis_report():
@@ -703,6 +810,9 @@ def test_analyze_operation_telemetry_adds_worker_and_scheduler_warnings():
     evidence_types = {item["type"] for item in report["evidence"]}
     assert "worker_health_degradation" in evidence_types
     assert "scheduler_delay_pattern" in evidence_types
+    assert "queue_pressure_context" in evidence_types
+    assert "worker_operation_risk_summary" in evidence_types
+    assert "device_local_operation_context" in evidence_types
 
     worker_evidence = next(
         item for item in report["evidence"] if item["type"] == "worker_health_degradation"
@@ -728,6 +838,61 @@ def test_analyze_operation_telemetry_adds_worker_and_scheduler_warnings():
         ]
         == {"queue_backlog_threshold_exceeded": 1}
     )
+    queue_pressure = next(
+        item for item in report["evidence"] if item["type"] == "queue_pressure_context"
+    )
+    assert queue_pressure["status"] == "warning"
+    assert queue_pressure["raw_context"]["queue_pressure_reason"] == (
+        "max_total_queue_depth_exceeded_overload_threshold"
+    )
+    assert queue_pressure["raw_context"]["max_pressure_task"] == "vision_agent"
+    assert "queue_backlog" in queue_pressure["suspected_causes"]
+
+    worker_risk = next(
+        item
+        for item in report["evidence"]
+        if item["type"] == "worker_operation_risk_summary"
+    )
+    assert worker_risk["status"] == "warning"
+    assert worker_risk["observed_value"] == 2
+    assert worker_risk["raw_context"]["operation_risk_summary_counts"] == {
+        "latency_or_fallback_risk": 1,
+        "drop_or_queue_pressure_risk": 1,
+    }
+
+    device_local = next(
+        item
+        for item in report["evidence"]
+        if item["type"] == "device_local_operation_context"
+    )
+    assert device_local["status"] == "passed"
+    assert device_local["observed_value"] == 9
+    assert device_local["raw_context"]["device_local_producer_sources"] == [
+        "resource_snapshot_fixture",
+        "image_file",
+        "fastapi_request_fixture",
+    ]
+
+
+def test_device_local_operation_context_warns_when_event_coverage_is_missing():
+    summary = operation_telemetry_summary()
+    summary["runtime_event_summary"]["device_local_event_count"] = 0
+    summary["runtime_event_summary"]["producer_event_count"] = 0
+    summary["runtime_event_summary"]["producer_sources"] = []
+    summary["queue_state_summary"]["device_local_producer_sources"] = []
+
+    report = analyze_orchestration_summary(summary)
+
+    validate_diagnosis_report(report)
+    evidence = next(
+        item
+        for item in report["evidence"]
+        if item["type"] == "device_local_operation_context"
+    )
+    assert evidence["status"] == "warning"
+    assert evidence["severity"] == "medium"
+    assert "device_local_evidence_gap" in evidence["suspected_causes"]
+    assert "local input overrides" in evidence["recommendation"]
 
 
 def test_analyze_runtime_result_returns_operation_evidence():

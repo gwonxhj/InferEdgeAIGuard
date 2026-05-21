@@ -52,7 +52,7 @@ Implemented today:
 - output-level bbox validity, bbox collapse, confidence distribution, detection count drift, NaN/Inf, and score range detectors
 - baseline-vs-candidate comparison for output quality drift and suspicious speed/quality trade-offs
 - initial temporal consistency evidence for detection count variance, bbox center movement, class flip rate, and track-free temporal instability signals
-- runtime reliability evidence from Orchestrator `orchestration_summary` files: deadline miss, drop/fallback, queue backlog, sustained workload profile pressure, local profile adapter signals, and optional tegrastats thermal/resource signals
+- runtime reliability evidence from Orchestrator `orchestration_summary` files: deadline miss, drop/fallback, queue backlog, queue pressure reasons, worker operation risk summaries, device-local producer/event coverage, sustained workload profile pressure, local profile adapter signals, and optional tegrastats thermal/resource signals
 - portfolio demo diagnosis bundle covering normal/pass, bbox collapse/blocked, score saturation/blocked, temporal instability/review_required, and provenance mismatch cases
 - artifact and source model provenance mismatch detection
 - Forge summary vs Runtime worker_response provenance mismatch coverage
