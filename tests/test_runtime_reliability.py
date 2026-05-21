@@ -230,6 +230,109 @@ def multi_workload_sustained_summary() -> dict:
     return summary
 
 
+def operation_telemetry_summary() -> dict:
+    summary = multi_workload_sustained_summary()
+    summary["worker_health_snapshot"] = {
+        "schema_version": "inferedge-orchestrator-worker-health-v1",
+        "health_state_counts": {"healthy": 1, "degraded": 2},
+        "degraded_workers": ["vision_agent", "voice_command_agent"],
+        "constrained_workers": [],
+        "workers": {
+            "safety_monitor_agent": {
+                "agent_id": "safety_monitor_agent",
+                "agent_type": "safety",
+                "health_state": "healthy",
+                "health_reasons": ["healthy_without_runtime_risk"],
+                "drop_rate": 0.0,
+                "deadline_miss_rate": 0.0,
+                "fallback_rate": 0.0,
+                "queue_pressure_ratio": 0.25,
+                "runtime_loop": "safety_monitor_loop",
+                "ingress_profile": "periodic_monitor",
+            },
+            "vision_agent": {
+                "agent_id": "vision_agent",
+                "agent_type": "vision",
+                "health_state": "degraded",
+                "health_reasons": [
+                    "fallback_policy_used",
+                    "frames_dropped",
+                    "queue_reached_capacity",
+                ],
+                "drop_rate": 0.25,
+                "deadline_miss_rate": 0.10,
+                "fallback_rate": 0.25,
+                "queue_pressure_ratio": 1.0,
+                "runtime_loop": "yolo_detection_loop",
+                "ingress_profile": "frame_queue",
+            },
+            "voice_command_agent": {
+                "agent_id": "voice_command_agent",
+                "agent_type": "voice",
+                "health_state": "degraded",
+                "health_reasons": [
+                    "fallback_policy_used",
+                    "frames_dropped",
+                    "queue_reached_capacity",
+                ],
+                "drop_rate": 0.75,
+                "deadline_miss_rate": 0.0,
+                "fallback_rate": 0.75,
+                "queue_pressure_ratio": 1.0,
+                "runtime_loop": "whisper_command_burst",
+                "ingress_profile": "fastapi_concurrent_request",
+            },
+        },
+    }
+    summary["runtime_event_summary"] = {
+        "schema_version": "inferedge-orchestrator-runtime-event-summary-v1",
+        "event_count": 9,
+        "event_type_counts": {
+            "queue_snapshot": 2,
+            "schedule": 2,
+            "execution": 2,
+            "drop": 2,
+            "policy_decision": 1,
+        },
+        "reason_counts": {
+            "priority_deadline": 2,
+            "completed_within_latency_budget": 1,
+            "scheduler_delay_observed": 1,
+            "load_shedding_backlog_threshold_exceeded": 2,
+            "queue_backlog_threshold_exceeded": 1,
+        },
+        "policy_decision_reason_counts": {
+            "queue_backlog_threshold_exceeded": 1
+        },
+        "drop_reason_counts": {
+            "load_shedding_backlog_threshold_exceeded": 2
+        },
+        "fallback_decision_count": 2,
+        "deadline_missed_count": 1,
+        "scheduler_delay_event_count": 2,
+        "latest_event_index": 8,
+    }
+    summary["runtime_event_timeline"] = [
+        {
+            "event_index": 0,
+            "event_type": "execution",
+            "agent_id": "vision_agent",
+            "scheduler_delay_cycles": 2,
+            "queue_wait_ms": 10.0,
+            "reason": "scheduler_delay_observed",
+        },
+        {
+            "event_index": 1,
+            "event_type": "execution",
+            "agent_id": "voice_command_agent",
+            "scheduler_delay_cycles": 1,
+            "queue_wait_ms": 5.0,
+            "reason": "scheduler_delay_observed",
+        },
+    ]
+    return summary
+
+
 def runtime_result_with_operation_signals() -> dict:
     return {
         "schema_version": "inferedge-runtime-result-v1",
@@ -501,6 +604,28 @@ def test_multi_workload_sustained_summary_adds_profile_and_thermal_metrics():
     } == {"local_profile_adapter"}
 
 
+def test_operation_telemetry_summary_preserves_phase2_metrics():
+    metrics = compute_runtime_reliability_metrics(operation_telemetry_summary())
+
+    assert metrics["policy_decision_reason_counts"] == {
+        "queue_backlog_threshold_exceeded": 1
+    }
+    assert metrics["drop_reason_counts"] == {
+        "load_shedding_backlog_threshold_exceeded": 2
+    }
+    assert metrics["runtime_event_reason_counts"]["scheduler_delay_observed"] == 1
+    assert metrics["scheduler_delay_event_count"] == 2
+    assert metrics["fallback_decision_count"] == 2
+    assert metrics["runtime_event_count"] == 9
+    assert metrics["worker_health"]["degraded_worker_count"] == 2
+    assert metrics["worker_health"]["health_reason_counts"] == {
+        "healthy_without_runtime_risk": 1,
+        "fallback_policy_used": 2,
+        "frames_dropped": 2,
+        "queue_reached_capacity": 2,
+    }
+
+
 def test_analyze_orchestration_summary_returns_diagnosis_report():
     report = analyze_orchestration_summary(orchestration_summary())
 
@@ -565,6 +690,40 @@ def test_analyze_multi_workload_sustained_summary_adds_runtime_evidence():
     assert (
         report["candidate_summary"]["runtime_reliability"]["max_temperature_c"]
         == 76.2
+    )
+
+
+def test_analyze_operation_telemetry_adds_worker_and_scheduler_warnings():
+    report = analyze_orchestration_summary(operation_telemetry_summary())
+
+    validate_diagnosis_report(report)
+    evidence_types = {item["type"] for item in report["evidence"]}
+    assert "worker_health_degradation" in evidence_types
+    assert "scheduler_delay_pattern" in evidence_types
+
+    worker_evidence = next(
+        item for item in report["evidence"] if item["type"] == "worker_health_degradation"
+    )
+    assert worker_evidence["status"] == "warning"
+    assert worker_evidence["raw_context"]["worker_health"]["degraded_workers"] == [
+        "vision_agent",
+        "voice_command_agent",
+    ]
+    assert "fallback_policy_used" in worker_evidence["suspected_causes"]
+
+    scheduler_evidence = next(
+        item for item in report["evidence"] if item["type"] == "scheduler_delay_pattern"
+    )
+    assert scheduler_evidence["observed_value"] == 2
+    assert scheduler_evidence["status"] == "failed"
+    assert scheduler_evidence["raw_context"]["drop_reason_counts"] == {
+        "load_shedding_backlog_threshold_exceeded": 2
+    }
+    assert (
+        report["candidate_summary"]["runtime_reliability"][
+            "policy_decision_reason_counts"
+        ]
+        == {"queue_backlog_threshold_exceeded": 1}
     )
 
 

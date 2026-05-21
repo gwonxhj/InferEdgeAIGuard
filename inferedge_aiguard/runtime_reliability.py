@@ -37,6 +37,11 @@ DEFAULT_RUNTIME_RELIABILITY_THRESHOLDS = {
     "runtime_error_severity_review": 1,
     "remote_dispatch_failure_review": 1,
     "remote_execution_failure_review": 1,
+    "worker_degraded_count_review": 1,
+    "worker_degraded_count_blocked": 3,
+    "worker_constrained_count_review": 1,
+    "scheduler_delay_event_count_review": 1,
+    "scheduler_delay_event_count_blocked": 3,
 }
 
 
@@ -68,6 +73,16 @@ def analyze_orchestration_summary(
         _queue_backlog_evidence(metrics, totals, policy),
         _sustained_overload_evidence(metrics, totals, policy),
     ]
+    worker_health_evidence = _worker_health_degradation_evidence(
+        metrics, totals, policy
+    )
+    if worker_health_evidence is not None:
+        evidence.append(worker_health_evidence)
+    scheduler_delay_evidence = _scheduler_delay_pattern_evidence(
+        metrics, totals, policy
+    )
+    if scheduler_delay_evidence is not None:
+        evidence.append(scheduler_delay_evidence)
     for runtime_metrics in runtime_operation_metrics:
         evidence.extend(_runtime_operation_evidence(runtime_metrics, policy))
     for remote_metrics in remote_dispatch_metrics:
@@ -184,6 +199,9 @@ def compute_runtime_reliability_metrics(summary: dict[str, Any]) -> dict[str, An
     observed_signals = _observed_runtime_signals(multi_workload_summary)
     tegrastats_timeline = _tegrastats_timeline(summary)
     tegrastats_summary = _mapping(tegrastats_timeline.get("summary"))
+    worker_health_snapshot = _worker_health_snapshot(summary)
+    runtime_event_summary = _runtime_event_summary(summary)
+    runtime_event_timeline = _runtime_event_timeline(summary)
     totals = _totals(runtime_summary)
     latency_timeline = _list(summary.get("latency_timeline"))
     queue_depth_timeline = _list(summary.get("queue_depth_timeline"))
@@ -224,6 +242,18 @@ def compute_runtime_reliability_metrics(summary: dict[str, Any]) -> dict[str, An
         policy_decision_reasons = _policy_decision_reasons_from_values(
             observed_signals.get("policy_decision_reasons")
         )
+    policy_decision_reason_counts = _count_mapping(
+        runtime_event_summary.get("policy_decision_reason_counts")
+    )
+    if policy_decision_reason_counts:
+        policy_decision_reasons = policy_decision_reason_counts
+    drop_reason_counts = _count_mapping(runtime_event_summary.get("drop_reason_counts"))
+    runtime_event_reason_counts = _count_mapping(
+        runtime_event_summary.get("reason_counts")
+    )
+    runtime_event_type_counts = _count_mapping(
+        runtime_event_summary.get("event_type_counts")
+    )
     queue_backlog_decisions = [
         item
         for item in policy_decision_log
@@ -231,6 +261,13 @@ def compute_runtime_reliability_metrics(summary: dict[str, Any]) -> dict[str, An
         or "backlog" in str(item.get("decision_reason", "")).lower()
         or "backlog" in str(item.get("decision", "")).lower()
     ]
+    queue_backlog_decision_count = len(queue_backlog_decisions)
+    if queue_backlog_decision_count <= 0 and policy_decision_reasons:
+        queue_backlog_decision_count = sum(
+            count
+            for reason, count in policy_decision_reasons.items()
+            if "backlog" in reason.lower()
+        )
     max_total_queue_depth = max(
         _non_negative_number(sustained_summary.get("max_total_queue_depth")),
         _non_negative_number(observed_signals.get("max_total_queue_depth")),
@@ -240,6 +277,11 @@ def compute_runtime_reliability_metrics(summary: dict[str, Any]) -> dict[str, An
     affected_workload_profiles = _affected_workload_profiles(workload_profiles)
     if affected_workload_profiles:
         overload_event_count = max(overload_event_count, float(len(affected_workload_profiles)))
+    worker_health_metrics = _worker_health_metrics(worker_health_snapshot)
+    scheduler_delay_event_count = max(
+        _non_negative_number(runtime_event_summary.get("scheduler_delay_event_count")),
+        float(_scheduler_delay_event_count(runtime_event_timeline)),
+    )
 
     total_task_events = executed_count + dropped_count
     return {
@@ -257,12 +299,28 @@ def compute_runtime_reliability_metrics(summary: dict[str, Any]) -> dict[str, An
         "fallback_rate": _ratio(fallback_count, total_task_events),
         "policy_decision_log_count": len(policy_decision_log),
         "policy_decision_reasons": policy_decision_reasons,
+        "policy_decision_reason_counts": policy_decision_reason_counts,
+        "drop_reason_counts": drop_reason_counts,
+        "runtime_event_reason_counts": runtime_event_reason_counts,
+        "runtime_event_type_counts": runtime_event_type_counts,
         "top_policy_decision_reason": _top_reason(policy_decision_reasons),
-        "queue_backlog_policy_decision_count": len(queue_backlog_decisions),
+        "queue_backlog_policy_decision_count": queue_backlog_decision_count,
         "queue_depth_sample_count": len(queue_depth_timeline),
         "latency_sample_count": len(latency_timeline),
+        "runtime_event_count": _non_negative_number(
+            runtime_event_summary.get("event_count")
+        )
+        or float(len(runtime_event_timeline)),
+        "fallback_decision_count": _non_negative_number(
+            runtime_event_summary.get("fallback_decision_count")
+        ),
+        "scheduler_delay_event_count": scheduler_delay_event_count,
+        "latest_runtime_event_index": _optional_non_negative_number(
+            runtime_event_summary.get("latest_event_index")
+        ),
         "max_total_queue_depth": max_total_queue_depth,
         "affected_agents": sorted(_affected_agents(summary)),
+        "worker_health": worker_health_metrics,
         "workload_profile_count": len(workload_profiles),
         "profiled_workload_risk_count": len(affected_workload_profiles),
         "local_profile_adapter_count": _non_negative_number(
@@ -668,6 +726,113 @@ def _sustained_overload_evidence(
             "queue_depth_sample_count": metrics.get("queue_depth_sample_count"),
             "latency_sample_count": metrics.get("latency_sample_count"),
             "metrics": metrics,
+        },
+    )
+
+
+def _worker_health_degradation_evidence(
+    metrics: dict[str, Any],
+    totals: dict[str, Any],
+    thresholds: dict[str, float],
+) -> dict[str, Any] | None:
+    worker_health = _mapping(metrics.get("worker_health"))
+    if not worker_health.get("worker_count"):
+        return None
+    degraded_count = worker_health.get("degraded_worker_count", 0.0)
+    constrained_count = worker_health.get("constrained_worker_count", 0.0)
+    observed = degraded_count + constrained_count
+    if observed < thresholds["worker_degraded_count_review"]:
+        return None
+    severity = _rate_severity(
+        value=observed,
+        review=thresholds["worker_degraded_count_review"],
+        blocked=thresholds["worker_degraded_count_blocked"],
+    )
+    if constrained_count >= thresholds["worker_constrained_count_review"]:
+        severity = "high"
+    status = "failed" if severity == "high" else "warning"
+    return build_evidence_item(
+        evidence_type="worker_health_degradation",
+        metric_name="degraded_or_constrained_worker_count",
+        observed_value=observed,
+        baseline_value=0,
+        threshold=thresholds["worker_degraded_count_review"],
+        delta=None,
+        delta_pct=None,
+        increase_factor=None,
+        severity=severity,
+        status=status,
+        why_it_matters=(
+            "Worker health degradation explains which runtime loops were marked "
+            "degraded or constrained and preserves the scheduler-observed reasons "
+            "without making AIGuard the deployment decision owner."
+        ),
+        suspected_causes=[
+            reason
+            for reason in worker_health.get("health_reason_counts", {})
+            if reason != "healthy_without_runtime_risk"
+        ],
+        recommendation=(
+            "Inspect worker_health_snapshot health_reasons, per-worker drop and "
+            "fallback rates, and queue pressure before treating the operation path "
+            "as stable."
+        ),
+        raw_context={
+            "totals": totals,
+            "worker_health": worker_health,
+        },
+    )
+
+
+def _scheduler_delay_pattern_evidence(
+    metrics: dict[str, Any],
+    totals: dict[str, Any],
+    thresholds: dict[str, float],
+) -> dict[str, Any] | None:
+    count = metrics.get("scheduler_delay_event_count", 0.0)
+    if count < thresholds["scheduler_delay_event_count_review"]:
+        return None
+    severity = _rate_severity(
+        value=count,
+        review=thresholds["scheduler_delay_event_count_review"],
+        blocked=thresholds["scheduler_delay_event_count_blocked"],
+    )
+    status = _status_for_runtime_metric(severity)
+    return build_evidence_item(
+        evidence_type="scheduler_delay_pattern",
+        metric_name="scheduler_delay_event_count",
+        observed_value=count,
+        baseline_value=0,
+        threshold=thresholds["scheduler_delay_event_count_review"],
+        delta=None,
+        delta_pct=None,
+        increase_factor=None,
+        severity=severity,
+        status=status,
+        why_it_matters=(
+            "Scheduler delay events show that tasks waited across scheduling "
+            "cycles before execution, which can make edge workloads stale even "
+            "when final execution latency stays inside budget."
+        ),
+        suspected_causes=[
+            "scheduler_queue_wait",
+            "priority_contention",
+            "producer_rate_exceeds_scheduler_capacity",
+        ],
+        recommendation=(
+            "Inspect runtime_event_timeline scheduler_delay_cycles, queue_wait_ms, "
+            "and policy decision reasons before relying on this scheduling profile."
+        ),
+        raw_context={
+            "totals": totals,
+            "scheduler_delay_event_count": count,
+            "policy_decision_reason_counts": metrics.get(
+                "policy_decision_reason_counts", {}
+            ),
+            "drop_reason_counts": metrics.get("drop_reason_counts", {}),
+            "runtime_event_reason_counts": metrics.get(
+                "runtime_event_reason_counts", {}
+            ),
         },
     )
 
@@ -1279,6 +1444,20 @@ def _tegrastats_timeline(summary: dict[str, Any]) -> dict[str, Any]:
     return value if isinstance(value, dict) else {}
 
 
+def _worker_health_snapshot(summary: dict[str, Any]) -> dict[str, Any]:
+    value = summary.get("worker_health_snapshot")
+    return value if isinstance(value, dict) else {}
+
+
+def _runtime_event_summary(summary: dict[str, Any]) -> dict[str, Any]:
+    value = summary.get("runtime_event_summary")
+    return value if isinstance(value, dict) else {}
+
+
+def _runtime_event_timeline(summary: dict[str, Any]) -> list[dict[str, Any]]:
+    return _list(summary.get("runtime_event_timeline"))
+
+
 def _runtime_health_snapshot(runtime_result: dict[str, Any]) -> dict[str, Any]:
     value = runtime_result.get("runtime_health_snapshot")
     return value if isinstance(value, dict) else {}
@@ -1458,6 +1637,16 @@ def _policy_decision_reasons_from_values(value: Any) -> dict[str, int]:
     return counts
 
 
+def _count_mapping(value: Any) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    if not isinstance(value, dict):
+        return counts
+    for name, count in value.items():
+        key = name if isinstance(name, str) and name else "unknown"
+        counts[key] = counts.get(key, 0) + int(_non_negative_number(count))
+    return counts
+
+
 def _top_reason(reasons: dict[str, int]) -> str | None:
     if not reasons:
         return None
@@ -1523,6 +1712,67 @@ def _affected_workload_profiles(
             continue
         affected.append({**profile, "risk_reasons": reasons})
     return affected
+
+
+def _worker_health_metrics(snapshot: dict[str, Any]) -> dict[str, Any]:
+    workers_raw = snapshot.get("workers")
+    workers = workers_raw if isinstance(workers_raw, dict) else {}
+    worker_metrics: list[dict[str, Any]] = []
+    reason_counts: dict[str, int] = {}
+    for worker_id, worker in workers.items():
+        if not isinstance(worker, dict):
+            continue
+        health_reasons = _string_list(worker.get("health_reasons"))
+        for reason in health_reasons:
+            reason_counts[reason] = reason_counts.get(reason, 0) + 1
+        worker_metrics.append(
+            {
+                "worker_id": worker_id,
+                "agent_id": worker.get("agent_id") or worker_id,
+                "agent_type": worker.get("agent_type"),
+                "health_state": worker.get("health_state"),
+                "health_reasons": health_reasons,
+                "drop_rate": _non_negative_number(worker.get("drop_rate")),
+                "deadline_miss_rate": _non_negative_number(
+                    worker.get("deadline_miss_rate")
+                ),
+                "fallback_rate": _non_negative_number(worker.get("fallback_rate")),
+                "queue_pressure_ratio": _non_negative_number(
+                    worker.get("queue_pressure_ratio")
+                ),
+                "runtime_loop": worker.get("runtime_loop"),
+                "ingress_profile": worker.get("ingress_profile"),
+            }
+        )
+    health_state_counts = _count_mapping(snapshot.get("health_state_counts"))
+    degraded_workers = _string_list(snapshot.get("degraded_workers"))
+    constrained_workers = _string_list(snapshot.get("constrained_workers"))
+    return {
+        "schema_version": snapshot.get("schema_version"),
+        "worker_count": len(worker_metrics),
+        "health_state_counts": health_state_counts,
+        "degraded_workers": degraded_workers,
+        "constrained_workers": constrained_workers,
+        "degraded_worker_count": max(
+            _non_negative_number(health_state_counts.get("degraded")),
+            float(len(degraded_workers)),
+        ),
+        "constrained_worker_count": max(
+            _non_negative_number(health_state_counts.get("constrained")),
+            float(len(constrained_workers)),
+        ),
+        "health_reason_counts": reason_counts,
+        "workers": worker_metrics,
+    }
+
+
+def _scheduler_delay_event_count(timeline: list[dict[str, Any]]) -> int:
+    count = 0
+    for event in timeline:
+        delay = event.get("scheduler_delay_cycles")
+        if isinstance(delay, int) and not isinstance(delay, bool) and delay > 0:
+            count += 1
+    return count
 
 
 def _list(value: Any) -> list[dict[str, Any]]:

@@ -22,6 +22,9 @@ Expected input:
 - optional `latency_timeline`
 - optional `multi_workload_sustained_summary`
 - optional `tegrastats_timeline`
+- optional `worker_health_snapshot`
+- optional `runtime_event_summary`
+- optional `runtime_event_timeline`
 - optional embedded `runtime_result` / `runtime_results`
 
 The summary is produced by InferEdgeOrchestrator's 3-agent scheduling and
@@ -51,6 +54,8 @@ guess a root cause from missing logs.
 | `sustained_overload_risk` | `max_total_queue_depth` | `>= 3` | `>= 8` | Sustained queue depth indicates multi-agent overload pressure |
 | `profiled_workload_pressure` | `profiled_workload_risk_count` | `>= 1` | `>= 3` | Sustained workload profiles show which runtime loops are under pressure |
 | `thermal_resource_pressure` | `max_temperature_c` | `>= 70.0` | `>= 85.0` | Tegrastats indicates thermal/resource pressure during sustained execution |
+| `worker_health_degradation` | `degraded_or_constrained_worker_count` | `>= 1` | `>= 3` degraded workers or any constrained worker | Worker health snapshot explains degraded/constrained runtime loops |
+| `scheduler_delay_pattern` | `scheduler_delay_event_count` | `>= 1` | `>= 3` | Runtime event timeline shows tasks delayed across scheduler cycles |
 | `runtime_backend_unavailable` | `engine_available` | `0` | n/a | Runtime could not confirm backend/engine availability |
 | `runtime_latency_budget_overrun` | `latency_budget_exceeded` | `true` | n/a | Runtime exceeded the latency budget or missed a deadline |
 | `runtime_error_classification` | `runtime_error_severity` | present | n/a | Runtime classified an execution warning/error with a retry hint |
@@ -73,6 +78,36 @@ When Orchestrator emits sustained demo telemetry, AIGuard also preserves:
 This lets the report explain not only that work was dropped, but also why the
 scheduler intervened and whether queue depth kept growing under sustained
 multi-agent load.
+
+## Orchestrator Operation Telemetry Fields
+
+When Orchestrator emits Phase 2 operation telemetry, AIGuard preserves and
+reasons over:
+
+- `worker_health_snapshot.health_state_counts`
+- `worker_health_snapshot.degraded_workers`
+- `worker_health_snapshot.constrained_workers`
+- per-worker `health_reasons`, `drop_rate`, `deadline_miss_rate`,
+  `fallback_rate`, `queue_pressure_ratio`, `runtime_loop`, and
+  `ingress_profile`
+- `runtime_event_summary.policy_decision_reason_counts`
+- `runtime_event_summary.drop_reason_counts`
+- `runtime_event_summary.reason_counts`
+- `runtime_event_summary.fallback_decision_count`
+- `runtime_event_summary.scheduler_delay_event_count`
+- `runtime_event_timeline[].scheduler_delay_cycles`
+- `runtime_event_timeline[].queue_wait_ms`
+
+`worker_health_degradation` is emitted when Orchestrator marks one or more
+workers as degraded or constrained. Degraded workers are warning evidence;
+constrained workers or a high degraded count increase severity. This keeps
+AIGuard as an evidence provider while letting Lab and reviewers see which
+runtime loops were affected.
+
+`scheduler_delay_pattern` is emitted only when scheduler delay events are
+observed. Policy and drop reason counts are also preserved in raw context so the
+warning can explain whether delay was associated with backlog, load shedding,
+fallback, or another scheduler reason.
 
 ## Multi-Workload Sustained Fields
 
