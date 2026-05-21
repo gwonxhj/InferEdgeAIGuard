@@ -158,15 +158,19 @@ reasons over:
 - `runtime_health_snapshot.thermal_memory_evidence_available`
 - `runtime_error_classification.category`
 - `runtime_error_classification.severity`
+- `runtime_error_classification.retryable`
 - `runtime_error_classification.retry_hint`
+- `runtime_events[].retryable`
 - `runtime_events[].latency_budget_exceeded`
 - `runtime_events[].deadline_missed`
 
 These fields are interpreted as operation evidence. For example, a Runtime
 result with `engine_available: false`, `latency_budget_exceeded: true`, and a
-`retry_hint` produces deterministic guard evidence such as
+retryable `retry_hint` produces deterministic guard evidence such as
 `runtime_backend_unavailable`, `runtime_latency_budget_overrun`, and
-`runtime_error_classification`.
+`runtime_error_classification`. AIGuard preserves `retryable` as deterministic
+Runtime-side failure evidence for Lab review; it does not perform retries or
+claim production worker behavior.
 
 ## CLI
 
