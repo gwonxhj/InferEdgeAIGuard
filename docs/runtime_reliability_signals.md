@@ -56,6 +56,9 @@ guess a root cause from missing logs.
 | `thermal_resource_pressure` | `max_temperature_c` | `>= 70.0` | `>= 85.0` | Tegrastats indicates thermal/resource pressure during sustained execution |
 | `worker_health_degradation` | `degraded_or_constrained_worker_count` | `>= 1` | `>= 3` degraded workers or any constrained worker | Worker health snapshot explains degraded/constrained runtime loops |
 | `scheduler_delay_pattern` | `scheduler_delay_event_count` | `>= 1` | `>= 3` | Runtime event timeline shows tasks delayed across scheduler cycles |
+| `queue_pressure_context` | `queue_pressure_reason_count` | `>= 1` concerning reason | n/a | Queue pressure reason explains whether backlog was near or beyond the overload threshold |
+| `worker_operation_risk_summary` | `worker_operation_risk_count` | `>= 1` | `>= 3` | Worker operation risk summary identifies latency/fallback/drop/queue-pressure risk labels |
+| `device_local_operation_context` | `device_local_event_count` | `>= 1` when device-local tasks exist | n/a | Device-local starter records local producer sources and runtime event coverage |
 | `runtime_backend_unavailable` | `engine_available` | `0` | n/a | Runtime could not confirm backend/engine availability |
 | `runtime_latency_budget_overrun` | `latency_budget_exceeded` | `true` | n/a | Runtime exceeded the latency budget or missed a deadline |
 | `runtime_error_classification` | `runtime_error_severity` | present | n/a | Runtime classified an execution warning/error with a retry hint |
@@ -90,11 +93,22 @@ reasons over:
 - per-worker `health_reasons`, `drop_rate`, `deadline_miss_rate`,
   `fallback_rate`, `queue_pressure_ratio`, `runtime_loop`, and
   `ingress_profile`
+- per-worker `primary_health_reason`, `operation_risk_summary`,
+  `device_local_validation`, `producer_stage`, `producer_sources`, and
+  `producer_event_count`
+- `queue_state_summary.queue_pressure_reason`
+- `queue_state_summary.max_pressure_task`
+- `queue_state_summary.device_local_producer_sources`
+- `queue_state_summary.producer_sources_by_task`
 - `runtime_event_summary.policy_decision_reason_counts`
 - `runtime_event_summary.drop_reason_counts`
 - `runtime_event_summary.reason_counts`
+- `runtime_event_summary.queue_pressure_reason_counts`
 - `runtime_event_summary.fallback_decision_count`
 - `runtime_event_summary.scheduler_delay_event_count`
+- `runtime_event_summary.producer_sources`
+- `runtime_event_summary.producer_event_count`
+- `runtime_event_summary.device_local_event_count`
 - `runtime_event_timeline[].scheduler_delay_cycles`
 - `runtime_event_timeline[].queue_wait_ms`
 
@@ -108,6 +122,22 @@ runtime loops were affected.
 observed. Policy and drop reason counts are also preserved in raw context so the
 warning can explain whether delay was associated with backlog, load shedding,
 fallback, or another scheduler reason.
+
+`queue_pressure_context` is emitted when Orchestrator reports a concerning
+queue pressure reason, such as threshold exceeded or elevated pressure. AIGuard
+preserves the pressure reason, max pressure task, policy reason counts, and drop
+reason counts as review evidence without inferring a root cause.
+
+`worker_operation_risk_summary` is emitted when Orchestrator records non-healthy
+operation risk labels such as `latency_or_fallback_risk` or
+`drop_or_queue_pressure_risk`. It complements `worker_health_degradation` by
+preserving the concise per-worker risk labels intended for Lab reports.
+
+`device_local_operation_context` is emitted when device-local tasks are present.
+It passes when Orchestrator records producer sources and device-local runtime
+event coverage, and warns when device-local tasks exist but producer/event
+coverage is missing. This is local starter evidence, not proof of long-running
+device operation.
 
 ## Multi-Workload Sustained Fields
 
