@@ -474,6 +474,7 @@ def compute_runtime_operation_metrics(runtime_result: dict[str, Any]) -> dict[st
 
     health = _runtime_health_snapshot(runtime_result)
     error = _runtime_error_classification(runtime_result)
+    operation_summary = _runtime_operation_summary(runtime_result)
     events = _runtime_events(runtime_result)
     latency_budget_ms = _first_number(
         health.get("latency_budget_ms"),
@@ -522,6 +523,31 @@ def compute_runtime_operation_metrics(runtime_result: dict[str, Any]) -> dict[st
         "model": runtime_result.get("model"),
         "engine": runtime_result.get("engine"),
         "device": runtime_result.get("device"),
+        "runtime_operation_summary": operation_summary,
+        "runtime_operation_summary_schema": operation_summary.get("schema_version"),
+        "runtime_operation_health_status": _first_string(
+            operation_summary.get("health_status"),
+            health.get("status"),
+        ),
+        "runtime_operation_health_reason": _first_string(
+            operation_summary.get("health_reason"),
+            health.get("health_reason"),
+        ),
+        "runtime_operation_recommended_action": _first_string(
+            operation_summary.get("recommended_action")
+        ),
+        "runtime_operation_risk_labels": _string_list(
+            operation_summary.get("risk_labels")
+        ),
+        "runtime_operation_evidence_gaps": _string_list(
+            operation_summary.get("evidence_gaps")
+        ),
+        "runtime_operation_decision_owner": _first_string(
+            operation_summary.get("decision_owner")
+        ),
+        "runtime_operation_scheduler_owner": _first_string(
+            operation_summary.get("scheduler_owner")
+        ),
         "execution_status": _first_string(
             runtime_result.get("execution_status"),
             health.get("execution_status"),
@@ -1176,6 +1202,9 @@ def _runtime_operation_evidence(
     if metrics.get("runtime_error_category") or metrics.get("retry_hint"):
         evidence.append(_runtime_error_classification_evidence(metrics, thresholds))
 
+    if _runtime_operation_summary_has_review_signal(metrics):
+        evidence.append(_runtime_operation_summary_evidence(metrics, thresholds))
+
     if (
         metrics.get("device") == "jetson"
         and metrics.get("thermal_memory_evidence_available") is False
@@ -1592,6 +1621,67 @@ def _runtime_error_classification_evidence(
     )
 
 
+def _runtime_operation_summary_has_review_signal(metrics: dict[str, Any]) -> bool:
+    recommended_action = metrics.get("runtime_operation_recommended_action")
+    if isinstance(recommended_action, str) and recommended_action not in {"", "none"}:
+        return True
+    return bool(metrics.get("runtime_operation_risk_labels"))
+
+
+def _runtime_operation_summary_evidence(
+    metrics: dict[str, Any],
+    thresholds: dict[str, float],
+) -> dict[str, Any]:
+    risk_labels = _string_list(metrics.get("runtime_operation_risk_labels"))
+    evidence_gaps = _string_list(metrics.get("runtime_operation_evidence_gaps"))
+    recommended_action = metrics.get("runtime_operation_recommended_action")
+    health_reason = metrics.get("runtime_operation_health_reason")
+    summary_signal_count = max(
+        len(risk_labels),
+        1
+        if isinstance(recommended_action, str)
+        and recommended_action not in {"", "none"}
+        else 0,
+    )
+    return build_evidence_item(
+        evidence_type="runtime_operation_health",
+        metric_name="runtime_operation_summary_risk_count",
+        observed_value=summary_signal_count,
+        baseline_value=None,
+        threshold=thresholds["runtime_error_severity_review"],
+        delta=None,
+        delta_pct=None,
+        increase_factor=None,
+        severity="medium",
+        status="warning",
+        why_it_matters=(
+            "Runtime provided an operation summary with risk labels or a review "
+            "action. AIGuard preserves this deterministic Runtime-side warning "
+            "without making the final deployment decision."
+        ),
+        suspected_causes=[
+            cause
+            for cause in [
+                health_reason,
+                *risk_labels,
+                *evidence_gaps,
+            ]
+            if isinstance(cause, str) and cause
+        ],
+        recommendation=(
+            str(recommended_action)
+            if isinstance(recommended_action, str) and recommended_action
+            else "Review Runtime operation summary before Lab deployment decision."
+        ),
+        raw_context={
+            "runtime_operation": metrics,
+            "runtime_operation_summary": metrics.get("runtime_operation_summary"),
+            "decision_owner": metrics.get("runtime_operation_decision_owner"),
+            "scheduler_owner": metrics.get("runtime_operation_scheduler_owner"),
+        },
+    )
+
+
 def _runtime_thermal_evidence_gap(metrics: dict[str, Any]) -> dict[str, Any]:
     return build_evidence_item(
         evidence_type="runtime_thermal_memory_evidence_missing",
@@ -1701,6 +1791,11 @@ def _runtime_error_classification(runtime_result: dict[str, Any]) -> dict[str, A
 
 def _runtime_events(runtime_result: dict[str, Any]) -> list[dict[str, Any]]:
     return _list(runtime_result.get("runtime_events"))
+
+
+def _runtime_operation_summary(runtime_result: dict[str, Any]) -> dict[str, Any]:
+    value = runtime_result.get("runtime_operation_summary")
+    return value if isinstance(value, dict) else {}
 
 
 def _runtime_results(summary: dict[str, Any]) -> list[dict[str, Any]]:

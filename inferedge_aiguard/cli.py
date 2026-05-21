@@ -347,6 +347,7 @@ def _looks_like_runtime_operation_result(data: dict) -> bool:
             "runtime_health_snapshot",
             "runtime_error_classification",
             "runtime_events",
+            "runtime_operation_summary",
         }
     )
 

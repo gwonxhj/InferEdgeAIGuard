@@ -39,6 +39,7 @@ Runtime result input is also supported directly when the JSON includes:
 - optional `runtime_health_snapshot`
 - optional `runtime_error_classification`
 - optional `runtime_events`
+- optional `runtime_operation_summary`
 
 AIGuard treats these fields as Runtime-provided operation evidence. It does not
 guess a root cause from missing logs.
@@ -62,6 +63,7 @@ guess a root cause from missing logs.
 | `runtime_backend_unavailable` | `engine_available` | `0` | n/a | Runtime could not confirm backend/engine availability |
 | `runtime_latency_budget_overrun` | `latency_budget_exceeded` | `true` | n/a | Runtime exceeded the latency budget or missed a deadline |
 | `runtime_error_classification` | `runtime_error_severity` | present | n/a | Runtime classified an execution warning/error with a retry hint |
+| `runtime_operation_health` | `runtime_operation_summary_risk_count` | `>= 1` risk label or review action | n/a | Runtime provided operation summary risk labels, evidence gaps, or a review action |
 | `runtime_thermal_memory_evidence_missing` | `thermal_memory_evidence_available` | `false` on Jetson | n/a | Jetson result lacks thermal/memory context for sustained review |
 
 These thresholds are intentionally deterministic and local-first. They are
@@ -193,6 +195,12 @@ reasons over:
 - `runtime_events[].retryable`
 - `runtime_events[].latency_budget_exceeded`
 - `runtime_events[].deadline_missed`
+- `runtime_operation_summary.health_reason`
+- `runtime_operation_summary.risk_labels`
+- `runtime_operation_summary.evidence_gaps`
+- `runtime_operation_summary.recommended_action`
+- `runtime_operation_summary.decision_owner`
+- `runtime_operation_summary.scheduler_owner`
 
 These fields are interpreted as operation evidence. For example, a Runtime
 result with `engine_available: false`, `latency_budget_exceeded: true`, and a
@@ -201,6 +209,10 @@ retryable `retry_hint` produces deterministic guard evidence such as
 `runtime_error_classification`. AIGuard preserves `retryable` as deterministic
 Runtime-side failure evidence for Lab review; it does not perform retries or
 claim production worker behavior.
+When `runtime_operation_summary` is present, AIGuard preserves Runtime-provided
+`risk_labels`, `evidence_gaps`, and `recommended_action` as
+`runtime_operation_health` warning evidence while keeping Lab as the final
+deployment decision owner.
 
 ## CLI
 
