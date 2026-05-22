@@ -258,6 +258,11 @@ python -m inferedge_aiguard.cli reason \
 evidence로 변환합니다. AIGuard는 comparability를 다시 계산하지 않으며,
 non-comparable 또는 same-condition이 아닌 report는
 `edgeenv_comparability_guardrail` skipped evidence로 남깁니다.
+EdgeEnv가 baseline 또는 candidate telemetry context 아래에
+`orchestrator_operation_context`를 보존한 경우, AIGuard는 그 nested context의
+queue depth, thermal, throttling hint를 supplemental operation evidence로
+읽습니다. 이 feed는 Orchestrator verdict, EdgeEnv comparability gate, Lab
+deployment decision으로 취급하지 않습니다.
 candidate telemetry gap과 baseline/candidate execution sequence inversion은
 EdgeEnv replay context에서 온 warning evidence로 보존되며, AIGuard가 이를
 comparability decision으로 재판정하지 않습니다.

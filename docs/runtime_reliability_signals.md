@@ -55,10 +55,12 @@ EdgeEnv runtime regression reports are also supported when the JSON includes:
 - `evidence.fps_delta_pct`
 - `evidence.memory_peak_delta_pct`
 - optional `runtime_telemetry_context`
+- optional `runtime_telemetry_context.<run>.orchestrator_operation_context`
 
 EdgeEnv remains the comparability and regression calculation owner. AIGuard
-only turns same-condition EdgeEnv regression and telemetry coverage signals into
-deterministic diagnosis evidence for Lab review.
+only turns same-condition EdgeEnv regression, telemetry coverage, and preserved
+Orchestrator operation context signals into deterministic diagnosis evidence for
+Lab review.
 
 ## Evidence Mapping
 
@@ -86,6 +88,8 @@ deterministic diagnosis evidence for Lab review.
 | `runtime_memory_regression` | `memory_peak_delta_pct` | `>= 30.0` | n/a | EdgeEnv same-condition regression indicates memory headroom risk |
 | `runtime_telemetry_context_coverage` | `runtime_telemetry_evidence_gap_count` | `>= 1` | n/a | EdgeEnv telemetry context is present but baseline/candidate coverage has gaps |
 | `runtime_telemetry_replay_context` | `runtime_telemetry_history_missing_run_count` | `>= 1` or baseline/candidate sequence order mismatch | n/a | EdgeEnv telemetry history replay has missing telemetry or ordering concerns |
+| `runtime_thermal_instability` | `candidate_max_temperature_c` / `candidate_throttling_detected` | temperature `>= 70.0` or throttling `true` | temperature `>= 85.0` | EdgeEnv telemetry or attached Orchestrator feed indicates thermal/throttling pressure |
+| `runtime_queue_overload` | `candidate_queue_depth` | `>= 3.0` | `>= 8.0` | EdgeEnv telemetry or attached Orchestrator feed indicates queue backlog pressure |
 | `edgeenv_comparability_guardrail` | `edgeenv_comparable` | skipped when not comparable or not same-condition | n/a | AIGuard refuses to reinterpret non-comparable EdgeEnv reports as same-condition regression |
 
 These thresholds are intentionally deterministic and local-first. They are
@@ -295,7 +299,12 @@ python -m inferedge_aiguard.cli reason \
 This path emits deterministic runtime anomaly evidence such as
 `runtime_latency_regression`, `runtime_throughput_regression`,
 `runtime_memory_regression`, `runtime_telemetry_context_coverage`, and
-`runtime_telemetry_replay_context`.
+`runtime_telemetry_replay_context`. If EdgeEnv preserved an
+`orchestrator_operation_context` under the baseline or candidate telemetry
+context, AIGuard reads queue depth, thermal, and throttling hints from that
+nested context as supplemental operation evidence. It does not treat the feed as
+an Orchestrator verdict, an EdgeEnv comparability gate, or a Lab deployment
+decision.
 Candidate telemetry gaps and baseline/candidate execution sequence inversion
 are preserved as EdgeEnv replay-context warnings, not recomputed
 comparability decisions.
