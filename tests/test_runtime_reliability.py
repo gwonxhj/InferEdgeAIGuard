@@ -17,6 +17,7 @@ from inferedge_aiguard.schema import validate_diagnosis_report
 
 
 ROOT = Path(__file__).resolve().parents[1]
+EDGEENV_REGRESSION_FIXTURES = ROOT / "tests" / "fixtures" / "edgeenv_regression"
 
 
 def orchestration_summary() -> dict:
@@ -1664,3 +1665,78 @@ def test_cli_reason_edgeenv_regression_saves_sequence_order_warning(tmp_path):
     assert "telemetry_sequence_order_mismatch" in replay_evidence[
         "suspected_causes"
     ]
+
+
+def test_cli_reason_edgeenv_regression_consumes_edgeenv_candidate_gap_fixture(tmp_path):
+    input_path = EDGEENV_REGRESSION_FIXTURES / "edgeenv_candidate_telemetry_gap.json"
+    output_path = tmp_path / "reports" / "edgeenv_guard_analysis.json"
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "reason-edgeenv-regression",
+            "--input",
+            str(input_path),
+            "--save-json",
+            str(output_path),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    saved = json.loads(output_path.read_text(encoding="utf-8"))
+    evidence_by_type = {item["type"]: item for item in saved["evidence"]}
+    coverage_evidence = evidence_by_type["runtime_telemetry_context_coverage"]
+    replay_evidence = evidence_by_type["runtime_telemetry_replay_context"]
+    assert "runtime_telemetry_replay_context" in result.stdout
+    assert saved["guard_verdict"] == "suspicious"
+    assert saved["source"]["edgeenv_runtime_regression_report"] is True
+    assert saved["source"]["edgeenv_mode"] == "same-condition"
+    assert coverage_evidence["status"] == "warning"
+    assert coverage_evidence["observed_value"] == 4.0
+    assert "runtime_telemetry_gap" in coverage_evidence["suspected_causes"]
+    assert replay_evidence["status"] == "warning"
+    assert replay_evidence["observed_value"] == 1.0
+    assert "telemetry_history_replay_gap" in replay_evidence["suspected_causes"]
+    assert "guard_analysis" not in json.loads(input_path.read_text(encoding="utf-8"))
+
+
+def test_cli_reason_edgeenv_regression_consumes_edgeenv_sequence_fixture(tmp_path):
+    input_path = EDGEENV_REGRESSION_FIXTURES / "edgeenv_sequence_inversion.json"
+    output_path = tmp_path / "reports" / "edgeenv_guard_analysis.json"
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "reason-edgeenv-regression",
+            "--input",
+            str(input_path),
+            "--save-json",
+            str(output_path),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    saved = json.loads(output_path.read_text(encoding="utf-8"))
+    evidence_by_type = {item["type"]: item for item in saved["evidence"]}
+    coverage_evidence = evidence_by_type["runtime_telemetry_context_coverage"]
+    replay_evidence = evidence_by_type["runtime_telemetry_replay_context"]
+    assert "runtime_telemetry_replay_context" in result.stdout
+    assert saved["guard_verdict"] == "suspicious"
+    assert coverage_evidence["status"] == "passed"
+    assert coverage_evidence["observed_value"] == 0.0
+    assert replay_evidence["status"] == "warning"
+    assert replay_evidence["observed_value"] == 0.0
+    assert "telemetry_sequence_order_mismatch" in replay_evidence[
+        "suspected_causes"
+    ]
+    assert "guard_analysis" not in json.loads(input_path.read_text(encoding="utf-8"))

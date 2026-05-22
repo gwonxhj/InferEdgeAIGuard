@@ -216,6 +216,8 @@ regression 계산이나 final deployment decision을 소유하지 않습니다.
 candidate telemetry gap과 baseline/candidate execution sequence inversion은
 EdgeEnv replay context에서 온 warning evidence로 보존되며, AIGuard가 이를
 comparability decision으로 재판정하지 않습니다.
+`tests/fixtures/edgeenv_regression/`에는 EdgeEnv의 committed replay fixtures를
+mirror한 작은 CLI smoke 입력이 있습니다.
 
 Remote dispatch starter 결과도 deterministic evidence로 해석할 수 있습니다.
 
