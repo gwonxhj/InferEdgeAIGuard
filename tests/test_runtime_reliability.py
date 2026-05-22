@@ -4,9 +4,11 @@ import sys
 from pathlib import Path
 
 from inferedge_aiguard.runtime_reliability import (
+    analyze_edgeenv_regression_report,
     analyze_orchestration_summary,
     analyze_remote_dispatch_result,
     analyze_runtime_result,
+    compute_edgeenv_regression_metrics,
     compute_remote_dispatch_metrics,
     compute_runtime_reliability_metrics,
     compute_runtime_operation_metrics,
@@ -401,6 +403,63 @@ def operation_telemetry_summary() -> dict:
     return summary
 
 
+def edgeenv_regression_report() -> dict:
+    return {
+        "baseline_run_id": "edgeenv-smoke-baseline",
+        "candidate_run_id": "edgeenv-smoke-candidate",
+        "comparable": True,
+        "mode": "same-condition",
+        "regression_detected": True,
+        "regression_type": "mixed",
+        "severity": "high",
+        "recommendation": "review_required",
+        "evidence": {
+            "mean_delta_pct": 18.0,
+            "p95_delta_pct": 10.0,
+            "p99_delta_pct": 32.0,
+            "fps_delta_pct": -22.0,
+            "memory_peak_delta_pct": 40.0,
+            "triggered_thresholds": [
+                {
+                    "name": "p99_latency_high",
+                    "metric": "latency_p99_ms",
+                    "observed": 32.0,
+                    "threshold": 25.0,
+                    "severity": "high",
+                    "type": "latency",
+                }
+            ],
+        },
+        "runtime_telemetry_context": {
+            "role": "supplemental_runtime_telemetry_context",
+            "source": "result_artifacts+runtime_telemetry_history",
+            "baseline": {
+                "run_id": "edgeenv-smoke-baseline",
+                "result_telemetry_present": True,
+                "history_entry_present": True,
+                "execution_sequence_id": 1,
+                "telemetry_source": "synthetic_local_fixture",
+            },
+            "candidate": {
+                "run_id": "edgeenv-smoke-candidate",
+                "result_telemetry_present": True,
+                "history_entry_present": True,
+                "execution_sequence_id": 2,
+                "telemetry_source": "synthetic_local_fixture",
+            },
+            "history": {
+                "schema_version": "edgeenv.runtime-telemetry-history.v1",
+                "summary": {
+                    "registered_runs": 2,
+                    "telemetry_runs": 2,
+                    "missing_telemetry_runs": 0,
+                },
+            },
+            "evidence_gaps": [],
+        },
+    }
+
+
 def runtime_result_with_operation_signals() -> dict:
     return {
         "schema_version": "inferedge-runtime-result-v1",
@@ -793,6 +852,104 @@ def test_operation_telemetry_summary_preserves_phase2_metrics():
         "image_file",
         "fastapi_request_fixture",
     ]
+
+
+def test_compute_edgeenv_regression_metrics_preserves_telemetry_context():
+    metrics = compute_edgeenv_regression_metrics(edgeenv_regression_report())
+
+    assert metrics["comparable"] is True
+    assert metrics["mode"] == "same-condition"
+    assert metrics["regression_detected"] is True
+    assert metrics["p99_delta_pct"] == 32.0
+    assert metrics["fps_delta_pct"] == -22.0
+    assert metrics["memory_peak_delta_pct"] == 40.0
+    assert metrics["runtime_telemetry_context_present"] is True
+    assert metrics["candidate_telemetry_present"] is True
+    assert metrics["candidate_history_entry_present"] is True
+    assert metrics["evidence_gap_count"] == 0.0
+
+
+def test_analyze_edgeenv_regression_report_returns_runtime_anomaly_evidence():
+    report = analyze_edgeenv_regression_report(edgeenv_regression_report())
+
+    validate_diagnosis_report(report)
+    assert report["guard_verdict"] == "blocked"
+    assert report["severity"] == "high"
+    assert report["source"]["edgeenv_runtime_regression_report"] is True
+    assert report["source"]["edgeenv_mode"] == "same-condition"
+    assert report["primary_reason"] == (
+        "EdgeEnv same-condition runtime regression evidence requires "
+        "deterministic AIGuard review."
+    )
+    evidence_types = {item["type"] for item in report["evidence"]}
+    assert evidence_types == {
+        "runtime_latency_regression",
+        "runtime_throughput_regression",
+        "runtime_memory_regression",
+        "runtime_telemetry_context_coverage",
+    }
+    latency_evidence = next(
+        item for item in report["evidence"] if item["type"] == "runtime_latency_regression"
+    )
+    assert latency_evidence["metric_name"] == "p99_delta_pct"
+    assert latency_evidence["observed_value"] == 32.0
+    assert latency_evidence["threshold"] == 25.0
+    assert "tail_latency_spike" in latency_evidence["suspected_causes"]
+
+    telemetry_evidence = next(
+        item
+        for item in report["evidence"]
+        if item["type"] == "runtime_telemetry_context_coverage"
+    )
+    assert telemetry_evidence["status"] == "passed"
+    assert telemetry_evidence["observed_value"] == 0.0
+    assert report["candidate_summary"]["edgeenv_regression"]["candidate_run_id"] == (
+        "edgeenv-smoke-candidate"
+    )
+
+
+def test_analyze_edgeenv_regression_report_warns_on_telemetry_gap():
+    regression_report = edgeenv_regression_report()
+    regression_report["regression_detected"] = False
+    regression_report["evidence"] = {}
+    regression_report["runtime_telemetry_context"]["candidate"][
+        "result_telemetry_present"
+    ] = False
+    regression_report["runtime_telemetry_context"]["candidate"][
+        "history_entry_present"
+    ] = False
+    regression_report["runtime_telemetry_context"]["evidence_gaps"] = [
+        {
+            "run_id": "edgeenv-smoke-candidate",
+            "reason": "runtime_telemetry_missing_in_result",
+        }
+    ]
+
+    report = analyze_edgeenv_regression_report(regression_report)
+
+    validate_diagnosis_report(report)
+    assert report["guard_verdict"] == "suspicious"
+    assert report["severity"] == "medium"
+    evidence = report["evidence"][0]
+    assert evidence["type"] == "runtime_telemetry_context_coverage"
+    assert evidence["status"] == "warning"
+    assert evidence["observed_value"] == 3.0
+    assert "runtime_telemetry_gap" in evidence["suspected_causes"]
+
+
+def test_analyze_edgeenv_regression_report_skips_non_comparable_regression():
+    regression_report = edgeenv_regression_report()
+    regression_report["comparable"] = False
+    regression_report["mode"] = "protocol_mismatch"
+
+    report = analyze_edgeenv_regression_report(regression_report)
+
+    validate_diagnosis_report(report)
+    assert report["guard_verdict"] == "pass"
+    evidence = report["evidence"][0]
+    assert evidence["type"] == "edgeenv_comparability_guardrail"
+    assert evidence["status"] == "skipped"
+    assert "does not reinterpret non-comparable" in evidence["why_it_matters"]
 
 
 def test_analyze_orchestration_summary_returns_diagnosis_report():
@@ -1237,3 +1394,44 @@ def test_cli_reason_remote_dispatch_and_unified_route(tmp_path):
         text=True,
     )
     assert "connection_error" in unified.stdout
+
+
+def test_cli_reason_edgeenv_regression_and_unified_route(tmp_path):
+    input_path = tmp_path / "edgeenv_regression.json"
+    input_path.write_text(
+        json.dumps(edgeenv_regression_report()),
+        encoding="utf-8",
+    )
+
+    explicit = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "reason-edgeenv-regression",
+            "--input",
+            str(input_path),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert "runtime_latency_regression" in explicit.stdout
+    assert "guard_verdict: blocked" in explicit.stdout
+
+    unified = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "reason",
+            "--input",
+            str(input_path),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert "runtime_telemetry_context_coverage" in unified.stdout

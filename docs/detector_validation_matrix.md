@@ -16,6 +16,7 @@ the current portfolio demo cases and local-first validation workflow.
 | `score_saturation_blocked` | confidence scores concentrate near 0 or 1 | `blocked` | `critical` / `high` | Possible score decoder, calibration, or postprocess issue |
 | `temporal_instability_review` | frame-level detection count or bbox movement is unstable | `review_required` | `medium` / `high` | Runtime output stability should be reviewed |
 | `provenance_mismatch` | Forge/Runtime source or artifact identity does not match | `blocked` or Lab `error` mapping | `high` / `critical` | Candidate evidence may not describe the artifact under review |
+| `edgeenv_runtime_regression` | EdgeEnv same-condition runtime regression and telemetry context | `blocked` / `suspicious` depending on evidence | `high` / `medium` | Runtime regression should be reviewed as deployment risk evidence |
 
 ## Detector Matrix
 
@@ -33,6 +34,7 @@ not the final Lab deployment policy.
 | baseline deviation | invalid/collapse/saturation factor | near baseline | factor `> 5x` | factor `> 10x` | `evidence[].increase_factor` |
 | temporal consistency | count CV, bbox center jump, class flip | stable sequence | count CV `> 1.0`, class flip `> 0.30`, or center jump p95 `> 0.50` image diagonal | zero-frame ratio `> 0.30` | `candidate_summary.temporal` |
 | provenance consistency | source/artifact/backend/target/precision identity | exact handoff match | warning mismatch | error mismatch | `guard_analysis.anomalies`, `guard_analysis.status` |
+| EdgeEnv runtime regression | p99/mean/FPS/memory deltas and telemetry coverage | comparable report without threshold breach | same-condition regression or telemetry gap | high tail-latency regression | `candidate_summary.edgeenv_regression` |
 
 ## Implemented Detector Details
 
@@ -51,6 +53,10 @@ not the final Lab deployment policy.
 | temporal consistency | `class_flip_rate` | review `0.30` | `pass` | `review_required` | `evidence[].observed_value` |
 | temporal consistency | `zero_detection_frame_ratio` | blocked `0.30` | `pass` | `blocked` | `candidate_summary.temporal` |
 | provenance | artifact/source/backend/target/precision mismatch | exact identity expected | `pass` / `ok` | `warning` / `error` | `guard_analysis.anomalies`, `guard_analysis.status` |
+| EdgeEnv regression | `p99_delta_pct` | review/high `25.0` | `pass` | `blocked` for high same-condition tail latency regression | `evidence[].type=runtime_latency_regression` |
+| EdgeEnv regression | `fps_delta_pct` | review `<= -20.0` | `pass` | `review_required` | `evidence[].type=runtime_throughput_regression` |
+| EdgeEnv regression | `memory_peak_delta_pct` | warning `30.0` | `pass` | `suspicious` / `review_required` | `evidence[].type=runtime_memory_regression` |
+| EdgeEnv telemetry context | `runtime_telemetry_evidence_gap_count` | warning `>= 1` | `pass` | `suspicious` | `evidence[].type=runtime_telemetry_context_coverage` |
 
 ## Next Candidate Detectors
 
