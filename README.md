@@ -198,6 +198,22 @@ deadline miss, drop/fallback 신호를 `guard_analysis` evidence로 변환합니
 AIGuard는 runtime reliability risk를 설명하고, 최종 deployment decision은
 계속 InferEdgeLab이 담당합니다.
 
+EdgeEnv runtime regression report도 deterministic runtime anomaly evidence로
+해석할 수 있습니다.
+
+```bash
+python -m inferedge_aiguard.cli reason-edgeenv-regression \
+  --input reports/edgeenv_runtime_regression.json
+python -m inferedge_aiguard.cli reason \
+  --input reports/edgeenv_runtime_regression.json
+```
+
+이 경로는 EdgeEnv의 comparability-first 결과를 존중하면서
+`runtime_latency_regression`, `runtime_throughput_regression`,
+`runtime_memory_regression`, `runtime_telemetry_context_coverage` evidence를
+생성합니다. AIGuard는 regression 계산이나 final deployment decision을
+소유하지 않습니다.
+
 Remote dispatch starter 결과도 deterministic evidence로 해석할 수 있습니다.
 
 ```bash

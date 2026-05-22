@@ -44,6 +44,22 @@ Runtime result input is also supported directly when the JSON includes:
 AIGuard treats these fields as Runtime-provided operation evidence. It does not
 guess a root cause from missing logs.
 
+EdgeEnv runtime regression reports are also supported when the JSON includes:
+
+- `regression_detected`
+- `mode`
+- `comparable`
+- `evidence.mean_delta_pct`
+- `evidence.p95_delta_pct`
+- `evidence.p99_delta_pct`
+- `evidence.fps_delta_pct`
+- `evidence.memory_peak_delta_pct`
+- optional `runtime_telemetry_context`
+
+EdgeEnv remains the comparability and regression calculation owner. AIGuard
+only turns same-condition EdgeEnv regression and telemetry coverage signals into
+deterministic diagnosis evidence for Lab review.
+
 ## Evidence Mapping
 
 | Evidence type | Metric | Review threshold | Block threshold | Meaning |
@@ -65,6 +81,11 @@ guess a root cause from missing logs.
 | `runtime_error_classification` | `runtime_error_severity` | present | n/a | Runtime classified an execution warning/error with a retry hint |
 | `runtime_operation_health` | `runtime_operation_summary_risk_count` | `>= 1` risk label or review action | n/a | Runtime provided operation summary risk labels, evidence gaps, or a review action |
 | `runtime_thermal_memory_evidence_missing` | `thermal_memory_evidence_available` | `false` on Jetson | n/a | Jetson result lacks thermal/memory context for sustained review |
+| `runtime_latency_regression` | `p99_delta_pct` / `mean_delta_pct` / `p95_delta_pct` | p99 `>= 25.0` or mean/p95 `>= 15.0` | n/a | EdgeEnv same-condition regression indicates latency drift or tail latency spike |
+| `runtime_throughput_regression` | `fps_delta_pct` | `<= -20.0` | n/a | EdgeEnv same-condition regression indicates FPS drop |
+| `runtime_memory_regression` | `memory_peak_delta_pct` | `>= 30.0` | n/a | EdgeEnv same-condition regression indicates memory headroom risk |
+| `runtime_telemetry_context_coverage` | `runtime_telemetry_evidence_gap_count` | `>= 1` | n/a | EdgeEnv telemetry context is present but baseline/candidate coverage has gaps |
+| `edgeenv_comparability_guardrail` | `edgeenv_comparable` | skipped when not comparable or not same-condition | n/a | AIGuard refuses to reinterpret non-comparable EdgeEnv reports as same-condition regression |
 
 These thresholds are intentionally deterministic and local-first. They are
 review signals, not production SLOs.
@@ -255,6 +276,27 @@ selection status and explicit HTTP/SSH starter execution status as
 Recovered fallback remains review evidence because it proves the resilience path
 worked, but also shows that the primary worker path was unstable. This remains
 starter evidence, not a claim of production remote execution.
+
+EdgeEnv runtime regression reports can be analyzed directly:
+
+```bash
+python -m inferedge_aiguard.cli reason-edgeenv-regression \
+  --input reports/edgeenv_runtime_regression.json
+```
+
+The unified `reason` command auto-routes EdgeEnv regression reports as well:
+
+```bash
+python -m inferedge_aiguard.cli reason \
+  --input reports/edgeenv_runtime_regression.json
+```
+
+This path emits deterministic runtime anomaly evidence such as
+`runtime_latency_regression`, `runtime_throughput_regression`,
+`runtime_memory_regression`, and `runtime_telemetry_context_coverage`.
+AIGuard does not recompute comparability; if EdgeEnv marks the report as
+non-comparable or not same-condition, AIGuard emits
+`edgeenv_comparability_guardrail` as skipped evidence.
 
 ## Output
 

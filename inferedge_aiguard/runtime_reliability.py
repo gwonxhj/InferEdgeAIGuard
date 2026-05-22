@@ -46,6 +46,11 @@ DEFAULT_RUNTIME_RELIABILITY_THRESHOLDS = {
     "worker_operation_risk_count_review": 1,
     "worker_operation_risk_count_blocked": 3,
     "device_local_event_count_review": 1,
+    "edgeenv_mean_delta_pct_review": 15.0,
+    "edgeenv_p99_delta_pct_review": 25.0,
+    "edgeenv_fps_drop_pct_review": -20.0,
+    "edgeenv_memory_peak_delta_pct_warning": 30.0,
+    "edgeenv_telemetry_gap_review": 1.0,
 }
 
 
@@ -205,6 +210,43 @@ def analyze_remote_dispatch_result(
         candidate_summary={
             "schema_version": remote_dispatch_result.get("schema_version"),
             "remote_dispatch": metrics,
+        },
+    )
+
+
+def analyze_edgeenv_regression_report(
+    regression_report: dict[str, Any],
+    *,
+    thresholds: dict[str, float] | None = None,
+    source: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Build guard_analysis from an EdgeEnv runtime regression report.
+
+    EdgeEnv owns comparability and regression calculation. AIGuard only turns
+    already reported same-condition regression and telemetry coverage signals
+    into deterministic diagnosis evidence for Lab to consume.
+    """
+
+    policy = {**DEFAULT_RUNTIME_RELIABILITY_THRESHOLDS, **(thresholds or {})}
+    metrics = compute_edgeenv_regression_metrics(regression_report)
+    evidence = _edgeenv_regression_evidence(metrics, policy)
+
+    return build_diagnosis_report(
+        evidence=evidence,
+        source={
+            "edgeenv_runtime_regression_report": True,
+            "edgeenv_mode": metrics.get("mode"),
+            "edgeenv_comparable": metrics.get("comparable"),
+            **(source or {}),
+        },
+        confidence=_confidence_from_evidence(evidence),
+        primary_reason=_primary_reason(evidence),
+        thresholds=policy,
+        candidate_summary={
+            "edgeenv_regression": metrics,
+            "runtime_telemetry_context": regression_report.get(
+                "runtime_telemetry_context", {}
+            ),
         },
     )
 
@@ -392,6 +434,60 @@ def compute_runtime_reliability_metrics(summary: dict[str, Any]) -> dict[str, An
         "max_ram_used_mb": _optional_non_negative_number(
             tegrastats_summary.get("max_ram_used_mb")
         ),
+    }
+
+
+def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dict[str, Any]:
+    """Extract deterministic runtime regression metrics from EdgeEnv output."""
+
+    evidence = _mapping(regression_report.get("evidence"))
+    context = _mapping(regression_report.get("runtime_telemetry_context"))
+    baseline_context = _mapping(context.get("baseline"))
+    candidate_context = _mapping(context.get("candidate"))
+    gaps = [
+        item
+        for item in _list(context.get("evidence_gaps"))
+        if isinstance(item, dict)
+    ]
+    missing_coverage_count = 0.0
+    for run_context in (baseline_context, candidate_context):
+        if run_context and run_context.get("result_telemetry_present") is False:
+            missing_coverage_count += 1.0
+        if run_context and run_context.get("history_entry_present") is False:
+            missing_coverage_count += 1.0
+    return {
+        "baseline_run_id": regression_report.get("baseline_run_id"),
+        "candidate_run_id": regression_report.get("candidate_run_id"),
+        "comparable": bool(regression_report.get("comparable")),
+        "mode": regression_report.get("mode"),
+        "regression_detected": bool(regression_report.get("regression_detected")),
+        "regression_type": regression_report.get("regression_type"),
+        "severity": regression_report.get("severity"),
+        "recommendation": regression_report.get("recommendation"),
+        "mean_delta_pct": _optional_number(evidence.get("mean_delta_pct")),
+        "p95_delta_pct": _optional_number(evidence.get("p95_delta_pct")),
+        "p99_delta_pct": _optional_number(evidence.get("p99_delta_pct")),
+        "fps_delta_pct": _optional_number(evidence.get("fps_delta_pct")),
+        "memory_peak_delta_pct": _optional_number(
+            evidence.get("memory_peak_delta_pct")
+        ),
+        "triggered_thresholds": _list(evidence.get("triggered_thresholds")),
+        "runtime_telemetry_context_present": bool(context),
+        "runtime_telemetry_source": context.get("source"),
+        "baseline_telemetry_present": baseline_context.get(
+            "result_telemetry_present"
+        ),
+        "candidate_telemetry_present": candidate_context.get(
+            "result_telemetry_present"
+        ),
+        "baseline_history_entry_present": baseline_context.get(
+            "history_entry_present"
+        ),
+        "candidate_history_entry_present": candidate_context.get(
+            "history_entry_present"
+        ),
+        "evidence_gap_count": float(len(gaps)) + missing_coverage_count,
+        "evidence_gaps": gaps,
     }
 
 
@@ -1187,6 +1283,265 @@ def _thermal_pressure_evidence(
     )
 
 
+def _edgeenv_regression_evidence(
+    metrics: dict[str, Any],
+    thresholds: dict[str, float],
+) -> list[dict[str, Any]]:
+    evidence: list[dict[str, Any]] = []
+    comparable = bool(metrics.get("comparable"))
+    same_condition = metrics.get("mode") == "same-condition"
+
+    if not comparable or not same_condition:
+        evidence.append(_edgeenv_comparability_guardrail_evidence(metrics))
+        return evidence
+
+    if metrics.get("regression_detected"):
+        latency_evidence = _edgeenv_latency_regression_evidence(metrics, thresholds)
+        if latency_evidence is not None:
+            evidence.append(latency_evidence)
+        fps_evidence = _edgeenv_fps_drop_evidence(metrics, thresholds)
+        if fps_evidence is not None:
+            evidence.append(fps_evidence)
+        memory_evidence = _edgeenv_memory_regression_evidence(metrics, thresholds)
+        if memory_evidence is not None:
+            evidence.append(memory_evidence)
+
+    telemetry_evidence = _edgeenv_telemetry_context_evidence(metrics, thresholds)
+    if telemetry_evidence is not None:
+        evidence.append(telemetry_evidence)
+
+    if not evidence:
+        evidence.append(_edgeenv_regression_pass_evidence(metrics))
+    return evidence
+
+
+def _edgeenv_comparability_guardrail_evidence(metrics: dict[str, Any]) -> dict[str, Any]:
+    return build_evidence_item(
+        evidence_type="edgeenv_comparability_guardrail",
+        metric_name="edgeenv_comparable",
+        observed_value=1 if metrics.get("comparable") else 0,
+        baseline_value=1,
+        threshold=1,
+        delta=None,
+        delta_pct=None,
+        increase_factor=None,
+        severity="low",
+        status="skipped",
+        why_it_matters=(
+            "AIGuard does not reinterpret non-comparable EdgeEnv results as "
+            "same-condition runtime regressions. Comparability remains owned by "
+            "EdgeEnv and final deployment decisions remain owned by Lab."
+        ),
+        suspected_causes=[],
+        recommendation=(
+            "Use EdgeEnv mode and comparability reasons as report context, or rerun "
+            "with matching model, precision, shape, and benchmark protocol before "
+            "diagnosing same-condition runtime regression."
+        ),
+        raw_context={"edgeenv_regression": metrics},
+    )
+
+
+def _edgeenv_latency_regression_evidence(
+    metrics: dict[str, Any],
+    thresholds: dict[str, float],
+) -> dict[str, Any] | None:
+    candidates = [
+        ("p99_delta_pct", metrics.get("p99_delta_pct"), thresholds["edgeenv_p99_delta_pct_review"]),
+        ("mean_delta_pct", metrics.get("mean_delta_pct"), thresholds["edgeenv_mean_delta_pct_review"]),
+        ("p95_delta_pct", metrics.get("p95_delta_pct"), thresholds["edgeenv_mean_delta_pct_review"]),
+    ]
+    observed_name = None
+    observed_value = None
+    observed_threshold = None
+    for name, value, threshold in candidates:
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            if observed_value is None or float(value) > float(observed_value):
+                observed_name = name
+                observed_value = float(value)
+                observed_threshold = float(threshold)
+    if observed_name is None or observed_value is None or observed_threshold is None:
+        return None
+    severity = "high" if observed_value >= thresholds["edgeenv_p99_delta_pct_review"] else "medium"
+    status = "failed" if observed_value >= observed_threshold else "passed"
+    if status == "passed":
+        severity = "low"
+    return build_evidence_item(
+        evidence_type="runtime_latency_regression",
+        metric_name=observed_name,
+        observed_value=observed_value,
+        baseline_value=0,
+        threshold=observed_threshold,
+        delta=None,
+        delta_pct=observed_value,
+        increase_factor=None,
+        severity=severity,
+        status=status,
+        why_it_matters=(
+            "Same-condition latency regression, especially p95/p99 tail latency, "
+            "is deployment risk evidence because it can indicate runtime drift, "
+            "thermal pressure, scheduler contention, or backend changes."
+        ),
+        suspected_causes=[
+            "runtime_latency_drift",
+            "tail_latency_spike",
+            "thermal_or_scheduler_contention",
+        ]
+        if status != "passed"
+        else [],
+        recommendation=(
+            "Review EdgeEnv comparability judgement, tail latency deltas, runtime "
+            "telemetry context, and recent runtime/device changes before deployment."
+            if status != "passed"
+            else "Latency regression metrics are within configured thresholds."
+        ),
+        raw_context={"edgeenv_regression": metrics},
+    )
+
+
+def _edgeenv_fps_drop_evidence(
+    metrics: dict[str, Any],
+    thresholds: dict[str, float],
+) -> dict[str, Any] | None:
+    fps_delta = metrics.get("fps_delta_pct")
+    if not isinstance(fps_delta, (int, float)) or isinstance(fps_delta, bool):
+        return None
+    threshold = thresholds["edgeenv_fps_drop_pct_review"]
+    status = "failed" if fps_delta <= threshold else "passed"
+    return build_evidence_item(
+        evidence_type="runtime_throughput_regression",
+        metric_name="fps_delta_pct",
+        observed_value=fps_delta,
+        baseline_value=0,
+        threshold=threshold,
+        delta=None,
+        delta_pct=fps_delta,
+        increase_factor=None,
+        severity="medium" if status != "passed" else "low",
+        status=status,
+        why_it_matters=(
+            "FPS drop can reduce edge workload headroom even when mean latency "
+            "alone looks acceptable."
+        ),
+        suspected_causes=[
+            "runtime_throughput_drop",
+            "device_resource_contention",
+            "backend_or_power_mode_change",
+        ]
+        if status != "passed"
+        else [],
+        recommendation=(
+            "Review throughput delta together with latency tail and runtime "
+            "telemetry before deployment."
+            if status != "passed"
+            else "Throughput regression is within configured thresholds."
+        ),
+        raw_context={"edgeenv_regression": metrics},
+    )
+
+
+def _edgeenv_memory_regression_evidence(
+    metrics: dict[str, Any],
+    thresholds: dict[str, float],
+) -> dict[str, Any] | None:
+    memory_delta = metrics.get("memory_peak_delta_pct")
+    if not isinstance(memory_delta, (int, float)) or isinstance(memory_delta, bool):
+        return None
+    threshold = thresholds["edgeenv_memory_peak_delta_pct_warning"]
+    status = "warning" if memory_delta >= threshold else "passed"
+    return build_evidence_item(
+        evidence_type="runtime_memory_regression",
+        metric_name="memory_peak_delta_pct",
+        observed_value=memory_delta,
+        baseline_value=0,
+        threshold=threshold,
+        delta=None,
+        delta_pct=memory_delta,
+        increase_factor=None,
+        severity="medium" if status != "passed" else "low",
+        status=status,
+        why_it_matters=(
+            "Higher memory peak can reduce deployment headroom and increase queue "
+            "backlog or OOM risk on constrained edge devices."
+        ),
+        suspected_causes=[
+            "memory_pressure",
+            "runtime_allocator_or_workspace_change",
+            "preprocess_postprocess_memory_growth",
+        ]
+        if status != "passed"
+        else [],
+        recommendation=(
+            "Review memory peak delta and runtime telemetry before treating the "
+            "candidate as operation-stable."
+            if status != "passed"
+            else "Memory regression is within configured thresholds."
+        ),
+        raw_context={"edgeenv_regression": metrics},
+    )
+
+
+def _edgeenv_telemetry_context_evidence(
+    metrics: dict[str, Any],
+    thresholds: dict[str, float],
+) -> dict[str, Any] | None:
+    if not metrics.get("runtime_telemetry_context_present"):
+        return None
+    gap_count = metrics.get("evidence_gap_count", 0.0)
+    status = (
+        "warning"
+        if gap_count >= thresholds["edgeenv_telemetry_gap_review"]
+        else "passed"
+    )
+    return build_evidence_item(
+        evidence_type="runtime_telemetry_context_coverage",
+        metric_name="runtime_telemetry_evidence_gap_count",
+        observed_value=gap_count,
+        baseline_value=0,
+        threshold=thresholds["edgeenv_telemetry_gap_review"],
+        delta=None,
+        delta_pct=None,
+        increase_factor=None,
+        severity="medium" if status != "passed" else "low",
+        status=status,
+        why_it_matters=(
+            "Runtime telemetry context makes regression evidence more explainable. "
+            "Missing baseline or candidate telemetry is an evidence gap, not a "
+            "failed benchmark by itself."
+        ),
+        suspected_causes=["runtime_telemetry_gap"] if status != "passed" else [],
+        recommendation=(
+            "Rerun telemetry history export or preserve runtime_telemetry artifacts "
+            "for both baseline and candidate before relying on trend diagnosis."
+            if status != "passed"
+            else "Telemetry coverage is present for the EdgeEnv regression report."
+        ),
+        raw_context={"edgeenv_regression": metrics},
+    )
+
+
+def _edgeenv_regression_pass_evidence(metrics: dict[str, Any]) -> dict[str, Any]:
+    return build_evidence_item(
+        evidence_type="edgeenv_runtime_regression_health",
+        metric_name="edgeenv_runtime_regression_signal_count",
+        observed_value=0,
+        baseline_value=None,
+        threshold=0,
+        delta=None,
+        delta_pct=None,
+        increase_factor=None,
+        severity="low",
+        status="passed",
+        why_it_matters=(
+            "EdgeEnv regression report was comparable and did not provide runtime "
+            "regression signals above AIGuard review thresholds."
+        ),
+        suspected_causes=[],
+        recommendation="No runtime anomaly evidence was produced from the EdgeEnv report.",
+        raw_context={"edgeenv_regression": metrics},
+    )
+
+
 def _runtime_operation_evidence(
     metrics: dict[str, Any],
     thresholds: dict[str, float],
@@ -1849,6 +2204,12 @@ def _optional_non_negative_number(value: Any) -> float | None:
     return None
 
 
+def _optional_number(value: Any) -> float | None:
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return float(value)
+    return None
+
+
 def _first_number(*values: Any) -> float | None:
     for value in values:
         if isinstance(value, (int, float)) and not isinstance(value, bool):
@@ -1906,9 +2267,20 @@ def _primary_reason(evidence: list[dict[str, Any]]) -> str:
     if not failed:
         warnings = [item for item in evidence if item.get("status") == "warning"]
         if warnings:
+            if any(str(item.get("type", "")).startswith("runtime_telemetry") for item in warnings):
+                return "Runtime telemetry context has evidence gaps that require review."
             return "Runtime scheduling evidence requires review."
         return "Runtime scheduling evidence is within configured thresholds."
     first = max(failed, key=lambda item: _severity_rank(item.get("severity")))
+    if first.get("type") in {
+        "runtime_latency_regression",
+        "runtime_throughput_regression",
+        "runtime_memory_regression",
+    }:
+        return (
+            "EdgeEnv same-condition runtime regression evidence requires "
+            "deterministic AIGuard review."
+        )
     return (
         f"{first.get('metric_name', 'runtime_reliability_metric')} indicates "
         "runtime reliability risk under orchestrated multi-agent load."

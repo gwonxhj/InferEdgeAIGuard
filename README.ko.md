@@ -110,6 +110,22 @@ python -m inferedge_aiguard.cli reason \
 - `profiled_workload_pressure`
 - `thermal_resource_pressure`
 
+EdgeEnv runtime regression report도 deterministic runtime anomaly evidence로
+해석할 수 있습니다.
+
+```bash
+python -m inferedge_aiguard.cli reason-edgeenv-regression \
+  --input reports/edgeenv_runtime_regression.json
+python -m inferedge_aiguard.cli reason \
+  --input reports/edgeenv_runtime_regression.json
+```
+
+이 경로는 EdgeEnv가 생성한 same-condition regression과
+`runtime_telemetry_context` coverage를 `runtime_latency_regression`,
+`runtime_throughput_regression`, `runtime_memory_regression`,
+`runtime_telemetry_context_coverage` evidence로 변환합니다. AIGuard는
+comparability 계산이나 final deployment decision을 소유하지 않습니다.
+
 이 기능은 AIGuard를 final deployment decision owner로 바꾸지 않습니다. AIGuard는
 runtime reliability risk를 설명하는 optional evidence provider이고, 최종 판단은
 InferEdgeLab이 담당합니다.

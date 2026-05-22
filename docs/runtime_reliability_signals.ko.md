@@ -237,6 +237,28 @@ python -m inferedge_aiguard.cli reason \
 `schema_version: inferedge-runtime-result-v1` 또는 Runtime operation 필드가
 있는 Runtime result도 unified `reason` 명령이 자동 라우팅합니다.
 
+EdgeEnv runtime regression report도 직접 분석할 수 있습니다.
+
+```bash
+python -m inferedge_aiguard.cli reason-edgeenv-regression \
+  --input reports/edgeenv_runtime_regression.json
+```
+
+unified `reason` 명령도 EdgeEnv regression report를 자동 라우팅합니다.
+
+```bash
+python -m inferedge_aiguard.cli reason \
+  --input reports/edgeenv_runtime_regression.json
+```
+
+이 경로는 EdgeEnv가 이미 계산한 same-condition regression과
+`runtime_telemetry_context` coverage를 `runtime_latency_regression`,
+`runtime_throughput_regression`, `runtime_memory_regression`,
+`runtime_telemetry_context_coverage` evidence로 변환합니다. AIGuard는
+comparability를 다시 계산하지 않으며, non-comparable 또는
+same-condition이 아닌 report는 `edgeenv_comparability_guardrail` skipped
+evidence로 남깁니다.
+
 Remote dispatch starter result도 직접 분석할 수 있습니다.
 
 ```bash
