@@ -1496,3 +1496,51 @@ def test_cli_reason_edgeenv_regression_and_unified_route(tmp_path):
         text=True,
     )
     assert "runtime_telemetry_context_coverage" in unified.stdout
+
+
+def test_cli_reason_edgeenv_regression_saves_replay_context_evidence(tmp_path):
+    regression_report = edgeenv_regression_report()
+    regression_report["regression_detected"] = False
+    regression_report["evidence"] = {}
+    regression_report["runtime_telemetry_context"]["history"]["summary"][
+        "registered_runs"
+    ] = 3
+    regression_report["runtime_telemetry_context"]["history"]["summary"][
+        "missing_telemetry_runs"
+    ] = 1
+    input_path = tmp_path / "edgeenv_regression_history_gap.json"
+    output_path = tmp_path / "reports" / "edgeenv_guard_analysis.json"
+    input_path.write_text(json.dumps(regression_report), encoding="utf-8")
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "reason-edgeenv-regression",
+            "--input",
+            str(input_path),
+            "--save-json",
+            str(output_path),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    saved = json.loads(output_path.read_text(encoding="utf-8"))
+    replay_evidence = next(
+        item
+        for item in saved["evidence"]
+        if item["type"] == "runtime_telemetry_replay_context"
+    )
+    assert "runtime_telemetry_replay_context" in result.stdout
+    assert "- saved_json:" in result.stdout
+    assert saved["guard_verdict"] == "suspicious"
+    assert replay_evidence["metric_name"] == (
+        "runtime_telemetry_history_missing_run_count"
+    )
+    assert replay_evidence["status"] == "warning"
+    assert replay_evidence["observed_value"] == 1.0
+    assert "telemetry_history_replay_gap" in replay_evidence["suspected_causes"]
