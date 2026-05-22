@@ -210,9 +210,9 @@ python -m inferedge_aiguard.cli reason \
 
 이 경로는 EdgeEnv의 comparability-first 결과를 존중하면서
 `runtime_latency_regression`, `runtime_throughput_regression`,
-`runtime_memory_regression`, `runtime_telemetry_context_coverage` evidence를
-생성합니다. AIGuard는 regression 계산이나 final deployment decision을
-소유하지 않습니다.
+`runtime_memory_regression`, `runtime_telemetry_context_coverage`,
+`runtime_telemetry_replay_context` evidence를 생성합니다. AIGuard는
+regression 계산이나 final deployment decision을 소유하지 않습니다.
 
 Remote dispatch starter 결과도 deterministic evidence로 해석할 수 있습니다.
 

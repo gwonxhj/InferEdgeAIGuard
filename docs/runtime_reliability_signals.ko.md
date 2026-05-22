@@ -254,10 +254,10 @@ python -m inferedge_aiguard.cli reason \
 이 경로는 EdgeEnv가 이미 계산한 same-condition regression과
 `runtime_telemetry_context` coverage를 `runtime_latency_regression`,
 `runtime_throughput_regression`, `runtime_memory_regression`,
-`runtime_telemetry_context_coverage` evidence로 변환합니다. AIGuard는
-comparability를 다시 계산하지 않으며, non-comparable 또는
-same-condition이 아닌 report는 `edgeenv_comparability_guardrail` skipped
-evidence로 남깁니다.
+`runtime_telemetry_context_coverage`, `runtime_telemetry_replay_context`
+evidence로 변환합니다. AIGuard는 comparability를 다시 계산하지 않으며,
+non-comparable 또는 same-condition이 아닌 report는
+`edgeenv_comparability_guardrail` skipped evidence로 남깁니다.
 
 Remote dispatch starter result도 직접 분석할 수 있습니다.
 

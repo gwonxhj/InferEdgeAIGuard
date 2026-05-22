@@ -866,6 +866,10 @@ def test_compute_edgeenv_regression_metrics_preserves_telemetry_context():
     assert metrics["runtime_telemetry_context_present"] is True
     assert metrics["candidate_telemetry_present"] is True
     assert metrics["candidate_history_entry_present"] is True
+    assert metrics["history_missing_telemetry_runs"] == 0.0
+    assert metrics["baseline_execution_sequence_id"] == 1.0
+    assert metrics["candidate_execution_sequence_id"] == 2.0
+    assert metrics["execution_sequence_order_valid"] is True
     assert metrics["evidence_gap_count"] == 0.0
 
 
@@ -935,6 +939,63 @@ def test_analyze_edgeenv_regression_report_warns_on_telemetry_gap():
     assert evidence["status"] == "warning"
     assert evidence["observed_value"] == 3.0
     assert "runtime_telemetry_gap" in evidence["suspected_causes"]
+
+
+def test_analyze_edgeenv_regression_report_warns_on_replay_history_gap():
+    regression_report = edgeenv_regression_report()
+    regression_report["regression_detected"] = False
+    regression_report["evidence"] = {}
+    regression_report["runtime_telemetry_context"]["history"]["summary"][
+        "registered_runs"
+    ] = 3
+    regression_report["runtime_telemetry_context"]["history"]["summary"][
+        "missing_telemetry_runs"
+    ] = 1
+
+    report = analyze_edgeenv_regression_report(regression_report)
+
+    validate_diagnosis_report(report)
+    assert report["guard_verdict"] == "suspicious"
+    assert report["severity"] == "medium"
+    evidence_types = {item["type"] for item in report["evidence"]}
+    assert "runtime_telemetry_context_coverage" in evidence_types
+    replay_evidence = next(
+        item
+        for item in report["evidence"]
+        if item["type"] == "runtime_telemetry_replay_context"
+    )
+    assert replay_evidence["status"] == "warning"
+    assert replay_evidence["observed_value"] == 1.0
+    assert "telemetry_history_replay_gap" in replay_evidence["suspected_causes"]
+    assert "EdgeEnv telemetry history is the replay artifact" in replay_evidence[
+        "why_it_matters"
+    ]
+
+
+def test_analyze_edgeenv_regression_report_warns_on_replay_sequence_order():
+    regression_report = edgeenv_regression_report()
+    regression_report["regression_detected"] = False
+    regression_report["evidence"] = {}
+    regression_report["runtime_telemetry_context"]["baseline"][
+        "execution_sequence_id"
+    ] = 5
+    regression_report["runtime_telemetry_context"]["candidate"][
+        "execution_sequence_id"
+    ] = 2
+
+    report = analyze_edgeenv_regression_report(regression_report)
+
+    validate_diagnosis_report(report)
+    replay_evidence = next(
+        item
+        for item in report["evidence"]
+        if item["type"] == "runtime_telemetry_replay_context"
+    )
+    assert replay_evidence["status"] == "warning"
+    assert replay_evidence["observed_value"] == 0.0
+    assert "telemetry_sequence_order_mismatch" in replay_evidence[
+        "suspected_causes"
+    ]
 
 
 def test_analyze_edgeenv_regression_report_skips_non_comparable_regression():

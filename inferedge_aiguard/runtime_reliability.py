@@ -444,6 +444,8 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
     context = _mapping(regression_report.get("runtime_telemetry_context"))
     baseline_context = _mapping(context.get("baseline"))
     candidate_context = _mapping(context.get("candidate"))
+    history = _mapping(context.get("history"))
+    history_summary = _mapping(history.get("summary"))
     gaps = [
         item
         for item in _list(context.get("evidence_gaps"))
@@ -455,6 +457,12 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
             missing_coverage_count += 1.0
         if run_context and run_context.get("history_entry_present") is False:
             missing_coverage_count += 1.0
+    baseline_sequence_id = _optional_number(
+        baseline_context.get("execution_sequence_id")
+    )
+    candidate_sequence_id = _optional_number(
+        candidate_context.get("execution_sequence_id")
+    )
     return {
         "baseline_run_id": regression_report.get("baseline_run_id"),
         "candidate_run_id": regression_report.get("candidate_run_id"),
@@ -474,6 +482,16 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
         "triggered_thresholds": _list(evidence.get("triggered_thresholds")),
         "runtime_telemetry_context_present": bool(context),
         "runtime_telemetry_source": context.get("source"),
+        "runtime_telemetry_history_schema_version": history.get("schema_version"),
+        "history_registered_runs": _optional_number(
+            history_summary.get("registered_runs")
+        ),
+        "history_telemetry_runs": _optional_number(
+            history_summary.get("telemetry_runs")
+        ),
+        "history_missing_telemetry_runs": _optional_number(
+            history_summary.get("missing_telemetry_runs")
+        ),
         "baseline_telemetry_present": baseline_context.get(
             "result_telemetry_present"
         ),
@@ -485,6 +503,12 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
         ),
         "candidate_history_entry_present": candidate_context.get(
             "history_entry_present"
+        ),
+        "baseline_execution_sequence_id": baseline_sequence_id,
+        "candidate_execution_sequence_id": candidate_sequence_id,
+        "execution_sequence_order_valid": _execution_sequence_order_valid(
+            baseline_sequence_id,
+            candidate_sequence_id,
         ),
         "evidence_gap_count": float(len(gaps)) + missing_coverage_count,
         "evidence_gaps": gaps,
@@ -1309,6 +1333,9 @@ def _edgeenv_regression_evidence(
     telemetry_evidence = _edgeenv_telemetry_context_evidence(metrics, thresholds)
     if telemetry_evidence is not None:
         evidence.append(telemetry_evidence)
+    replay_evidence = _edgeenv_telemetry_replay_evidence(metrics, thresholds)
+    if replay_evidence is not None:
+        evidence.append(replay_evidence)
 
     if not evidence:
         evidence.append(_edgeenv_regression_pass_evidence(metrics))
@@ -1515,6 +1542,64 @@ def _edgeenv_telemetry_context_evidence(
             "for both baseline and candidate before relying on trend diagnosis."
             if status != "passed"
             else "Telemetry coverage is present for the EdgeEnv regression report."
+        ),
+        raw_context={"edgeenv_regression": metrics},
+    )
+
+
+def _edgeenv_telemetry_replay_evidence(
+    metrics: dict[str, Any],
+    thresholds: dict[str, float],
+) -> dict[str, Any] | None:
+    if not metrics.get("runtime_telemetry_context_present"):
+        return None
+    history_missing_count = metrics.get("history_missing_telemetry_runs")
+    sequence_order_valid = metrics.get("execution_sequence_order_valid")
+    if history_missing_count in (None, 0.0) and sequence_order_valid is not False:
+        return None
+
+    missing_value = (
+        history_missing_count
+        if isinstance(history_missing_count, (int, float))
+        and not isinstance(history_missing_count, bool)
+        else 0.0
+    )
+    status = (
+        "warning"
+        if missing_value >= thresholds["edgeenv_telemetry_gap_review"]
+        or sequence_order_valid is False
+        else "passed"
+    )
+    suspected_causes: list[str] = []
+    if missing_value >= thresholds["edgeenv_telemetry_gap_review"]:
+        suspected_causes.append("telemetry_history_replay_gap")
+    if sequence_order_valid is False:
+        suspected_causes.append("telemetry_sequence_order_mismatch")
+
+    return build_evidence_item(
+        evidence_type="runtime_telemetry_replay_context",
+        metric_name="runtime_telemetry_history_missing_run_count",
+        observed_value=missing_value,
+        baseline_value=0,
+        threshold=thresholds["edgeenv_telemetry_gap_review"],
+        delta=None,
+        delta_pct=None,
+        increase_factor=None,
+        severity="medium" if status != "passed" else "low",
+        status=status,
+        why_it_matters=(
+            "EdgeEnv telemetry history is the replay artifact behind runtime "
+            "regression context. History-level missing telemetry or out-of-order "
+            "baseline/candidate sequence IDs reduce how confidently reviewers can "
+            "interpret runtime trend evidence."
+        ),
+        suspected_causes=suspected_causes,
+        recommendation=(
+            "Inspect the EdgeEnv telemetry history artifact, confirm baseline and "
+            "candidate sequence order, and rerun export-history if replay gaps "
+            "should not be present."
+            if status != "passed"
+            else "Telemetry replay context is present and ordered for this report."
         ),
         raw_context={"edgeenv_regression": metrics},
     )
@@ -2208,6 +2293,15 @@ def _optional_number(value: Any) -> float | None:
     if isinstance(value, (int, float)) and not isinstance(value, bool):
         return float(value)
     return None
+
+
+def _execution_sequence_order_valid(
+    baseline_sequence_id: float | None,
+    candidate_sequence_id: float | None,
+) -> bool | None:
+    if baseline_sequence_id is None or candidate_sequence_id is None:
+        return None
+    return candidate_sequence_id >= baseline_sequence_id
 
 
 def _first_number(*values: Any) -> float | None:
