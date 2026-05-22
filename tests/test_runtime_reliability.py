@@ -522,6 +522,55 @@ def edgeenv_regression_report_with_runtime_telemetry_signals() -> dict:
     return report
 
 
+def edgeenv_regression_report_with_orchestrator_feed_context() -> dict:
+    report = edgeenv_regression_report()
+    report["regression_detected"] = False
+    report["evidence"] = {}
+    context = report["runtime_telemetry_context"]
+    context["history"]["summary"]["orchestrator_feed_runs"] = 1
+    context["candidate"]["orchestrator_context_present"] = True
+    context["candidate"]["orchestrator_available_sections"] = [
+        "available_sections",
+        "operation",
+        "queue_depth",
+        "resource",
+        "run_id",
+    ]
+    context["candidate"]["orchestrator_operation_context"] = {
+        "schema_version": "inferedge-orchestrator-edgeenv-runtime-telemetry-feed-v1",
+        "role": "orchestrator_operation_context_for_edgeenv",
+        "source": "orchestration_summary",
+        "run_id": "edgeenv-smoke-candidate",
+        "not_a_regression_judgement": True,
+        "not_a_comparability_gate": True,
+        "decision_owner": "lab",
+        "regression_owner": "edgeenv",
+        "candidate_context": {
+            "run_id": "edgeenv-smoke-candidate",
+            "telemetry_source": "inferedge_orchestrator_operation_summary",
+            "available_sections": ["operation", "resource"],
+            "queue_depth": 7,
+            "operation": {
+                "queue_depth": 7,
+                "deadline_missed_count": 2,
+                "fallback_count": 1,
+            },
+            "resource": {
+                "source": "tegrastats_timeline",
+                "resource_evidence_available": True,
+                "gpu_temperature": 78.5,
+                "ram_used_mb": 2048.0,
+                "throttling_detected": True,
+            },
+        },
+        "edgeenv_mapping_hint": {
+            "runtime_telemetry_context_role": "candidate",
+            "copy_candidate_context_to": "runtime_telemetry_context.candidate",
+        },
+    }
+    return report
+
+
 def runtime_result_with_operation_signals() -> dict:
     return {
         "schema_version": "inferedge-runtime-result-v1",
@@ -948,6 +997,18 @@ def test_compute_edgeenv_regression_metrics_extracts_runtime_telemetry_signals()
     assert metrics["candidate_queue_depth"] == 6.0
 
 
+def test_compute_edgeenv_regression_metrics_extracts_orchestrator_feed_context():
+    metrics = compute_edgeenv_regression_metrics(
+        edgeenv_regression_report_with_orchestrator_feed_context()
+    )
+
+    assert metrics["history_orchestrator_feed_runs"] == 1.0
+    assert metrics["candidate_orchestrator_context_present"] is True
+    assert metrics["candidate_max_temperature_c"] == 78.5
+    assert metrics["candidate_throttling_detected"] is True
+    assert metrics["candidate_queue_depth"] == 7.0
+
+
 def test_analyze_edgeenv_regression_report_returns_runtime_anomaly_evidence():
     report = analyze_edgeenv_regression_report(edgeenv_regression_report())
 
@@ -1015,6 +1076,27 @@ def test_analyze_edgeenv_regression_report_warns_on_runtime_telemetry_signals():
     assert "queue_overload" in queue_evidence["suspected_causes"]
     assert report["candidate_summary"]["edgeenv_regression"][
         "candidate_throttling_detected"
+    ] is True
+
+
+def test_analyze_edgeenv_regression_report_warns_on_orchestrator_feed_context():
+    report = analyze_edgeenv_regression_report(
+        edgeenv_regression_report_with_orchestrator_feed_context()
+    )
+
+    validate_diagnosis_report(report)
+    assert report["guard_verdict"] == "suspicious"
+    assert report["severity"] == "medium"
+    evidence_types = {item["type"] for item in report["evidence"]}
+    assert "runtime_thermal_instability" in evidence_types
+    assert "runtime_queue_overload" in evidence_types
+    queue_evidence = next(
+        item for item in report["evidence"] if item["type"] == "runtime_queue_overload"
+    )
+    assert queue_evidence["observed_value"] == 7.0
+    assert "queue_overload" in queue_evidence["suspected_causes"]
+    assert report["candidate_summary"]["edgeenv_regression"][
+        "candidate_orchestrator_context_present"
     ] is True
 
 

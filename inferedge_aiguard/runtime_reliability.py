@@ -467,26 +467,42 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
     candidate_sequence_id = _optional_number(
         candidate_context.get("execution_sequence_id")
     )
+    baseline_orchestrator_context_present = isinstance(
+        baseline_context.get("orchestrator_operation_context"),
+        dict,
+    )
+    candidate_orchestrator_context_present = isinstance(
+        candidate_context.get("orchestrator_operation_context"),
+        dict,
+    )
     baseline_max_temperature_c = _max_optional_number(
         _telemetry_number(
             baseline_context,
             "gpu_temperature",
             "resource.gpu_temperature",
+            "orchestrator_operation_context.candidate_context.gpu_temperature",
+            "orchestrator_operation_context.candidate_context.resource.gpu_temperature",
         ),
         _telemetry_number(
             baseline_context,
             "cpu_temperature",
             "resource.cpu_temperature",
+            "orchestrator_operation_context.candidate_context.cpu_temperature",
+            "orchestrator_operation_context.candidate_context.resource.cpu_temperature",
         ),
         _telemetry_number(
             baseline_context,
             "gpu_temperature_c",
             "resource.gpu_temperature_c",
+            "orchestrator_operation_context.candidate_context.gpu_temperature_c",
+            "orchestrator_operation_context.candidate_context.resource.gpu_temperature_c",
         ),
         _telemetry_number(
             baseline_context,
             "cpu_temperature_c",
             "resource.cpu_temperature_c",
+            "orchestrator_operation_context.candidate_context.cpu_temperature_c",
+            "orchestrator_operation_context.candidate_context.resource.cpu_temperature_c",
         ),
     )
     candidate_max_temperature_c = _max_optional_number(
@@ -494,21 +510,29 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
             candidate_context,
             "gpu_temperature",
             "resource.gpu_temperature",
+            "orchestrator_operation_context.candidate_context.gpu_temperature",
+            "orchestrator_operation_context.candidate_context.resource.gpu_temperature",
         ),
         _telemetry_number(
             candidate_context,
             "cpu_temperature",
             "resource.cpu_temperature",
+            "orchestrator_operation_context.candidate_context.cpu_temperature",
+            "orchestrator_operation_context.candidate_context.resource.cpu_temperature",
         ),
         _telemetry_number(
             candidate_context,
             "gpu_temperature_c",
             "resource.gpu_temperature_c",
+            "orchestrator_operation_context.candidate_context.gpu_temperature_c",
+            "orchestrator_operation_context.candidate_context.resource.gpu_temperature_c",
         ),
         _telemetry_number(
             candidate_context,
             "cpu_temperature_c",
             "resource.cpu_temperature_c",
+            "orchestrator_operation_context.candidate_context.cpu_temperature_c",
+            "orchestrator_operation_context.candidate_context.resource.cpu_temperature_c",
         ),
     )
     return {
@@ -531,6 +555,9 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
         "runtime_telemetry_context_present": bool(context),
         "runtime_telemetry_source": context.get("source"),
         "runtime_telemetry_history_schema_version": history.get("schema_version"),
+        "history_orchestrator_feed_runs": _optional_number(
+            history_summary.get("orchestrator_feed_runs")
+        ),
         "history_registered_runs": _optional_number(
             history_summary.get("registered_runs")
         ),
@@ -558,27 +585,37 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
             baseline_sequence_id,
             candidate_sequence_id,
         ),
+        "baseline_orchestrator_context_present": baseline_orchestrator_context_present,
+        "candidate_orchestrator_context_present": candidate_orchestrator_context_present,
         "baseline_max_temperature_c": baseline_max_temperature_c,
         "candidate_max_temperature_c": candidate_max_temperature_c,
         "baseline_throttling_detected": _telemetry_bool(
             baseline_context,
             "throttling_detected",
             "resource.throttling_detected",
+            "orchestrator_operation_context.candidate_context.throttling_detected",
+            "orchestrator_operation_context.candidate_context.resource.throttling_detected",
         ),
         "candidate_throttling_detected": _telemetry_bool(
             candidate_context,
             "throttling_detected",
             "resource.throttling_detected",
+            "orchestrator_operation_context.candidate_context.throttling_detected",
+            "orchestrator_operation_context.candidate_context.resource.throttling_detected",
         ),
         "baseline_queue_depth": _telemetry_number(
             baseline_context,
             "queue_depth",
             "operation.queue_depth",
+            "orchestrator_operation_context.candidate_context.queue_depth",
+            "orchestrator_operation_context.candidate_context.operation.queue_depth",
         ),
         "candidate_queue_depth": _telemetry_number(
             candidate_context,
             "queue_depth",
             "operation.queue_depth",
+            "orchestrator_operation_context.candidate_context.queue_depth",
+            "orchestrator_operation_context.candidate_context.operation.queue_depth",
         ),
         "evidence_gap_count": float(len(gaps)) + missing_coverage_count,
         "evidence_gaps": gaps,
