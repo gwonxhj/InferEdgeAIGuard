@@ -258,6 +258,9 @@ python -m inferedge_aiguard.cli reason \
 evidence로 변환합니다. AIGuard는 comparability를 다시 계산하지 않으며,
 non-comparable 또는 same-condition이 아닌 report는
 `edgeenv_comparability_guardrail` skipped evidence로 남깁니다.
+candidate telemetry gap과 baseline/candidate execution sequence inversion은
+EdgeEnv replay context에서 온 warning evidence로 보존되며, AIGuard가 이를
+comparability decision으로 재판정하지 않습니다.
 
 Remote dispatch starter result도 직접 분석할 수 있습니다.
 
