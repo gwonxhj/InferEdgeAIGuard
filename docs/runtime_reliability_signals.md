@@ -299,6 +299,8 @@ This path emits deterministic runtime anomaly evidence such as
 Candidate telemetry gaps and baseline/candidate execution sequence inversion
 are preserved as EdgeEnv replay-context warnings, not recomputed
 comparability decisions.
+`tests/fixtures/edgeenv_regression/` mirrors the committed EdgeEnv replay
+fixtures as small CLI smoke inputs.
 AIGuard does not recompute comparability; if EdgeEnv marks the report as
 non-comparable or not same-condition, AIGuard emits
 `edgeenv_comparability_guardrail` as skipped evidence.
