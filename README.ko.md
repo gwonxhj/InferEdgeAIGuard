@@ -126,6 +126,9 @@ python -m inferedge_aiguard.cli reason \
 `runtime_telemetry_context_coverage`, `runtime_telemetry_replay_context`
 evidence로 변환합니다. AIGuard는 comparability 계산이나 final deployment
 decision을 소유하지 않습니다.
+candidate telemetry gap과 baseline/candidate execution sequence inversion은
+EdgeEnv replay context에서 온 warning evidence로 보존되며, AIGuard가 이를
+comparability decision으로 재판정하지 않습니다.
 
 이 기능은 AIGuard를 final deployment decision owner로 바꾸지 않습니다. AIGuard는
 runtime reliability risk를 설명하는 optional evidence provider이고, 최종 판단은
