@@ -211,8 +211,11 @@ python -m inferedge_aiguard.cli reason \
 이 경로는 EdgeEnv의 comparability-first 결과를 존중하면서
 `runtime_latency_regression`, `runtime_throughput_regression`,
 `runtime_memory_regression`, `runtime_telemetry_context_coverage`,
-`runtime_telemetry_replay_context` evidence를 생성합니다. AIGuard는
-regression 계산이나 final deployment decision을 소유하지 않습니다.
+`runtime_telemetry_replay_context` evidence를 생성합니다. EdgeEnv가
+runtime telemetry context에 thermal/throttling 또는 queue depth 신호를
+포함하면 `runtime_thermal_instability`와 `runtime_queue_overload` evidence도
+additive하게 생성합니다. AIGuard는 regression 계산이나 final deployment
+decision을 소유하지 않습니다.
 candidate telemetry gap과 baseline/candidate execution sequence inversion은
 EdgeEnv replay context에서 온 warning evidence로 보존되며, AIGuard가 이를
 comparability decision으로 재판정하지 않습니다.

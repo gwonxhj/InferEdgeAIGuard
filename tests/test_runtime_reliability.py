@@ -498,6 +498,30 @@ def edgeenv_regression_report_with_sequence_inversion() -> dict:
     return report
 
 
+def edgeenv_regression_report_with_runtime_telemetry_signals() -> dict:
+    report = edgeenv_regression_report()
+    report["regression_detected"] = False
+    report["evidence"] = {}
+    context = report["runtime_telemetry_context"]
+    context["baseline"].update(
+        {
+            "gpu_temperature": 55.0,
+            "cpu_temperature": 50.0,
+            "queue_depth": 1,
+            "throttling_detected": False,
+        }
+    )
+    context["candidate"].update(
+        {
+            "gpu_temperature": 76.2,
+            "cpu_temperature": 68.0,
+            "queue_depth": 6,
+            "throttling_detected": True,
+        }
+    )
+    return report
+
+
 def runtime_result_with_operation_signals() -> dict:
     return {
         "schema_version": "inferedge-runtime-result-v1",
@@ -911,6 +935,19 @@ def test_compute_edgeenv_regression_metrics_preserves_telemetry_context():
     assert metrics["evidence_gap_count"] == 0.0
 
 
+def test_compute_edgeenv_regression_metrics_extracts_runtime_telemetry_signals():
+    metrics = compute_edgeenv_regression_metrics(
+        edgeenv_regression_report_with_runtime_telemetry_signals()
+    )
+
+    assert metrics["baseline_max_temperature_c"] == 55.0
+    assert metrics["candidate_max_temperature_c"] == 76.2
+    assert metrics["baseline_throttling_detected"] is False
+    assert metrics["candidate_throttling_detected"] is True
+    assert metrics["baseline_queue_depth"] == 1.0
+    assert metrics["candidate_queue_depth"] == 6.0
+
+
 def test_analyze_edgeenv_regression_report_returns_runtime_anomaly_evidence():
     report = analyze_edgeenv_regression_report(edgeenv_regression_report())
 
@@ -948,6 +985,37 @@ def test_analyze_edgeenv_regression_report_returns_runtime_anomaly_evidence():
     assert report["candidate_summary"]["edgeenv_regression"]["candidate_run_id"] == (
         "edgeenv-smoke-candidate"
     )
+
+
+def test_analyze_edgeenv_regression_report_warns_on_runtime_telemetry_signals():
+    report = analyze_edgeenv_regression_report(
+        edgeenv_regression_report_with_runtime_telemetry_signals()
+    )
+
+    validate_diagnosis_report(report)
+    assert report["guard_verdict"] == "suspicious"
+    assert report["severity"] == "medium"
+    evidence_types = {item["type"] for item in report["evidence"]}
+    assert "runtime_thermal_instability" in evidence_types
+    assert "runtime_queue_overload" in evidence_types
+    thermal_evidence = next(
+        item
+        for item in report["evidence"]
+        if item["type"] == "runtime_thermal_instability"
+    )
+    assert thermal_evidence["status"] == "warning"
+    assert thermal_evidence["metric_name"] == "candidate_max_temperature_c"
+    assert thermal_evidence["observed_value"] == 76.2
+    assert "thermal_throttling" in thermal_evidence["suspected_causes"]
+    queue_evidence = next(
+        item for item in report["evidence"] if item["type"] == "runtime_queue_overload"
+    )
+    assert queue_evidence["status"] == "warning"
+    assert queue_evidence["observed_value"] == 6.0
+    assert "queue_overload" in queue_evidence["suspected_causes"]
+    assert report["candidate_summary"]["edgeenv_regression"][
+        "candidate_throttling_detected"
+    ] is True
 
 
 def test_analyze_edgeenv_regression_report_warns_on_telemetry_gap():

@@ -51,6 +51,10 @@ DEFAULT_RUNTIME_RELIABILITY_THRESHOLDS = {
     "edgeenv_fps_drop_pct_review": -20.0,
     "edgeenv_memory_peak_delta_pct_warning": 30.0,
     "edgeenv_telemetry_gap_review": 1.0,
+    "edgeenv_telemetry_queue_depth_review": 3.0,
+    "edgeenv_telemetry_queue_depth_blocked": 8.0,
+    "edgeenv_telemetry_temperature_c_review": 70.0,
+    "edgeenv_telemetry_temperature_c_blocked": 85.0,
 }
 
 
@@ -463,6 +467,50 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
     candidate_sequence_id = _optional_number(
         candidate_context.get("execution_sequence_id")
     )
+    baseline_max_temperature_c = _max_optional_number(
+        _telemetry_number(
+            baseline_context,
+            "gpu_temperature",
+            "resource.gpu_temperature",
+        ),
+        _telemetry_number(
+            baseline_context,
+            "cpu_temperature",
+            "resource.cpu_temperature",
+        ),
+        _telemetry_number(
+            baseline_context,
+            "gpu_temperature_c",
+            "resource.gpu_temperature_c",
+        ),
+        _telemetry_number(
+            baseline_context,
+            "cpu_temperature_c",
+            "resource.cpu_temperature_c",
+        ),
+    )
+    candidate_max_temperature_c = _max_optional_number(
+        _telemetry_number(
+            candidate_context,
+            "gpu_temperature",
+            "resource.gpu_temperature",
+        ),
+        _telemetry_number(
+            candidate_context,
+            "cpu_temperature",
+            "resource.cpu_temperature",
+        ),
+        _telemetry_number(
+            candidate_context,
+            "gpu_temperature_c",
+            "resource.gpu_temperature_c",
+        ),
+        _telemetry_number(
+            candidate_context,
+            "cpu_temperature_c",
+            "resource.cpu_temperature_c",
+        ),
+    )
     return {
         "baseline_run_id": regression_report.get("baseline_run_id"),
         "candidate_run_id": regression_report.get("candidate_run_id"),
@@ -509,6 +557,28 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
         "execution_sequence_order_valid": _execution_sequence_order_valid(
             baseline_sequence_id,
             candidate_sequence_id,
+        ),
+        "baseline_max_temperature_c": baseline_max_temperature_c,
+        "candidate_max_temperature_c": candidate_max_temperature_c,
+        "baseline_throttling_detected": _telemetry_bool(
+            baseline_context,
+            "throttling_detected",
+            "resource.throttling_detected",
+        ),
+        "candidate_throttling_detected": _telemetry_bool(
+            candidate_context,
+            "throttling_detected",
+            "resource.throttling_detected",
+        ),
+        "baseline_queue_depth": _telemetry_number(
+            baseline_context,
+            "queue_depth",
+            "operation.queue_depth",
+        ),
+        "candidate_queue_depth": _telemetry_number(
+            candidate_context,
+            "queue_depth",
+            "operation.queue_depth",
         ),
         "evidence_gap_count": float(len(gaps)) + missing_coverage_count,
         "evidence_gaps": gaps,
@@ -1336,6 +1406,15 @@ def _edgeenv_regression_evidence(
     replay_evidence = _edgeenv_telemetry_replay_evidence(metrics, thresholds)
     if replay_evidence is not None:
         evidence.append(replay_evidence)
+    thermal_evidence = _edgeenv_runtime_thermal_telemetry_evidence(
+        metrics,
+        thresholds,
+    )
+    if thermal_evidence is not None:
+        evidence.append(thermal_evidence)
+    queue_evidence = _edgeenv_runtime_queue_telemetry_evidence(metrics, thresholds)
+    if queue_evidence is not None:
+        evidence.append(queue_evidence)
 
     if not evidence:
         evidence.append(_edgeenv_regression_pass_evidence(metrics))
@@ -1603,6 +1682,123 @@ def _edgeenv_telemetry_replay_evidence(
         ),
         raw_context={"edgeenv_regression": metrics},
     )
+
+
+def _edgeenv_runtime_thermal_telemetry_evidence(
+    metrics: dict[str, Any],
+    thresholds: dict[str, float],
+) -> dict[str, Any] | None:
+    if not metrics.get("runtime_telemetry_context_present"):
+        return None
+    candidate_temperature = metrics.get("candidate_max_temperature_c")
+    throttling_detected = metrics.get("candidate_throttling_detected") is True
+    if candidate_temperature is None and not throttling_detected:
+        return None
+
+    observed_value = (
+        candidate_temperature
+        if isinstance(candidate_temperature, (int, float))
+        and not isinstance(candidate_temperature, bool)
+        else 1.0
+    )
+    severity = _rate_severity(
+        value=float(observed_value),
+        review=thresholds["edgeenv_telemetry_temperature_c_review"],
+        blocked=thresholds["edgeenv_telemetry_temperature_c_blocked"],
+    )
+    if throttling_detected and severity == "low":
+        severity = "medium"
+    status = _edgeenv_runtime_context_status(severity)
+    return build_evidence_item(
+        evidence_type="runtime_thermal_instability",
+        metric_name=(
+            "candidate_throttling_detected"
+            if candidate_temperature is None
+            else "candidate_max_temperature_c"
+        ),
+        observed_value=observed_value,
+        baseline_value=metrics.get("baseline_max_temperature_c"),
+        threshold=thresholds["edgeenv_telemetry_temperature_c_review"],
+        delta=None,
+        delta_pct=None,
+        increase_factor=None,
+        severity=severity,
+        status=status,
+        why_it_matters=(
+            "Thermal pressure or throttling in EdgeEnv telemetry can explain "
+            "runtime latency drift and reduce sustained deployment reliability."
+        ),
+        suspected_causes=[
+            "thermal_pressure",
+            "thermal_throttling",
+            "power_mode_or_cooling_constraint",
+        ]
+        if status != "passed"
+        else [],
+        recommendation=(
+            "Review EdgeEnv telemetry history, power mode, cooling, and sustained "
+            "run conditions before treating runtime regression as stable."
+            if status != "passed"
+            else "Thermal telemetry is within configured thresholds."
+        ),
+        raw_context={"edgeenv_regression": metrics},
+    )
+
+
+def _edgeenv_runtime_queue_telemetry_evidence(
+    metrics: dict[str, Any],
+    thresholds: dict[str, float],
+) -> dict[str, Any] | None:
+    if not metrics.get("runtime_telemetry_context_present"):
+        return None
+    queue_depth = metrics.get("candidate_queue_depth")
+    if not isinstance(queue_depth, (int, float)) or isinstance(queue_depth, bool):
+        return None
+
+    severity = _rate_severity(
+        value=float(queue_depth),
+        review=thresholds["edgeenv_telemetry_queue_depth_review"],
+        blocked=thresholds["edgeenv_telemetry_queue_depth_blocked"],
+    )
+    status = _edgeenv_runtime_context_status(severity)
+    return build_evidence_item(
+        evidence_type="runtime_queue_overload",
+        metric_name="candidate_queue_depth",
+        observed_value=queue_depth,
+        baseline_value=metrics.get("baseline_queue_depth"),
+        threshold=thresholds["edgeenv_telemetry_queue_depth_review"],
+        delta=None,
+        delta_pct=None,
+        increase_factor=None,
+        severity=severity,
+        status=status,
+        why_it_matters=(
+            "Queue depth in runtime telemetry is operation context for regression "
+            "review because backlog can inflate latency and hide workload pressure."
+        ),
+        suspected_causes=[
+            "queue_overload",
+            "scheduler_contention",
+            "input_rate_exceeds_runtime_capacity",
+        ]
+        if status != "passed"
+        else [],
+        recommendation=(
+            "Inspect Orchestrator queue policy, target FPS, drop/fallback behavior, "
+            "and runtime telemetry before deployment."
+            if status != "passed"
+            else "Queue depth telemetry is within configured thresholds."
+        ),
+        raw_context={"edgeenv_regression": metrics},
+    )
+
+
+def _edgeenv_runtime_context_status(severity: str) -> str:
+    if severity == "high":
+        return "failed"
+    if severity == "medium":
+        return "warning"
+    return "passed"
 
 
 def _edgeenv_regression_pass_evidence(metrics: dict[str, Any]) -> dict[str, Any]:
@@ -2293,6 +2489,37 @@ def _optional_number(value: Any) -> float | None:
     if isinstance(value, (int, float)) and not isinstance(value, bool):
         return float(value)
     return None
+
+
+def _max_optional_number(*values: float | None) -> float | None:
+    numeric_values = [value for value in values if value is not None]
+    return max(numeric_values) if numeric_values else None
+
+
+def _telemetry_number(context: dict[str, Any], *paths: str) -> float | None:
+    for path in paths:
+        value = _nested_value(context, path)
+        number = _optional_number(value)
+        if number is not None:
+            return number
+    return None
+
+
+def _telemetry_bool(context: dict[str, Any], *paths: str) -> bool | None:
+    for path in paths:
+        value = _nested_value(context, path)
+        if isinstance(value, bool):
+            return value
+    return None
+
+
+def _nested_value(context: dict[str, Any], path: str) -> Any:
+    value: Any = context
+    for key in path.split("."):
+        if not isinstance(value, dict):
+            return None
+        value = value.get(key)
+    return value
 
 
 def _execution_sequence_order_valid(
