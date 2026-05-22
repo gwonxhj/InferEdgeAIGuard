@@ -85,6 +85,7 @@ deterministic diagnosis evidence for Lab review.
 | `runtime_throughput_regression` | `fps_delta_pct` | `<= -20.0` | n/a | EdgeEnv same-condition regression indicates FPS drop |
 | `runtime_memory_regression` | `memory_peak_delta_pct` | `>= 30.0` | n/a | EdgeEnv same-condition regression indicates memory headroom risk |
 | `runtime_telemetry_context_coverage` | `runtime_telemetry_evidence_gap_count` | `>= 1` | n/a | EdgeEnv telemetry context is present but baseline/candidate coverage has gaps |
+| `runtime_telemetry_replay_context` | `runtime_telemetry_history_missing_run_count` | `>= 1` or baseline/candidate sequence order mismatch | n/a | EdgeEnv telemetry history replay has missing telemetry or ordering concerns |
 | `edgeenv_comparability_guardrail` | `edgeenv_comparable` | skipped when not comparable or not same-condition | n/a | AIGuard refuses to reinterpret non-comparable EdgeEnv reports as same-condition regression |
 
 These thresholds are intentionally deterministic and local-first. They are
@@ -293,7 +294,8 @@ python -m inferedge_aiguard.cli reason \
 
 This path emits deterministic runtime anomaly evidence such as
 `runtime_latency_regression`, `runtime_throughput_regression`,
-`runtime_memory_regression`, and `runtime_telemetry_context_coverage`.
+`runtime_memory_regression`, `runtime_telemetry_context_coverage`, and
+`runtime_telemetry_replay_context`.
 AIGuard does not recompute comparability; if EdgeEnv marks the report as
 non-comparable or not same-condition, AIGuard emits
 `edgeenv_comparability_guardrail` as skipped evidence.
