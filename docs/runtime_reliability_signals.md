@@ -296,6 +296,15 @@ python -m inferedge_aiguard.cli reason \
   --input reports/edgeenv_runtime_regression.json
 ```
 
+For the Runtime Intelligence chain smoke, AIGuard can also export the
+precomputed artifact that Lab ingests as optional evidence:
+
+```bash
+python -m inferedge_aiguard.cli reason-edgeenv-regression \
+  --input examples/runtime_intelligence/edgeenv_runtime_regression_with_orchestrator_feed.json \
+  --save-json examples/runtime_intelligence/aiguard_runtime_operation_guard_analysis.json
+```
+
 This path emits deterministic runtime anomaly evidence such as
 `runtime_latency_regression`, `runtime_throughput_regression`,
 `runtime_memory_regression`, `runtime_telemetry_context_coverage`, and
@@ -310,6 +319,10 @@ are preserved as EdgeEnv replay-context warnings, not recomputed
 comparability decisions.
 `tests/fixtures/edgeenv_regression/` mirrors the committed EdgeEnv replay
 fixtures as small CLI smoke inputs.
+`examples/runtime_intelligence/aiguard_runtime_operation_guard_analysis.json`
+is the precomputed `guard_analysis` artifact example aligned with Lab bundle
+naming. AIGuard provides runtime anomaly evidence there; it does not produce a
+Lab-owned deployment decision.
 AIGuard does not recompute comparability; if EdgeEnv marks the report as
 non-comparable or not same-condition, AIGuard emits
 `edgeenv_comparability_guardrail` as skipped evidence.

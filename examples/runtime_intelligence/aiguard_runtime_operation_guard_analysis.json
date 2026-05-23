@@ -1,0 +1,128 @@
+{
+  "schema_version": "inferedge-aiguard-diagnosis-v1",
+  "source": {
+    "edgeenv_runtime_regression_report": true,
+    "edgeenv_mode": "same-condition",
+    "edgeenv_comparable": true
+  },
+  "guard_verdict": "suspicious",
+  "severity": "medium",
+  "confidence": 0.74,
+  "primary_reason": "Runtime scheduling evidence requires review.",
+  "evidence": [
+    {
+      "type": "runtime_telemetry_context_coverage",
+      "metric_name": "runtime_telemetry_evidence_gap_count",
+      "observed_value": 0.0,
+      "baseline_value": 0,
+      "threshold": 1.0,
+      "delta": null,
+      "delta_pct": null,
+      "increase_factor": null,
+      "severity": "low",
+      "status": "passed",
+      "explanation": "runtime_telemetry_evidence_gap_count observed value is 0. Baseline value is 0. Threshold is 1. This runtime_telemetry_context_coverage evidence should be reviewed before deployment.",
+      "why_it_matters": "Runtime telemetry context makes regression evidence more explainable. Missing baseline or candidate telemetry is an evidence gap, not a failed benchmark by itself.",
+      "suspected_causes": [],
+      "recommendation": "Telemetry coverage is present for the EdgeEnv regression report.",
+      "raw_context": {
+        "edgeenv_regression": {
+          "runtime_telemetry_context_present": true,
+          "history_orchestrator_feed_runs": 1.0,
+          "candidate_orchestrator_context_present": true,
+          "candidate_max_temperature_c": 78.5,
+          "candidate_throttling_detected": true,
+          "candidate_queue_depth": 7.0,
+          "evidence_gap_count": 0.0
+        }
+      }
+    },
+    {
+      "type": "runtime_thermal_instability",
+      "metric_name": "candidate_max_temperature_c",
+      "observed_value": 78.5,
+      "baseline_value": null,
+      "threshold": 70.0,
+      "delta": null,
+      "delta_pct": null,
+      "increase_factor": null,
+      "severity": "medium",
+      "status": "warning",
+      "explanation": "candidate_max_temperature_c observed value is 78.5. Threshold is 70. This runtime_thermal_instability evidence should be reviewed before deployment.",
+      "why_it_matters": "Thermal pressure or throttling in EdgeEnv telemetry can explain runtime latency drift and reduce sustained deployment reliability.",
+      "suspected_causes": [
+        "thermal_pressure",
+        "thermal_throttling",
+        "power_mode_or_cooling_constraint"
+      ],
+      "recommendation": "Review EdgeEnv telemetry history, power mode, cooling, and sustained run conditions before treating runtime regression as stable.",
+      "raw_context": {
+        "edgeenv_regression": {
+          "history_orchestrator_feed_runs": 1.0,
+          "candidate_orchestrator_context_present": true,
+          "candidate_max_temperature_c": 78.5,
+          "candidate_throttling_detected": true,
+          "candidate_queue_depth": 7.0
+        }
+      }
+    },
+    {
+      "type": "runtime_queue_overload",
+      "metric_name": "candidate_queue_depth",
+      "observed_value": 7.0,
+      "baseline_value": null,
+      "threshold": 3.0,
+      "delta": null,
+      "delta_pct": null,
+      "increase_factor": null,
+      "severity": "medium",
+      "status": "warning",
+      "explanation": "candidate_queue_depth observed value is 7. Threshold is 3. This runtime_queue_overload evidence should be reviewed before deployment.",
+      "why_it_matters": "Queue depth in runtime telemetry is operation context for regression review because backlog can inflate latency and hide workload pressure.",
+      "suspected_causes": [
+        "queue_overload",
+        "scheduler_contention",
+        "input_rate_exceeds_runtime_capacity"
+      ],
+      "recommendation": "Inspect Orchestrator queue policy, target FPS, drop/fallback behavior, and runtime telemetry before deployment.",
+      "raw_context": {
+        "edgeenv_regression": {
+          "history_orchestrator_feed_runs": 1.0,
+          "candidate_orchestrator_context_present": true,
+          "candidate_max_temperature_c": 78.5,
+          "candidate_throttling_detected": true,
+          "candidate_queue_depth": 7.0
+        }
+      }
+    }
+  ],
+  "suspected_causes": [
+    "thermal_pressure",
+    "thermal_throttling",
+    "power_mode_or_cooling_constraint",
+    "queue_overload",
+    "scheduler_contention",
+    "input_rate_exceeds_runtime_capacity"
+  ],
+  "recommendations": [
+    "Telemetry coverage is present for the EdgeEnv regression report.",
+    "Review EdgeEnv telemetry history, power mode, cooling, and sustained run conditions before treating runtime regression as stable.",
+    "Inspect Orchestrator queue policy, target FPS, drop/fallback behavior, and runtime telemetry before deployment."
+  ],
+  "thresholds": {
+    "edgeenv_telemetry_gap_review": 1.0,
+    "edgeenv_telemetry_queue_depth_review": 3.0,
+    "edgeenv_telemetry_temperature_c_review": 70.0
+  },
+  "baseline_summary": {},
+  "candidate_summary": {
+    "edgeenv_regression": {
+      "history_orchestrator_feed_runs": 1.0,
+      "candidate_orchestrator_context_present": true,
+      "candidate_max_temperature_c": 78.5,
+      "candidate_throttling_detected": true,
+      "candidate_queue_depth": 7.0
+    }
+  },
+  "created_at": "2026-05-23T00:00:00Z"
+}

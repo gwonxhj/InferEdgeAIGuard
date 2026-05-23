@@ -18,6 +18,7 @@ from inferedge_aiguard.schema import validate_diagnosis_report
 
 ROOT = Path(__file__).resolve().parents[1]
 EDGEENV_REGRESSION_FIXTURES = ROOT / "tests" / "fixtures" / "edgeenv_regression"
+RUNTIME_INTELLIGENCE_EXAMPLES = ROOT / "examples" / "runtime_intelligence"
 
 
 def orchestration_summary() -> dict:
@@ -1890,3 +1891,68 @@ def test_cli_reason_edgeenv_regression_consumes_edgeenv_sequence_fixture(tmp_pat
         "suspected_causes"
     ]
     assert "guard_analysis" not in json.loads(input_path.read_text(encoding="utf-8"))
+
+
+def test_runtime_intelligence_example_exports_lab_ready_guard_analysis(tmp_path):
+    input_path = (
+        RUNTIME_INTELLIGENCE_EXAMPLES
+        / "edgeenv_runtime_regression_with_orchestrator_feed.json"
+    )
+    expected_path = (
+        RUNTIME_INTELLIGENCE_EXAMPLES
+        / "aiguard_runtime_operation_guard_analysis.json"
+    )
+    output_path = tmp_path / "aiguard_runtime_operation_guard_analysis.json"
+
+    expected = json.loads(expected_path.read_text(encoding="utf-8"))
+    validate_diagnosis_report(expected)
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "reason-edgeenv-regression",
+            "--input",
+            str(input_path),
+            "--save-json",
+            str(output_path),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    saved = json.loads(output_path.read_text(encoding="utf-8"))
+    validate_diagnosis_report(saved)
+    saved_evidence_types = {item["type"] for item in saved["evidence"]}
+    expected_evidence_types = {item["type"] for item in expected["evidence"]}
+    forbidden_decision_keys = {
+        "deployment_decision",
+        "final_decision",
+        "decision_owner",
+    }
+
+    assert output_path.name == expected_path.name
+    assert "- saved_json:" in result.stdout
+    assert saved["source"] == expected["source"]
+    assert saved["guard_verdict"] == expected["guard_verdict"] == "suspicious"
+    assert saved["severity"] == expected["severity"] == "medium"
+    assert expected_evidence_types == {
+        "runtime_telemetry_context_coverage",
+        "runtime_thermal_instability",
+        "runtime_queue_overload",
+    }
+    assert expected_evidence_types <= saved_evidence_types
+    assert saved["candidate_summary"]["edgeenv_regression"][
+        "history_orchestrator_feed_runs"
+    ] == 1.0
+    assert saved["candidate_summary"]["edgeenv_regression"][
+        "candidate_orchestrator_context_present"
+    ] is True
+    assert saved["candidate_summary"]["edgeenv_regression"][
+        "candidate_queue_depth"
+    ] == 7.0
+    assert forbidden_decision_keys.isdisjoint(saved)
+    assert forbidden_decision_keys.isdisjoint(expected)

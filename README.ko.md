@@ -118,6 +118,9 @@ python -m inferedge_aiguard.cli reason-edgeenv-regression \
   --input reports/edgeenv_runtime_regression.json
 python -m inferedge_aiguard.cli reason \
   --input reports/edgeenv_runtime_regression.json
+python -m inferedge_aiguard.cli reason-edgeenv-regression \
+  --input examples/runtime_intelligence/edgeenv_runtime_regression_with_orchestrator_feed.json \
+  --save-json examples/runtime_intelligence/aiguard_runtime_operation_guard_analysis.json
 ```
 
 이 경로는 EdgeEnv가 생성한 same-condition regression과
@@ -131,6 +134,11 @@ EdgeEnv replay context에서 온 warning evidence로 보존되며, AIGuard가 �
 comparability decision으로 재판정하지 않습니다.
 `tests/fixtures/edgeenv_regression/`에는 EdgeEnv의 committed replay fixtures를
 mirror한 작은 CLI smoke 입력이 있습니다.
+`examples/runtime_intelligence/aiguard_runtime_operation_guard_analysis.json`는
+Lab Runtime Intelligence bundle에 넣을 수 있는 precomputed
+`guard_analysis` artifact 예시입니다. 파일명은 Lab bundle의 AIGuard artifact
+role과 맞추며, AIGuard는 deterministic evidence만 생성하고 deployment
+decision은 만들지 않습니다.
 
 이 기능은 AIGuard를 final deployment decision owner로 바꾸지 않습니다. AIGuard는
 runtime reliability risk를 설명하는 optional evidence provider이고, 최종 판단은

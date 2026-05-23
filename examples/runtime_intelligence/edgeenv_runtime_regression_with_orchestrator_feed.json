@@ -1,0 +1,80 @@
+{
+  "baseline_run_id": "edgeenv-smoke-baseline",
+  "candidate_run_id": "edgeenv-smoke-candidate",
+  "comparable": true,
+  "mode": "same-condition",
+  "regression_detected": false,
+  "regression_type": "operation-context",
+  "severity": "medium",
+  "recommendation": "review_required",
+  "evidence": {},
+  "runtime_telemetry_context": {
+    "role": "supplemental_runtime_telemetry_context",
+    "source": "result_artifacts+runtime_telemetry_history",
+    "baseline": {
+      "run_id": "edgeenv-smoke-baseline",
+      "result_telemetry_present": true,
+      "history_entry_present": true,
+      "execution_sequence_id": 1,
+      "telemetry_source": "synthetic_local_fixture"
+    },
+    "candidate": {
+      "run_id": "edgeenv-smoke-candidate",
+      "result_telemetry_present": true,
+      "history_entry_present": true,
+      "execution_sequence_id": 2,
+      "telemetry_source": "synthetic_local_fixture",
+      "orchestrator_context_present": true,
+      "orchestrator_available_sections": [
+        "operation",
+        "queue_depth",
+        "resource"
+      ],
+      "orchestrator_operation_context": {
+        "schema_version": "inferedge-orchestrator-edgeenv-runtime-telemetry-feed-v1",
+        "role": "orchestrator_operation_context_for_edgeenv",
+        "source": "orchestration_summary",
+        "run_id": "edgeenv-smoke-candidate",
+        "not_a_regression_judgement": true,
+        "not_a_comparability_gate": true,
+        "decision_owner": "lab",
+        "regression_owner": "edgeenv",
+        "candidate_context": {
+          "run_id": "edgeenv-smoke-candidate",
+          "telemetry_source": "inferedge_orchestrator_operation_summary",
+          "available_sections": [
+            "operation",
+            "resource"
+          ],
+          "queue_depth": 7,
+          "operation": {
+            "queue_depth": 7,
+            "deadline_missed_count": 2,
+            "fallback_count": 1
+          },
+          "resource": {
+            "source": "tegrastats_timeline",
+            "resource_evidence_available": true,
+            "gpu_temperature": 78.5,
+            "ram_used_mb": 2048.0,
+            "throttling_detected": true
+          }
+        },
+        "edgeenv_mapping_hint": {
+          "runtime_telemetry_context_role": "candidate",
+          "copy_candidate_context_to": "runtime_telemetry_context.candidate"
+        }
+      }
+    },
+    "history": {
+      "schema_version": "edgeenv.runtime-telemetry-history.v1",
+      "summary": {
+        "registered_runs": 2,
+        "telemetry_runs": 2,
+        "missing_telemetry_runs": 0,
+        "orchestrator_feed_runs": 1
+      }
+    },
+    "evidence_gaps": []
+  }
+}
