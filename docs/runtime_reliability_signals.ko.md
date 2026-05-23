@@ -278,6 +278,12 @@ EdgeEnv가 baseline 또는 candidate telemetry context 아래에
 queue depth, thermal, throttling hint를 supplemental operation evidence로
 읽습니다. 이 feed는 Orchestrator verdict, EdgeEnv comparability gate, Lab
 deployment decision으로 취급하지 않습니다.
+AIGuard는 producer `edgeenv_mapping_hint`도 deterministic raw context에
+보존합니다. 여기에는 `coverage_summary_owner=edgeenv`,
+`coverage_summary_path=runtime_telemetry_context.history.telemetry_coverage`,
+`operation_context_role=supplemental` 같은 ownership marker가 포함됩니다.
+이 필드는 소유권 경계를 설명하기 위한 것이며 AIGuard가 EdgeEnv coverage를
+다시 계산하거나 Lab deployment policy를 소유한다는 뜻이 아닙니다.
 candidate telemetry gap과 baseline/candidate execution sequence inversion은
 EdgeEnv replay context에서 온 warning evidence로 보존되며, AIGuard가 이를
 comparability decision으로 재판정하지 않습니다.

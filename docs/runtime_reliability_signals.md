@@ -323,6 +323,11 @@ context, AIGuard reads queue depth, thermal, and throttling hints from that
 nested context as supplemental operation evidence. It does not treat the feed as
 an Orchestrator verdict, an EdgeEnv comparability gate, or a Lab deployment
 decision.
+AIGuard also preserves the producer `edgeenv_mapping_hint` in its deterministic
+raw context, including `coverage_summary_owner=edgeenv`,
+`coverage_summary_path=runtime_telemetry_context.history.telemetry_coverage`,
+and `operation_context_role=supplemental`. These fields document ownership; they
+do not make AIGuard recompute EdgeEnv coverage or own Lab deployment policy.
 Candidate telemetry gaps and baseline/candidate execution sequence inversion
 are preserved as EdgeEnv replay-context warnings, not recomputed
 comparability decisions.

@@ -228,6 +228,12 @@ context로 설명합니다. 이 summary가 없을 때만 per-run
 candidate telemetry gap과 baseline/candidate execution sequence inversion은
 EdgeEnv replay context에서 온 warning evidence로 보존되며, AIGuard가 이를
 comparability decision으로 재판정하지 않습니다.
+AIGuard는 EdgeEnv가 보존한 Orchestrator `edgeenv_mapping_hint`를 raw context에
+유지해 `coverage_summary_owner=edgeenv`,
+`coverage_summary_path=runtime_telemetry_context.history.telemetry_coverage`,
+`operation_context_role=supplemental` 경계를 Lab bundle까지 설명할 수 있게
+합니다. 이 값들은 ownership marker이며 AIGuard가 coverage/regression을
+소유한다는 의미가 아닙니다.
 `tests/fixtures/edgeenv_regression/`에는 EdgeEnv의 committed replay fixtures를
 mirror한 작은 CLI smoke 입력이 있습니다.
 `examples/runtime_intelligence/aiguard_runtime_operation_guard_analysis.json`는

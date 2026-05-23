@@ -82,6 +82,29 @@
           "execution_sequence_order_valid": true,
           "baseline_orchestrator_context_present": false,
           "candidate_orchestrator_context_present": true,
+          "orchestrator_candidate_context_telemetry_source": "inferedge_orchestrator_operation_summary",
+          "orchestrator_edgeenv_mapping_hint": {
+            "copy_candidate_context_to": "runtime_telemetry_context.candidate",
+            "operation_context_role": "supplemental",
+            "coverage_summary_owner": "edgeenv",
+            "coverage_summary_path": "runtime_telemetry_context.history.telemetry_coverage",
+            "candidate_context_required_fields": [
+              "run_id",
+              "telemetry_source",
+              "operation",
+              "resource"
+            ]
+          },
+          "orchestrator_mapping_hint_copy_candidate_context_to": "runtime_telemetry_context.candidate",
+          "orchestrator_mapping_hint_operation_context_role": "supplemental",
+          "orchestrator_mapping_hint_coverage_summary_owner": "edgeenv",
+          "orchestrator_mapping_hint_coverage_summary_path": "runtime_telemetry_context.history.telemetry_coverage",
+          "orchestrator_mapping_hint_candidate_context_required_fields": [
+            "run_id",
+            "telemetry_source",
+            "operation",
+            "resource"
+          ],
           "baseline_max_temperature_c": null,
           "candidate_max_temperature_c": 78.5,
           "baseline_throttling_detected": null,
@@ -166,6 +189,29 @@
           "execution_sequence_order_valid": true,
           "baseline_orchestrator_context_present": false,
           "candidate_orchestrator_context_present": true,
+          "orchestrator_candidate_context_telemetry_source": "inferedge_orchestrator_operation_summary",
+          "orchestrator_edgeenv_mapping_hint": {
+            "copy_candidate_context_to": "runtime_telemetry_context.candidate",
+            "operation_context_role": "supplemental",
+            "coverage_summary_owner": "edgeenv",
+            "coverage_summary_path": "runtime_telemetry_context.history.telemetry_coverage",
+            "candidate_context_required_fields": [
+              "run_id",
+              "telemetry_source",
+              "operation",
+              "resource"
+            ]
+          },
+          "orchestrator_mapping_hint_copy_candidate_context_to": "runtime_telemetry_context.candidate",
+          "orchestrator_mapping_hint_operation_context_role": "supplemental",
+          "orchestrator_mapping_hint_coverage_summary_owner": "edgeenv",
+          "orchestrator_mapping_hint_coverage_summary_path": "runtime_telemetry_context.history.telemetry_coverage",
+          "orchestrator_mapping_hint_candidate_context_required_fields": [
+            "run_id",
+            "telemetry_source",
+            "operation",
+            "resource"
+          ],
           "baseline_max_temperature_c": null,
           "candidate_max_temperature_c": 78.5,
           "baseline_throttling_detected": null,
@@ -250,6 +296,29 @@
           "execution_sequence_order_valid": true,
           "baseline_orchestrator_context_present": false,
           "candidate_orchestrator_context_present": true,
+          "orchestrator_candidate_context_telemetry_source": "inferedge_orchestrator_operation_summary",
+          "orchestrator_edgeenv_mapping_hint": {
+            "copy_candidate_context_to": "runtime_telemetry_context.candidate",
+            "operation_context_role": "supplemental",
+            "coverage_summary_owner": "edgeenv",
+            "coverage_summary_path": "runtime_telemetry_context.history.telemetry_coverage",
+            "candidate_context_required_fields": [
+              "run_id",
+              "telemetry_source",
+              "operation",
+              "resource"
+            ]
+          },
+          "orchestrator_mapping_hint_copy_candidate_context_to": "runtime_telemetry_context.candidate",
+          "orchestrator_mapping_hint_operation_context_role": "supplemental",
+          "orchestrator_mapping_hint_coverage_summary_owner": "edgeenv",
+          "orchestrator_mapping_hint_coverage_summary_path": "runtime_telemetry_context.history.telemetry_coverage",
+          "orchestrator_mapping_hint_candidate_context_required_fields": [
+            "run_id",
+            "telemetry_source",
+            "operation",
+            "resource"
+          ],
           "baseline_max_temperature_c": null,
           "candidate_max_temperature_c": 78.5,
           "baseline_throttling_detected": null,
@@ -371,6 +440,29 @@
       "execution_sequence_order_valid": true,
       "baseline_orchestrator_context_present": false,
       "candidate_orchestrator_context_present": true,
+      "orchestrator_candidate_context_telemetry_source": "inferedge_orchestrator_operation_summary",
+      "orchestrator_edgeenv_mapping_hint": {
+        "copy_candidate_context_to": "runtime_telemetry_context.candidate",
+        "operation_context_role": "supplemental",
+        "coverage_summary_owner": "edgeenv",
+        "coverage_summary_path": "runtime_telemetry_context.history.telemetry_coverage",
+        "candidate_context_required_fields": [
+          "run_id",
+          "telemetry_source",
+          "operation",
+          "resource"
+        ]
+      },
+      "orchestrator_mapping_hint_copy_candidate_context_to": "runtime_telemetry_context.candidate",
+      "orchestrator_mapping_hint_operation_context_role": "supplemental",
+      "orchestrator_mapping_hint_coverage_summary_owner": "edgeenv",
+      "orchestrator_mapping_hint_coverage_summary_path": "runtime_telemetry_context.history.telemetry_coverage",
+      "orchestrator_mapping_hint_candidate_context_required_fields": [
+        "run_id",
+        "telemetry_source",
+        "operation",
+        "resource"
+      ],
       "baseline_max_temperature_c": null,
       "candidate_max_temperature_c": 78.5,
       "baseline_throttling_detected": null,
@@ -474,8 +566,16 @@
             }
           },
           "edgeenv_mapping_hint": {
-            "runtime_telemetry_context_role": "candidate",
-            "copy_candidate_context_to": "runtime_telemetry_context.candidate"
+            "copy_candidate_context_to": "runtime_telemetry_context.candidate",
+            "operation_context_role": "supplemental",
+            "coverage_summary_owner": "edgeenv",
+            "coverage_summary_path": "runtime_telemetry_context.history.telemetry_coverage",
+            "candidate_context_required_fields": [
+              "run_id",
+              "telemetry_source",
+              "operation",
+              "resource"
+            ]
           }
         }
       },
@@ -568,5 +668,5 @@
       "evidence_gaps": []
     }
   },
-  "created_at": "2026-05-23T14:43:22Z"
+  "created_at": "2026-05-23T15:59:51Z"
 }

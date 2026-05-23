@@ -679,8 +679,18 @@ def edgeenv_regression_report_with_orchestrator_feed_context() -> dict:
             },
         },
         "edgeenv_mapping_hint": {
-            "runtime_telemetry_context_role": "candidate",
             "copy_candidate_context_to": "runtime_telemetry_context.candidate",
+            "operation_context_role": "supplemental",
+            "coverage_summary_owner": "edgeenv",
+            "coverage_summary_path": (
+                "runtime_telemetry_context.history.telemetry_coverage"
+            ),
+            "candidate_context_required_fields": [
+                "run_id",
+                "telemetry_source",
+                "operation",
+                "resource",
+            ],
         },
     }
     return report
@@ -1159,6 +1169,20 @@ def test_compute_edgeenv_regression_metrics_extracts_orchestrator_feed_context()
 
     assert metrics["history_orchestrator_feed_runs"] == 1.0
     assert metrics["candidate_orchestrator_context_present"] is True
+    assert metrics["orchestrator_candidate_context_telemetry_source"] == (
+        "inferedge_orchestrator_operation_summary"
+    )
+    assert metrics["orchestrator_mapping_hint_coverage_summary_owner"] == "edgeenv"
+    assert metrics["orchestrator_mapping_hint_coverage_summary_path"] == (
+        "runtime_telemetry_context.history.telemetry_coverage"
+    )
+    assert metrics["orchestrator_mapping_hint_operation_context_role"] == "supplemental"
+    assert set(metrics["orchestrator_mapping_hint_candidate_context_required_fields"]) >= {
+        "run_id",
+        "telemetry_source",
+        "operation",
+        "resource",
+    }
     assert metrics["candidate_max_temperature_c"] == 78.5
     assert metrics["candidate_throttling_detected"] is True
     assert metrics["candidate_queue_depth"] == 7.0
@@ -1282,6 +1306,12 @@ def test_analyze_edgeenv_regression_report_warns_on_orchestrator_feed_context():
     assert report["candidate_summary"]["edgeenv_regression"][
         "candidate_orchestrator_context_present"
     ] is True
+    assert report["candidate_summary"]["edgeenv_regression"][
+        "orchestrator_mapping_hint_coverage_summary_owner"
+    ] == "edgeenv"
+    assert report["candidate_summary"]["edgeenv_regression"][
+        "orchestrator_mapping_hint_operation_context_role"
+    ] == "supplemental"
 
 
 def test_analyze_edgeenv_regression_report_warns_on_telemetry_gap():
@@ -2137,5 +2167,29 @@ def test_runtime_intelligence_example_exports_lab_ready_guard_analysis(tmp_path)
     assert saved["candidate_summary"]["edgeenv_regression"][
         "candidate_queue_depth"
     ] == 7.0
+    assert saved["candidate_summary"]["edgeenv_regression"][
+        "orchestrator_mapping_hint_coverage_summary_owner"
+    ] == "edgeenv"
+    assert saved["candidate_summary"]["edgeenv_regression"][
+        "orchestrator_mapping_hint_coverage_summary_path"
+    ] == "runtime_telemetry_context.history.telemetry_coverage"
+    assert saved["candidate_summary"]["edgeenv_regression"][
+        "orchestrator_mapping_hint_operation_context_role"
+    ] == "supplemental"
+    assert saved["candidate_summary"]["edgeenv_regression"][
+        "orchestrator_candidate_context_telemetry_source"
+    ] == "inferedge_orchestrator_operation_summary"
+    coverage_evidence = next(
+        item
+        for item in saved["evidence"]
+        if item["type"] == "runtime_telemetry_context_coverage"
+    )
+    coverage_context = coverage_evidence["raw_context"]["edgeenv_regression"]
+    assert coverage_context["orchestrator_edgeenv_mapping_hint"][
+        "coverage_summary_owner"
+    ] == "edgeenv"
+    assert coverage_context["orchestrator_edgeenv_mapping_hint"][
+        "coverage_summary_path"
+    ] == "runtime_telemetry_context.history.telemetry_coverage"
     assert forbidden_decision_keys.isdisjoint(saved)
     assert forbidden_decision_keys.isdisjoint(expected)
