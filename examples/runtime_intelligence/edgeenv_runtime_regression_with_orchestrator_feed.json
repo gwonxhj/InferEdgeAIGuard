@@ -16,7 +16,27 @@
       "result_telemetry_present": true,
       "history_entry_present": true,
       "execution_sequence_id": 1,
-      "telemetry_source": "synthetic_local_fixture"
+      "telemetry_source": "synthetic_local_fixture",
+      "telemetry_coverage": {
+        "schema_version": "inferedge-runtime-telemetry-coverage-v1",
+        "expected_fields": [
+          "gpu_temperature",
+          "queue_depth",
+          "telemetry_timestamp"
+        ],
+        "observed_fields": [
+          "gpu_temperature",
+          "queue_depth",
+          "telemetry_timestamp"
+        ],
+        "missing_fields": [],
+        "expected_field_count": 3,
+        "observed_field_count": 3,
+        "missing_field_count": 0,
+        "coverage_ratio": 1.0,
+        "comparability_owner": "edgeenv",
+        "missing_telemetry_is_failure": false
+      }
     },
     "candidate": {
       "run_id": "edgeenv-smoke-candidate",
@@ -24,6 +44,27 @@
       "history_entry_present": true,
       "execution_sequence_id": 2,
       "telemetry_source": "synthetic_local_fixture",
+      "telemetry_coverage": {
+        "schema_version": "inferedge-runtime-telemetry-coverage-v1",
+        "expected_fields": [
+          "gpu_temperature",
+          "queue_depth",
+          "telemetry_timestamp"
+        ],
+        "observed_fields": [
+          "gpu_temperature",
+          "telemetry_timestamp"
+        ],
+        "missing_fields": [
+          "queue_depth"
+        ],
+        "expected_field_count": 3,
+        "observed_field_count": 2,
+        "missing_field_count": 1,
+        "coverage_ratio": 0.666667,
+        "comparability_owner": "edgeenv",
+        "missing_telemetry_is_failure": false
+      },
       "orchestrator_context_present": true,
       "orchestrator_available_sections": [
         "operation",

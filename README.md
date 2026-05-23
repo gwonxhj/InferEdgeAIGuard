@@ -219,6 +219,9 @@ runtime telemetry context에 thermal/throttling 또는 queue depth 신호를
 포함하면 `runtime_thermal_instability`와 `runtime_queue_overload` evidence도
 additive하게 생성합니다. AIGuard는 regression 계산이나 final deployment
 decision을 소유하지 않습니다.
+EdgeEnv가 `runtime_telemetry.coverage`를 보존하면 AIGuard는 coverage ratio,
+missing field name, `missing_telemetry_is_failure`를 deterministic warning
+context로 설명하지만, 이를 배포 판단으로 직접 승격하지 않습니다.
 candidate telemetry gap과 baseline/candidate execution sequence inversion은
 EdgeEnv replay context에서 온 warning evidence로 보존되며, AIGuard가 이를
 comparability decision으로 재판정하지 않습니다.

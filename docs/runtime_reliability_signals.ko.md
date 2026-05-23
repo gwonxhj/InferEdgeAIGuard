@@ -65,9 +65,15 @@ AIGuard는 이 필드를 Runtime이 제공한 operation evidence로만 해석합
 | `runtime_error_classification` | `runtime_error_severity` | present | n/a | Runtime이 retry hint와 함께 execution warning/error를 분류함 |
 | `runtime_operation_health` | `runtime_operation_summary_risk_count` | risk label 또는 review action `>= 1` | n/a | Runtime이 operation summary risk label, evidence gap, review action을 제공함 |
 | `runtime_thermal_memory_evidence_missing` | `thermal_memory_evidence_available` | `false` on Jetson | n/a | Jetson 결과에 sustained review용 thermal/memory context가 없음 |
+| `runtime_telemetry_context_coverage` | `runtime_telemetry_evidence_gap_count` | `>= 1` | n/a | EdgeEnv telemetry context의 baseline/candidate coverage, history entry, 또는 `telemetry_coverage.missing_fields`에 gap이 있음 |
 
 이 threshold는 local-first deterministic review signal입니다. production SLO로
 해석하지 않습니다.
+
+EdgeEnv가 `runtime_telemetry.coverage`를 보존하면 AIGuard는 coverage ratio,
+missing field name, `missing_telemetry_is_failure`를 evidence `raw_context`에
+남깁니다. coverage field 누락은 deterministic warning context일 뿐이며,
+AIGuard가 final deployment decision으로 승격하지 않습니다.
 
 ## Sustained Scenario Fields
 
@@ -275,6 +281,9 @@ deployment decision으로 취급하지 않습니다.
 candidate telemetry gap과 baseline/candidate execution sequence inversion은
 EdgeEnv replay context에서 온 warning evidence로 보존되며, AIGuard가 이를
 comparability decision으로 재판정하지 않습니다.
+EdgeEnv가 `runtime_telemetry.coverage`를 제공하면 AIGuard는 missing field를
+`runtime_telemetry_field_gap` suspected cause로 설명하지만, Lab-owned
+deployment policy를 대체하지 않습니다.
 `tests/fixtures/edgeenv_regression/`에는 EdgeEnv의 committed replay fixtures를
 mirror한 작은 CLI smoke 입력이 있습니다.
 `examples/runtime_intelligence/aiguard_runtime_operation_guard_analysis.json`는

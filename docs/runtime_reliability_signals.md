@@ -86,7 +86,7 @@ Lab review.
 | `runtime_latency_regression` | `p99_delta_pct` / `mean_delta_pct` / `p95_delta_pct` | p99 `>= 25.0` or mean/p95 `>= 15.0` | n/a | EdgeEnv same-condition regression indicates latency drift or tail latency spike |
 | `runtime_throughput_regression` | `fps_delta_pct` | `<= -20.0` | n/a | EdgeEnv same-condition regression indicates FPS drop |
 | `runtime_memory_regression` | `memory_peak_delta_pct` | `>= 30.0` | n/a | EdgeEnv same-condition regression indicates memory headroom risk |
-| `runtime_telemetry_context_coverage` | `runtime_telemetry_evidence_gap_count` | `>= 1` | n/a | EdgeEnv telemetry context is present but baseline/candidate coverage has gaps |
+| `runtime_telemetry_context_coverage` | `runtime_telemetry_evidence_gap_count` | `>= 1` | n/a | EdgeEnv telemetry context is present but baseline/candidate coverage, history entries, or `telemetry_coverage.missing_fields` have gaps |
 | `runtime_telemetry_replay_context` | `runtime_telemetry_history_missing_run_count` | `>= 1` or baseline/candidate sequence order mismatch | n/a | EdgeEnv telemetry history replay has missing telemetry or ordering concerns |
 | `runtime_thermal_instability` | `candidate_max_temperature_c` / `candidate_throttling_detected` | temperature `>= 70.0` or throttling `true` | temperature `>= 85.0` | EdgeEnv telemetry or attached Orchestrator feed indicates thermal/throttling pressure |
 | `runtime_queue_overload` | `candidate_queue_depth` | `>= 3.0` | `>= 8.0` | EdgeEnv telemetry or attached Orchestrator feed indicates queue backlog pressure |
@@ -94,6 +94,13 @@ Lab review.
 
 These thresholds are intentionally deterministic and local-first. They are
 review signals, not production SLOs.
+
+When EdgeEnv preserves `runtime_telemetry.coverage`, AIGuard records
+`baseline_telemetry_coverage_ratio`,
+`candidate_telemetry_coverage_ratio`, missing field names, and
+`missing_telemetry_is_failure` in the evidence `raw_context`. Missing coverage
+fields become deterministic warning context only; AIGuard does not convert them
+into a final deployment decision.
 
 ## Sustained Scenario Fields
 

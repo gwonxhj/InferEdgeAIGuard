@@ -8,32 +8,75 @@
   "guard_verdict": "suspicious",
   "severity": "medium",
   "confidence": 0.74,
-  "primary_reason": "Runtime scheduling evidence requires review.",
+  "primary_reason": "Runtime telemetry context has evidence gaps that require review.",
   "evidence": [
     {
       "type": "runtime_telemetry_context_coverage",
       "metric_name": "runtime_telemetry_evidence_gap_count",
-      "observed_value": 0.0,
+      "observed_value": 1.0,
       "baseline_value": 0,
       "threshold": 1.0,
       "delta": null,
       "delta_pct": null,
       "increase_factor": null,
-      "severity": "low",
-      "status": "passed",
-      "explanation": "runtime_telemetry_evidence_gap_count observed value is 0. Baseline value is 0. Threshold is 1. This runtime_telemetry_context_coverage evidence should be reviewed before deployment.",
+      "severity": "medium",
+      "status": "warning",
+      "explanation": "runtime_telemetry_evidence_gap_count observed value is 1. Baseline value is 0. Threshold is 1. This runtime_telemetry_context_coverage evidence should be reviewed before deployment.",
       "why_it_matters": "Runtime telemetry context makes regression evidence more explainable. Missing baseline or candidate telemetry is an evidence gap, not a failed benchmark by itself.",
-      "suspected_causes": [],
-      "recommendation": "Telemetry coverage is present for the EdgeEnv regression report.",
+      "suspected_causes": [
+        "runtime_telemetry_gap",
+        "runtime_telemetry_field_gap"
+      ],
+      "recommendation": "Inspect telemetry coverage missing fields, rerun telemetry history export if needed, and preserve runtime_telemetry artifacts for both baseline and candidate before relying on trend diagnosis.",
       "raw_context": {
         "edgeenv_regression": {
+          "baseline_run_id": "edgeenv-smoke-baseline",
+          "candidate_run_id": "edgeenv-smoke-candidate",
+          "comparable": true,
+          "mode": "same-condition",
+          "regression_detected": false,
+          "regression_type": "operation-context",
+          "severity": "medium",
+          "recommendation": "review_required",
+          "mean_delta_pct": null,
+          "p95_delta_pct": null,
+          "p99_delta_pct": null,
+          "fps_delta_pct": null,
+          "memory_peak_delta_pct": null,
+          "triggered_thresholds": [],
           "runtime_telemetry_context_present": true,
+          "runtime_telemetry_source": "result_artifacts+runtime_telemetry_history",
+          "runtime_telemetry_history_schema_version": "edgeenv.runtime-telemetry-history.v1",
           "history_orchestrator_feed_runs": 1.0,
+          "history_registered_runs": 2.0,
+          "history_telemetry_runs": 2.0,
+          "history_missing_telemetry_runs": 0.0,
+          "baseline_telemetry_present": true,
+          "candidate_telemetry_present": true,
+          "baseline_history_entry_present": true,
+          "candidate_history_entry_present": true,
+          "baseline_telemetry_coverage_ratio": 1.0,
+          "candidate_telemetry_coverage_ratio": 0.666667,
+          "baseline_telemetry_coverage_missing_fields": [],
+          "candidate_telemetry_coverage_missing_fields": [
+            "queue_depth"
+          ],
+          "telemetry_coverage_missing_field_count": 1.0,
+          "baseline_missing_telemetry_is_failure": false,
+          "candidate_missing_telemetry_is_failure": false,
+          "baseline_execution_sequence_id": 1.0,
+          "candidate_execution_sequence_id": 2.0,
+          "execution_sequence_order_valid": true,
+          "baseline_orchestrator_context_present": false,
           "candidate_orchestrator_context_present": true,
+          "baseline_max_temperature_c": null,
           "candidate_max_temperature_c": 78.5,
+          "baseline_throttling_detected": null,
           "candidate_throttling_detected": true,
+          "baseline_queue_depth": null,
           "candidate_queue_depth": 7.0,
-          "evidence_gap_count": 0.0
+          "evidence_gap_count": 1.0,
+          "evidence_gaps": []
         }
       }
     },
@@ -58,11 +101,53 @@
       "recommendation": "Review EdgeEnv telemetry history, power mode, cooling, and sustained run conditions before treating runtime regression as stable.",
       "raw_context": {
         "edgeenv_regression": {
+          "baseline_run_id": "edgeenv-smoke-baseline",
+          "candidate_run_id": "edgeenv-smoke-candidate",
+          "comparable": true,
+          "mode": "same-condition",
+          "regression_detected": false,
+          "regression_type": "operation-context",
+          "severity": "medium",
+          "recommendation": "review_required",
+          "mean_delta_pct": null,
+          "p95_delta_pct": null,
+          "p99_delta_pct": null,
+          "fps_delta_pct": null,
+          "memory_peak_delta_pct": null,
+          "triggered_thresholds": [],
+          "runtime_telemetry_context_present": true,
+          "runtime_telemetry_source": "result_artifacts+runtime_telemetry_history",
+          "runtime_telemetry_history_schema_version": "edgeenv.runtime-telemetry-history.v1",
           "history_orchestrator_feed_runs": 1.0,
+          "history_registered_runs": 2.0,
+          "history_telemetry_runs": 2.0,
+          "history_missing_telemetry_runs": 0.0,
+          "baseline_telemetry_present": true,
+          "candidate_telemetry_present": true,
+          "baseline_history_entry_present": true,
+          "candidate_history_entry_present": true,
+          "baseline_telemetry_coverage_ratio": 1.0,
+          "candidate_telemetry_coverage_ratio": 0.666667,
+          "baseline_telemetry_coverage_missing_fields": [],
+          "candidate_telemetry_coverage_missing_fields": [
+            "queue_depth"
+          ],
+          "telemetry_coverage_missing_field_count": 1.0,
+          "baseline_missing_telemetry_is_failure": false,
+          "candidate_missing_telemetry_is_failure": false,
+          "baseline_execution_sequence_id": 1.0,
+          "candidate_execution_sequence_id": 2.0,
+          "execution_sequence_order_valid": true,
+          "baseline_orchestrator_context_present": false,
           "candidate_orchestrator_context_present": true,
+          "baseline_max_temperature_c": null,
           "candidate_max_temperature_c": 78.5,
+          "baseline_throttling_detected": null,
           "candidate_throttling_detected": true,
-          "candidate_queue_depth": 7.0
+          "baseline_queue_depth": null,
+          "candidate_queue_depth": 7.0,
+          "evidence_gap_count": 1.0,
+          "evidence_gaps": []
         }
       }
     },
@@ -87,16 +172,60 @@
       "recommendation": "Inspect Orchestrator queue policy, target FPS, drop/fallback behavior, and runtime telemetry before deployment.",
       "raw_context": {
         "edgeenv_regression": {
+          "baseline_run_id": "edgeenv-smoke-baseline",
+          "candidate_run_id": "edgeenv-smoke-candidate",
+          "comparable": true,
+          "mode": "same-condition",
+          "regression_detected": false,
+          "regression_type": "operation-context",
+          "severity": "medium",
+          "recommendation": "review_required",
+          "mean_delta_pct": null,
+          "p95_delta_pct": null,
+          "p99_delta_pct": null,
+          "fps_delta_pct": null,
+          "memory_peak_delta_pct": null,
+          "triggered_thresholds": [],
+          "runtime_telemetry_context_present": true,
+          "runtime_telemetry_source": "result_artifacts+runtime_telemetry_history",
+          "runtime_telemetry_history_schema_version": "edgeenv.runtime-telemetry-history.v1",
           "history_orchestrator_feed_runs": 1.0,
+          "history_registered_runs": 2.0,
+          "history_telemetry_runs": 2.0,
+          "history_missing_telemetry_runs": 0.0,
+          "baseline_telemetry_present": true,
+          "candidate_telemetry_present": true,
+          "baseline_history_entry_present": true,
+          "candidate_history_entry_present": true,
+          "baseline_telemetry_coverage_ratio": 1.0,
+          "candidate_telemetry_coverage_ratio": 0.666667,
+          "baseline_telemetry_coverage_missing_fields": [],
+          "candidate_telemetry_coverage_missing_fields": [
+            "queue_depth"
+          ],
+          "telemetry_coverage_missing_field_count": 1.0,
+          "baseline_missing_telemetry_is_failure": false,
+          "candidate_missing_telemetry_is_failure": false,
+          "baseline_execution_sequence_id": 1.0,
+          "candidate_execution_sequence_id": 2.0,
+          "execution_sequence_order_valid": true,
+          "baseline_orchestrator_context_present": false,
           "candidate_orchestrator_context_present": true,
+          "baseline_max_temperature_c": null,
           "candidate_max_temperature_c": 78.5,
+          "baseline_throttling_detected": null,
           "candidate_throttling_detected": true,
-          "candidate_queue_depth": 7.0
+          "baseline_queue_depth": null,
+          "candidate_queue_depth": 7.0,
+          "evidence_gap_count": 1.0,
+          "evidence_gaps": []
         }
       }
     }
   ],
   "suspected_causes": [
+    "runtime_telemetry_gap",
+    "runtime_telemetry_field_gap",
     "thermal_pressure",
     "thermal_throttling",
     "power_mode_or_cooling_constraint",
@@ -105,24 +234,210 @@
     "input_rate_exceeds_runtime_capacity"
   ],
   "recommendations": [
-    "Telemetry coverage is present for the EdgeEnv regression report.",
+    "Inspect telemetry coverage missing fields, rerun telemetry history export if needed, and preserve runtime_telemetry artifacts for both baseline and candidate before relying on trend diagnosis.",
     "Review EdgeEnv telemetry history, power mode, cooling, and sustained run conditions before treating runtime regression as stable.",
     "Inspect Orchestrator queue policy, target FPS, drop/fallback behavior, and runtime telemetry before deployment."
   ],
   "thresholds": {
+    "deadline_miss_rate_review": 0.05,
+    "deadline_miss_rate_blocked": 0.2,
+    "drop_rate_review": 0.2,
+    "drop_rate_blocked": 0.5,
+    "fallback_rate_review": 0.2,
+    "fallback_rate_blocked": 0.5,
+    "queue_backlog_policy_decision_count_review": 1,
+    "max_total_queue_depth_review": 3,
+    "max_total_queue_depth_blocked": 8,
+    "profiled_workload_risk_count_review": 1,
+    "profiled_workload_risk_count_blocked": 3,
+    "thermal_pressure_temperature_c_review": 70.0,
+    "thermal_pressure_temperature_c_blocked": 85.0,
+    "runtime_latency_budget_overrun_review": 1,
+    "runtime_deadline_missed_review": 1,
+    "runtime_backend_unavailable_review": 1,
+    "runtime_error_severity_review": 1,
+    "remote_dispatch_failure_review": 1,
+    "remote_execution_failure_review": 1,
+    "worker_degraded_count_review": 1,
+    "worker_degraded_count_blocked": 3,
+    "worker_constrained_count_review": 1,
+    "scheduler_delay_event_count_review": 1,
+    "scheduler_delay_event_count_blocked": 3,
+    "queue_pressure_reason_count_review": 1,
+    "worker_operation_risk_count_review": 1,
+    "worker_operation_risk_count_blocked": 3,
+    "device_local_event_count_review": 1,
+    "edgeenv_mean_delta_pct_review": 15.0,
+    "edgeenv_p99_delta_pct_review": 25.0,
+    "edgeenv_fps_drop_pct_review": -20.0,
+    "edgeenv_memory_peak_delta_pct_warning": 30.0,
     "edgeenv_telemetry_gap_review": 1.0,
     "edgeenv_telemetry_queue_depth_review": 3.0,
-    "edgeenv_telemetry_temperature_c_review": 70.0
+    "edgeenv_telemetry_queue_depth_blocked": 8.0,
+    "edgeenv_telemetry_temperature_c_review": 70.0,
+    "edgeenv_telemetry_temperature_c_blocked": 85.0
   },
   "baseline_summary": {},
   "candidate_summary": {
     "edgeenv_regression": {
+      "baseline_run_id": "edgeenv-smoke-baseline",
+      "candidate_run_id": "edgeenv-smoke-candidate",
+      "comparable": true,
+      "mode": "same-condition",
+      "regression_detected": false,
+      "regression_type": "operation-context",
+      "severity": "medium",
+      "recommendation": "review_required",
+      "mean_delta_pct": null,
+      "p95_delta_pct": null,
+      "p99_delta_pct": null,
+      "fps_delta_pct": null,
+      "memory_peak_delta_pct": null,
+      "triggered_thresholds": [],
+      "runtime_telemetry_context_present": true,
+      "runtime_telemetry_source": "result_artifacts+runtime_telemetry_history",
+      "runtime_telemetry_history_schema_version": "edgeenv.runtime-telemetry-history.v1",
       "history_orchestrator_feed_runs": 1.0,
+      "history_registered_runs": 2.0,
+      "history_telemetry_runs": 2.0,
+      "history_missing_telemetry_runs": 0.0,
+      "baseline_telemetry_present": true,
+      "candidate_telemetry_present": true,
+      "baseline_history_entry_present": true,
+      "candidate_history_entry_present": true,
+      "baseline_telemetry_coverage_ratio": 1.0,
+      "candidate_telemetry_coverage_ratio": 0.666667,
+      "baseline_telemetry_coverage_missing_fields": [],
+      "candidate_telemetry_coverage_missing_fields": [
+        "queue_depth"
+      ],
+      "telemetry_coverage_missing_field_count": 1.0,
+      "baseline_missing_telemetry_is_failure": false,
+      "candidate_missing_telemetry_is_failure": false,
+      "baseline_execution_sequence_id": 1.0,
+      "candidate_execution_sequence_id": 2.0,
+      "execution_sequence_order_valid": true,
+      "baseline_orchestrator_context_present": false,
       "candidate_orchestrator_context_present": true,
+      "baseline_max_temperature_c": null,
       "candidate_max_temperature_c": 78.5,
+      "baseline_throttling_detected": null,
       "candidate_throttling_detected": true,
-      "candidate_queue_depth": 7.0
+      "baseline_queue_depth": null,
+      "candidate_queue_depth": 7.0,
+      "evidence_gap_count": 1.0,
+      "evidence_gaps": []
+    },
+    "runtime_telemetry_context": {
+      "role": "supplemental_runtime_telemetry_context",
+      "source": "result_artifacts+runtime_telemetry_history",
+      "baseline": {
+        "run_id": "edgeenv-smoke-baseline",
+        "result_telemetry_present": true,
+        "history_entry_present": true,
+        "execution_sequence_id": 1,
+        "telemetry_source": "synthetic_local_fixture",
+        "telemetry_coverage": {
+          "schema_version": "inferedge-runtime-telemetry-coverage-v1",
+          "expected_fields": [
+            "gpu_temperature",
+            "queue_depth",
+            "telemetry_timestamp"
+          ],
+          "observed_fields": [
+            "gpu_temperature",
+            "queue_depth",
+            "telemetry_timestamp"
+          ],
+          "missing_fields": [],
+          "expected_field_count": 3,
+          "observed_field_count": 3,
+          "missing_field_count": 0,
+          "coverage_ratio": 1.0,
+          "comparability_owner": "edgeenv",
+          "missing_telemetry_is_failure": false
+        }
+      },
+      "candidate": {
+        "run_id": "edgeenv-smoke-candidate",
+        "result_telemetry_present": true,
+        "history_entry_present": true,
+        "execution_sequence_id": 2,
+        "telemetry_source": "synthetic_local_fixture",
+        "telemetry_coverage": {
+          "schema_version": "inferedge-runtime-telemetry-coverage-v1",
+          "expected_fields": [
+            "gpu_temperature",
+            "queue_depth",
+            "telemetry_timestamp"
+          ],
+          "observed_fields": [
+            "gpu_temperature",
+            "telemetry_timestamp"
+          ],
+          "missing_fields": [
+            "queue_depth"
+          ],
+          "expected_field_count": 3,
+          "observed_field_count": 2,
+          "missing_field_count": 1,
+          "coverage_ratio": 0.666667,
+          "comparability_owner": "edgeenv",
+          "missing_telemetry_is_failure": false
+        },
+        "orchestrator_context_present": true,
+        "orchestrator_available_sections": [
+          "operation",
+          "queue_depth",
+          "resource"
+        ],
+        "orchestrator_operation_context": {
+          "schema_version": "inferedge-orchestrator-edgeenv-runtime-telemetry-feed-v1",
+          "role": "orchestrator_operation_context_for_edgeenv",
+          "source": "orchestration_summary",
+          "run_id": "edgeenv-smoke-candidate",
+          "not_a_regression_judgement": true,
+          "not_a_comparability_gate": true,
+          "decision_owner": "lab",
+          "regression_owner": "edgeenv",
+          "candidate_context": {
+            "run_id": "edgeenv-smoke-candidate",
+            "telemetry_source": "inferedge_orchestrator_operation_summary",
+            "available_sections": [
+              "operation",
+              "resource"
+            ],
+            "queue_depth": 7,
+            "operation": {
+              "queue_depth": 7,
+              "deadline_missed_count": 2,
+              "fallback_count": 1
+            },
+            "resource": {
+              "source": "tegrastats_timeline",
+              "resource_evidence_available": true,
+              "gpu_temperature": 78.5,
+              "ram_used_mb": 2048.0,
+              "throttling_detected": true
+            }
+          },
+          "edgeenv_mapping_hint": {
+            "runtime_telemetry_context_role": "candidate",
+            "copy_candidate_context_to": "runtime_telemetry_context.candidate"
+          }
+        }
+      },
+      "history": {
+        "schema_version": "edgeenv.runtime-telemetry-history.v1",
+        "summary": {
+          "registered_runs": 2,
+          "telemetry_runs": 2,
+          "missing_telemetry_runs": 0,
+          "orchestrator_feed_runs": 1
+        }
+      },
+      "evidence_gaps": []
     }
   },
-  "created_at": "2026-05-23T00:00:00Z"
+  "created_at": "2026-05-23T13:47:46Z"
 }
