@@ -523,6 +523,38 @@ def edgeenv_regression_report_with_runtime_telemetry_signals() -> dict:
     return report
 
 
+def edgeenv_regression_report_with_runtime_telemetry_coverage_gap() -> dict:
+    report = edgeenv_regression_report()
+    report["regression_detected"] = False
+    report["evidence"] = {}
+    context = report["runtime_telemetry_context"]
+    context["baseline"]["telemetry_coverage"] = {
+        "schema_version": "inferedge-runtime-telemetry-coverage-v1",
+        "expected_fields": ["gpu_temperature", "queue_depth", "telemetry_timestamp"],
+        "observed_fields": ["gpu_temperature", "queue_depth", "telemetry_timestamp"],
+        "missing_fields": [],
+        "expected_field_count": 3,
+        "observed_field_count": 3,
+        "missing_field_count": 0,
+        "coverage_ratio": 1.0,
+        "comparability_owner": "edgeenv",
+        "missing_telemetry_is_failure": False,
+    }
+    context["candidate"]["telemetry_coverage"] = {
+        "schema_version": "inferedge-runtime-telemetry-coverage-v1",
+        "expected_fields": ["gpu_temperature", "queue_depth", "telemetry_timestamp"],
+        "observed_fields": ["gpu_temperature", "telemetry_timestamp"],
+        "missing_fields": ["queue_depth"],
+        "expected_field_count": 3,
+        "observed_field_count": 2,
+        "missing_field_count": 1,
+        "coverage_ratio": 0.666667,
+        "comparability_owner": "edgeenv",
+        "missing_telemetry_is_failure": False,
+    }
+    return report
+
+
 def edgeenv_regression_report_with_orchestrator_feed_context() -> dict:
     report = edgeenv_regression_report()
     report["regression_detected"] = False
@@ -998,6 +1030,21 @@ def test_compute_edgeenv_regression_metrics_extracts_runtime_telemetry_signals()
     assert metrics["candidate_queue_depth"] == 6.0
 
 
+def test_compute_edgeenv_regression_metrics_extracts_telemetry_coverage_metadata():
+    metrics = compute_edgeenv_regression_metrics(
+        edgeenv_regression_report_with_runtime_telemetry_coverage_gap()
+    )
+
+    assert metrics["baseline_telemetry_coverage_ratio"] == 1.0
+    assert metrics["candidate_telemetry_coverage_ratio"] == 0.666667
+    assert metrics["baseline_telemetry_coverage_missing_fields"] == []
+    assert metrics["candidate_telemetry_coverage_missing_fields"] == ["queue_depth"]
+    assert metrics["telemetry_coverage_missing_field_count"] == 1.0
+    assert metrics["baseline_missing_telemetry_is_failure"] is False
+    assert metrics["candidate_missing_telemetry_is_failure"] is False
+    assert metrics["evidence_gap_count"] == 1.0
+
+
 def test_compute_edgeenv_regression_metrics_extracts_orchestrator_feed_context():
     metrics = compute_edgeenv_regression_metrics(
         edgeenv_regression_report_with_orchestrator_feed_context()
@@ -1078,6 +1125,26 @@ def test_analyze_edgeenv_regression_report_warns_on_runtime_telemetry_signals():
     assert report["candidate_summary"]["edgeenv_regression"][
         "candidate_throttling_detected"
     ] is True
+
+
+def test_analyze_edgeenv_regression_report_warns_on_telemetry_coverage_metadata_gap():
+    report = analyze_edgeenv_regression_report(
+        edgeenv_regression_report_with_runtime_telemetry_coverage_gap()
+    )
+
+    validate_diagnosis_report(report)
+    assert report["guard_verdict"] == "suspicious"
+    assert report["severity"] == "medium"
+    evidence = report["evidence"][0]
+    assert evidence["type"] == "runtime_telemetry_context_coverage"
+    assert evidence["status"] == "warning"
+    assert evidence["observed_value"] == 1.0
+    assert "runtime_telemetry_field_gap" in evidence["suspected_causes"]
+    assert "runtime_telemetry_gap" in evidence["suspected_causes"]
+    metrics = evidence["raw_context"]["edgeenv_regression"]
+    assert metrics["candidate_telemetry_coverage_missing_fields"] == ["queue_depth"]
+    assert metrics["candidate_missing_telemetry_is_failure"] is False
+    assert "Inspect telemetry coverage missing fields" in evidence["recommendation"]
 
 
 def test_analyze_edgeenv_regression_report_warns_on_orchestrator_feed_context():

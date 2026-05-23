@@ -461,6 +461,14 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
             missing_coverage_count += 1.0
         if run_context and run_context.get("history_entry_present") is False:
             missing_coverage_count += 1.0
+    baseline_coverage = _telemetry_coverage_payload(baseline_context)
+    candidate_coverage = _telemetry_coverage_payload(candidate_context)
+    baseline_coverage_missing_fields = _coverage_missing_fields(baseline_coverage)
+    candidate_coverage_missing_fields = _coverage_missing_fields(candidate_coverage)
+    coverage_missing_field_count = float(
+        len(baseline_coverage_missing_fields) + len(candidate_coverage_missing_fields)
+    )
+    missing_coverage_count += coverage_missing_field_count
     baseline_sequence_id = _optional_number(
         baseline_context.get("execution_sequence_id")
     )
@@ -578,6 +586,21 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
         ),
         "candidate_history_entry_present": candidate_context.get(
             "history_entry_present"
+        ),
+        "baseline_telemetry_coverage_ratio": _optional_number(
+            baseline_coverage.get("coverage_ratio")
+        ),
+        "candidate_telemetry_coverage_ratio": _optional_number(
+            candidate_coverage.get("coverage_ratio")
+        ),
+        "baseline_telemetry_coverage_missing_fields": baseline_coverage_missing_fields,
+        "candidate_telemetry_coverage_missing_fields": candidate_coverage_missing_fields,
+        "telemetry_coverage_missing_field_count": coverage_missing_field_count,
+        "baseline_missing_telemetry_is_failure": _optional_bool(
+            baseline_coverage.get("missing_telemetry_is_failure")
+        ),
+        "candidate_missing_telemetry_is_failure": _optional_bool(
+            candidate_coverage.get("missing_telemetry_is_failure")
         ),
         "baseline_execution_sequence_id": baseline_sequence_id,
         "candidate_execution_sequence_id": candidate_sequence_id,
@@ -1631,11 +1654,26 @@ def _edgeenv_telemetry_context_evidence(
     if not metrics.get("runtime_telemetry_context_present"):
         return None
     gap_count = metrics.get("evidence_gap_count", 0.0)
+    coverage_missing_count = metrics.get("telemetry_coverage_missing_field_count")
     status = (
         "warning"
         if gap_count >= thresholds["edgeenv_telemetry_gap_review"]
         else "passed"
     )
+    suspected_causes: list[str] = []
+    if status != "passed":
+        suspected_causes.append("runtime_telemetry_gap")
+    if (
+        isinstance(coverage_missing_count, (int, float))
+        and not isinstance(coverage_missing_count, bool)
+        and coverage_missing_count > 0
+    ):
+        suspected_causes.append("runtime_telemetry_field_gap")
+    if (
+        metrics.get("baseline_missing_telemetry_is_failure") is True
+        or metrics.get("candidate_missing_telemetry_is_failure") is True
+    ):
+        suspected_causes.append("runtime_telemetry_required_field_missing")
     return build_evidence_item(
         evidence_type="runtime_telemetry_context_coverage",
         metric_name="runtime_telemetry_evidence_gap_count",
@@ -1652,10 +1690,11 @@ def _edgeenv_telemetry_context_evidence(
             "Missing baseline or candidate telemetry is an evidence gap, not a "
             "failed benchmark by itself."
         ),
-        suspected_causes=["runtime_telemetry_gap"] if status != "passed" else [],
+        suspected_causes=suspected_causes,
         recommendation=(
-            "Rerun telemetry history export or preserve runtime_telemetry artifacts "
-            "for both baseline and candidate before relying on trend diagnosis."
+            "Inspect telemetry coverage missing fields, rerun telemetry history "
+            "export if needed, and preserve runtime_telemetry artifacts for both "
+            "baseline and candidate before relying on trend diagnosis."
             if status != "passed"
             else "Telemetry coverage is present for the EdgeEnv regression report."
         ),
@@ -2548,6 +2587,23 @@ def _telemetry_bool(context: dict[str, Any], *paths: str) -> bool | None:
         if isinstance(value, bool):
             return value
     return None
+
+
+def _telemetry_coverage_payload(context: dict[str, Any]) -> dict[str, Any]:
+    coverage = context.get("telemetry_coverage")
+    if isinstance(coverage, dict):
+        return coverage
+    coverage = context.get("history_telemetry_coverage")
+    if isinstance(coverage, dict):
+        return coverage
+    return {}
+
+
+def _coverage_missing_fields(coverage: dict[str, Any]) -> list[str]:
+    missing_fields = coverage.get("missing_fields")
+    if not isinstance(missing_fields, list):
+        return []
+    return [str(item) for item in missing_fields if isinstance(item, str)]
 
 
 def _nested_value(context: dict[str, Any], path: str) -> Any:
