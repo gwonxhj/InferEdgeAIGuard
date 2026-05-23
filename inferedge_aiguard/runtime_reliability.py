@@ -498,6 +498,15 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
         baseline_context.get("orchestrator_operation_context"),
         dict,
     )
+    candidate_orchestrator_context = _mapping(
+        candidate_context.get("orchestrator_operation_context")
+    )
+    candidate_orchestrator_candidate_context = _mapping(
+        candidate_orchestrator_context.get("candidate_context")
+    )
+    candidate_edgeenv_mapping_hint = _mapping(
+        candidate_orchestrator_context.get("edgeenv_mapping_hint")
+    )
     candidate_orchestrator_context_present = isinstance(
         candidate_context.get("orchestrator_operation_context"),
         dict,
@@ -642,6 +651,25 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
         ),
         "baseline_orchestrator_context_present": baseline_orchestrator_context_present,
         "candidate_orchestrator_context_present": candidate_orchestrator_context_present,
+        "orchestrator_candidate_context_telemetry_source": (
+            candidate_orchestrator_candidate_context.get("telemetry_source")
+        ),
+        "orchestrator_edgeenv_mapping_hint": dict(candidate_edgeenv_mapping_hint),
+        "orchestrator_mapping_hint_copy_candidate_context_to": (
+            candidate_edgeenv_mapping_hint.get("copy_candidate_context_to")
+        ),
+        "orchestrator_mapping_hint_operation_context_role": (
+            candidate_edgeenv_mapping_hint.get("operation_context_role")
+        ),
+        "orchestrator_mapping_hint_coverage_summary_owner": (
+            candidate_edgeenv_mapping_hint.get("coverage_summary_owner")
+        ),
+        "orchestrator_mapping_hint_coverage_summary_path": (
+            candidate_edgeenv_mapping_hint.get("coverage_summary_path")
+        ),
+        "orchestrator_mapping_hint_candidate_context_required_fields": _string_list(
+            candidate_edgeenv_mapping_hint.get("candidate_context_required_fields")
+        ),
         "baseline_max_temperature_c": baseline_max_temperature_c,
         "candidate_max_temperature_c": candidate_max_temperature_c,
         "baseline_throttling_detected": _telemetry_bool(

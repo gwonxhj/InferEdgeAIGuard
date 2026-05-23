@@ -102,8 +102,16 @@
           }
         },
         "edgeenv_mapping_hint": {
-          "runtime_telemetry_context_role": "candidate",
-          "copy_candidate_context_to": "runtime_telemetry_context.candidate"
+          "copy_candidate_context_to": "runtime_telemetry_context.candidate",
+          "operation_context_role": "supplemental",
+          "coverage_summary_owner": "edgeenv",
+          "coverage_summary_path": "runtime_telemetry_context.history.telemetry_coverage",
+          "candidate_context_required_fields": [
+            "run_id",
+            "telemetry_source",
+            "operation",
+            "resource"
+          ]
         }
       }
     },
