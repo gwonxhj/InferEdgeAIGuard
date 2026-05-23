@@ -281,8 +281,10 @@ deployment decision으로 취급하지 않습니다.
 candidate telemetry gap과 baseline/candidate execution sequence inversion은
 EdgeEnv replay context에서 온 warning evidence로 보존되며, AIGuard가 이를
 comparability decision으로 재판정하지 않습니다.
-EdgeEnv가 `runtime_telemetry.coverage`를 제공하면 AIGuard는 missing field를
-`runtime_telemetry_field_gap` suspected cause로 설명하지만, Lab-owned
+EdgeEnv가 `runtime_telemetry_context.history.telemetry_coverage`를 제공하면
+AIGuard는 해당 producer-side replay summary를 우선 사용해 missing field
+run을 `runtime_telemetry_field_gap` suspected cause로 설명합니다. 이 summary가
+없을 때만 per-run `runtime_telemetry.coverage`로 fallback하며, Lab-owned
 deployment policy를 대체하지 않습니다.
 `tests/fixtures/edgeenv_regression/`에는 EdgeEnv의 committed replay fixtures를
 mirror한 작은 CLI smoke 입력이 있습니다.

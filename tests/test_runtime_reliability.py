@@ -552,7 +552,89 @@ def edgeenv_regression_report_with_runtime_telemetry_coverage_gap() -> dict:
         "comparability_owner": "edgeenv",
         "missing_telemetry_is_failure": False,
     }
+    context["history"]["telemetry_coverage"] = _edgeenv_history_coverage_summary()
     return report
+
+
+def edgeenv_regression_report_with_history_telemetry_coverage_gap() -> dict:
+    report = edgeenv_regression_report()
+    report["regression_detected"] = False
+    report["evidence"] = {}
+    context = report["runtime_telemetry_context"]
+    context["history"]["telemetry_coverage"] = _edgeenv_history_coverage_summary()
+    return report
+
+
+def _edgeenv_history_coverage_summary() -> dict:
+    return {
+        "runs_with_coverage": 2,
+        "runs_without_coverage": 0,
+        "expected_fields": [
+            "gpu_temperature",
+            "queue_depth",
+            "telemetry_timestamp",
+        ],
+        "observed_fields": [
+            "gpu_temperature",
+            "queue_depth",
+            "telemetry_timestamp",
+        ],
+        "missing_fields": ["queue_depth"],
+        "coverage_ratio_min": 0.666667,
+        "coverage_ratio_max": 1.0,
+        "missing_telemetry_is_failure_values": [False],
+        "any_missing_telemetry_is_failure": False,
+        "missing_field_run_count": 1,
+        "missing_field_runs": [
+            {
+                "run_id": "edgeenv-smoke-candidate",
+                "missing_fields": ["queue_depth"],
+                "missing_field_count": 1,
+                "missing_telemetry_is_failure": False,
+            }
+        ],
+        "run_summaries": [
+            {
+                "run_id": "edgeenv-smoke-baseline",
+                "coverage_present": True,
+                "expected_fields": [
+                    "gpu_temperature",
+                    "queue_depth",
+                    "telemetry_timestamp",
+                ],
+                "observed_fields": [
+                    "gpu_temperature",
+                    "queue_depth",
+                    "telemetry_timestamp",
+                ],
+                "missing_fields": [],
+                "expected_field_count": 3,
+                "observed_field_count": 3,
+                "missing_field_count": 0,
+                "coverage_ratio": 1.0,
+                "missing_telemetry_is_failure": False,
+            },
+            {
+                "run_id": "edgeenv-smoke-candidate",
+                "coverage_present": True,
+                "expected_fields": [
+                    "gpu_temperature",
+                    "queue_depth",
+                    "telemetry_timestamp",
+                ],
+                "observed_fields": [
+                    "gpu_temperature",
+                    "telemetry_timestamp",
+                ],
+                "missing_fields": ["queue_depth"],
+                "expected_field_count": 3,
+                "observed_field_count": 2,
+                "missing_field_count": 1,
+                "coverage_ratio": 0.666667,
+                "missing_telemetry_is_failure": False,
+            },
+        ],
+    }
 
 
 def edgeenv_regression_report_with_orchestrator_feed_context() -> dict:
@@ -1040,8 +1122,33 @@ def test_compute_edgeenv_regression_metrics_extracts_telemetry_coverage_metadata
     assert metrics["baseline_telemetry_coverage_missing_fields"] == []
     assert metrics["candidate_telemetry_coverage_missing_fields"] == ["queue_depth"]
     assert metrics["telemetry_coverage_missing_field_count"] == 1.0
+    assert metrics["telemetry_coverage_source"] == "history_telemetry_coverage"
+    assert metrics["history_telemetry_coverage_missing_field_run_count"] == 1.0
+    assert metrics["history_telemetry_coverage_missing_field_runs"] == [
+        {
+            "run_id": "edgeenv-smoke-candidate",
+            "missing_fields": ["queue_depth"],
+            "missing_field_count": 1,
+            "missing_telemetry_is_failure": False,
+        }
+    ]
+    assert metrics["history_telemetry_coverage_run_summaries_present"] is True
     assert metrics["baseline_missing_telemetry_is_failure"] is False
     assert metrics["candidate_missing_telemetry_is_failure"] is False
+    assert metrics["evidence_gap_count"] == 1.0
+
+
+def test_compute_edgeenv_regression_metrics_prefers_history_coverage_summary():
+    metrics = compute_edgeenv_regression_metrics(
+        edgeenv_regression_report_with_history_telemetry_coverage_gap()
+    )
+
+    assert metrics["baseline_telemetry_coverage_ratio"] == 1.0
+    assert metrics["candidate_telemetry_coverage_ratio"] == 0.666667
+    assert metrics["baseline_telemetry_coverage_missing_fields"] == []
+    assert metrics["candidate_telemetry_coverage_missing_fields"] == ["queue_depth"]
+    assert metrics["telemetry_coverage_source"] == "history_telemetry_coverage"
+    assert metrics["telemetry_coverage_missing_field_count"] == 1.0
     assert metrics["evidence_gap_count"] == 1.0
 
 
@@ -1143,6 +1250,15 @@ def test_analyze_edgeenv_regression_report_warns_on_telemetry_coverage_metadata_
     assert "runtime_telemetry_gap" in evidence["suspected_causes"]
     metrics = evidence["raw_context"]["edgeenv_regression"]
     assert metrics["candidate_telemetry_coverage_missing_fields"] == ["queue_depth"]
+    assert metrics["telemetry_coverage_source"] == "history_telemetry_coverage"
+    assert metrics["history_telemetry_coverage_missing_field_runs"] == [
+        {
+            "run_id": "edgeenv-smoke-candidate",
+            "missing_fields": ["queue_depth"],
+            "missing_field_count": 1,
+            "missing_telemetry_is_failure": False,
+        }
+    ]
     assert metrics["candidate_missing_telemetry_is_failure"] is False
     assert "Inspect telemetry coverage missing fields" in evidence["recommendation"]
 

@@ -95,12 +95,14 @@ Lab review.
 These thresholds are intentionally deterministic and local-first. They are
 review signals, not production SLOs.
 
-When EdgeEnv preserves `runtime_telemetry.coverage`, AIGuard records
-`baseline_telemetry_coverage_ratio`,
-`candidate_telemetry_coverage_ratio`, missing field names, and
-`missing_telemetry_is_failure` in the evidence `raw_context`. Missing coverage
-fields become deterministic warning context only; AIGuard does not convert them
-into a final deployment decision.
+When EdgeEnv provides
+`runtime_telemetry_context.history.telemetry_coverage`, AIGuard prefers that
+producer-side replay summary for `baseline_telemetry_coverage_ratio`,
+`candidate_telemetry_coverage_ratio`, missing field runs, and
+`missing_telemetry_is_failure` in the evidence `raw_context`. If the history
+summary is absent, AIGuard falls back to per-run `runtime_telemetry.coverage`.
+Missing coverage fields become deterministic warning context only; AIGuard does
+not convert them into a final deployment decision.
 
 ## Sustained Scenario Fields
 
@@ -324,6 +326,10 @@ decision.
 Candidate telemetry gaps and baseline/candidate execution sequence inversion
 are preserved as EdgeEnv replay-context warnings, not recomputed
 comparability decisions.
+AIGuard prefers EdgeEnv's
+`runtime_telemetry_context.history.telemetry_coverage` summary for coverage
+missing-field runs and uses per-run coverage only as a backward-compatible
+fallback.
 `tests/fixtures/edgeenv_regression/` mirrors the committed EdgeEnv replay
 fixtures as small CLI smoke inputs.
 `examples/runtime_intelligence/aiguard_runtime_operation_guard_analysis.json`

@@ -450,6 +450,11 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
     candidate_context = _mapping(context.get("candidate"))
     history = _mapping(context.get("history"))
     history_summary = _mapping(history.get("summary"))
+    history_coverage = _mapping(history.get("telemetry_coverage"))
+    history_coverage_by_role = _history_telemetry_coverage_by_role(
+        context,
+        history_coverage,
+    )
     gaps = [
         item
         for item in _list(context.get("evidence_gaps"))
@@ -461,12 +466,26 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
             missing_coverage_count += 1.0
         if run_context and run_context.get("history_entry_present") is False:
             missing_coverage_count += 1.0
-    baseline_coverage = _telemetry_coverage_payload(baseline_context)
-    candidate_coverage = _telemetry_coverage_payload(candidate_context)
+    baseline_coverage = history_coverage_by_role.get(
+        "baseline",
+        _telemetry_coverage_payload(baseline_context),
+    )
+    candidate_coverage = history_coverage_by_role.get(
+        "candidate",
+        _telemetry_coverage_payload(candidate_context),
+    )
     baseline_coverage_missing_fields = _coverage_missing_fields(baseline_coverage)
     candidate_coverage_missing_fields = _coverage_missing_fields(candidate_coverage)
-    coverage_missing_field_count = float(
-        len(baseline_coverage_missing_fields) + len(candidate_coverage_missing_fields)
+    history_missing_field_count = _optional_number(
+        history_coverage.get("missing_field_run_count")
+    )
+    coverage_missing_field_count = (
+        history_missing_field_count
+        if history_missing_field_count is not None
+        else float(
+            len(baseline_coverage_missing_fields)
+            + len(candidate_coverage_missing_fields)
+        )
     )
     missing_coverage_count += coverage_missing_field_count
     baseline_sequence_id = _optional_number(
@@ -574,6 +593,19 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
         ),
         "history_missing_telemetry_runs": _optional_number(
             history_summary.get("missing_telemetry_runs")
+        ),
+        "telemetry_coverage_source": (
+            "history_telemetry_coverage"
+            if history_coverage
+            else "runtime_telemetry_context"
+        ),
+        "history_telemetry_coverage_missing_field_run_count": history_missing_field_count,
+        "history_telemetry_coverage_missing_field_runs": _history_missing_field_runs(
+            history_coverage,
+        ),
+        "history_telemetry_coverage_run_summaries_present": isinstance(
+            history_coverage.get("run_summaries"),
+            list,
         ),
         "baseline_telemetry_present": baseline_context.get(
             "result_telemetry_present"
@@ -2597,6 +2629,74 @@ def _telemetry_coverage_payload(context: dict[str, Any]) -> dict[str, Any]:
     if isinstance(coverage, dict):
         return coverage
     return {}
+
+
+def _history_telemetry_coverage_by_role(
+    context: dict[str, Any],
+    history_coverage: dict[str, Any],
+) -> dict[str, dict[str, Any]]:
+    if not history_coverage:
+        return {}
+    role_by_run_id: dict[str, str] = {}
+    for role in ("baseline", "candidate"):
+        run_context = _mapping(context.get(role))
+        run_id = run_context.get("run_id")
+        if isinstance(run_id, str) and run_id:
+            role_by_run_id[run_id] = role
+
+    coverage_by_role: dict[str, dict[str, Any]] = {}
+    run_summaries = history_coverage.get("run_summaries")
+    if isinstance(run_summaries, list):
+        for item in run_summaries:
+            if not isinstance(item, dict):
+                continue
+            run_id = item.get("run_id")
+            role = role_by_run_id.get(run_id) if isinstance(run_id, str) else None
+            if role is not None:
+                coverage_by_role[role] = item
+    missing_field_runs = history_coverage.get("missing_field_runs")
+    if isinstance(missing_field_runs, list):
+        for item in missing_field_runs:
+            if not isinstance(item, dict):
+                continue
+            run_id = item.get("run_id")
+            role = role_by_run_id.get(run_id) if isinstance(run_id, str) else None
+            if role is None:
+                continue
+            coverage = coverage_by_role.setdefault(role, {"run_id": run_id})
+            if "missing_fields" not in coverage:
+                coverage["missing_fields"] = _coverage_missing_fields(item)
+            if "missing_field_count" not in coverage:
+                coverage["missing_field_count"] = item.get("missing_field_count")
+            if "missing_telemetry_is_failure" not in coverage:
+                coverage["missing_telemetry_is_failure"] = item.get(
+                    "missing_telemetry_is_failure"
+                )
+    return coverage_by_role
+
+
+def _history_missing_field_runs(history_coverage: dict[str, Any]) -> list[dict[str, Any]]:
+    missing_field_runs = history_coverage.get("missing_field_runs")
+    if not isinstance(missing_field_runs, list):
+        return []
+    normalized: list[dict[str, Any]] = []
+    for item in missing_field_runs:
+        if not isinstance(item, dict):
+            continue
+        run_id = item.get("run_id")
+        if not isinstance(run_id, str) or not run_id:
+            continue
+        normalized.append(
+            {
+                "run_id": run_id,
+                "missing_fields": _coverage_missing_fields(item),
+                "missing_field_count": item.get("missing_field_count"),
+                "missing_telemetry_is_failure": item.get(
+                    "missing_telemetry_is_failure"
+                ),
+            }
+        )
+    return normalized
 
 
 def _coverage_missing_fields(coverage: dict[str, Any]) -> list[str]:
