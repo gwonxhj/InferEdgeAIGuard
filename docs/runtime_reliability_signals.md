@@ -335,6 +335,11 @@ AIGuard prefers EdgeEnv's
 `runtime_telemetry_context.history.telemetry_coverage` summary for coverage
 missing-field runs and uses per-run coverage only as a backward-compatible
 fallback.
+When EdgeEnv preserves Runtime's `runtime_telemetry_history_seed`, AIGuard keeps
+the `inferedge-runtime-telemetry-history-seed-v1`, `registry_owner=edgeenv`, and
+`decision_owner=lab` markers in deterministic raw context. This only preserves
+replay traceability; it does not make AIGuard the registry or deployment
+decision owner.
 `tests/fixtures/edgeenv_regression/` mirrors the committed EdgeEnv replay
 fixtures as small CLI smoke inputs.
 `examples/runtime_intelligence/aiguard_runtime_operation_guard_analysis.json`
