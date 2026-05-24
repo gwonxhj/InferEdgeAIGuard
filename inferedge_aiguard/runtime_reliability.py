@@ -451,6 +451,7 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
     history = _mapping(context.get("history"))
     history_summary = _mapping(history.get("summary"))
     history_coverage = _mapping(history.get("telemetry_coverage"))
+    history_seed_by_role = _history_telemetry_seed_by_role(context, history)
     history_coverage_by_role = _history_telemetry_coverage_by_role(
         context,
         history_coverage,
@@ -474,6 +475,8 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
         "candidate",
         _telemetry_coverage_payload(candidate_context),
     )
+    baseline_history_seed = history_seed_by_role.get("baseline", {})
+    candidate_history_seed = history_seed_by_role.get("candidate", {})
     baseline_coverage_missing_fields = _coverage_missing_fields(baseline_coverage)
     candidate_coverage_missing_fields = _coverage_missing_fields(candidate_coverage)
     history_missing_field_count = _optional_number(
@@ -599,6 +602,38 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
         ),
         "history_telemetry_runs": _optional_number(
             history_summary.get("telemetry_runs")
+        ),
+        "history_telemetry_seed_runs": _optional_number(
+            history_summary.get("history_seed_runs")
+        ),
+        "baseline_runtime_telemetry_history_seed_schema_version": (
+            baseline_history_seed.get("schema_version")
+        ),
+        "candidate_runtime_telemetry_history_seed_schema_version": (
+            candidate_history_seed.get("schema_version")
+        ),
+        "baseline_runtime_telemetry_history_seed_registry_owner": (
+            baseline_history_seed.get("registry_owner")
+        ),
+        "candidate_runtime_telemetry_history_seed_registry_owner": (
+            candidate_history_seed.get("registry_owner")
+        ),
+        "baseline_runtime_telemetry_history_seed_decision_owner": (
+            baseline_history_seed.get("decision_owner")
+        ),
+        "candidate_runtime_telemetry_history_seed_decision_owner": (
+            candidate_history_seed.get("decision_owner")
+        ),
+        "candidate_runtime_telemetry_history_seed_production_monitoring": (
+            _optional_bool(candidate_history_seed.get("production_monitoring"))
+        ),
+        "candidate_runtime_telemetry_history_seed_missing_telemetry_is_failure": (
+            _optional_bool(candidate_history_seed.get("missing_telemetry_is_failure"))
+        ),
+        "candidate_runtime_telemetry_history_seed_point_count": (
+            float(len(_list(candidate_history_seed.get("points"))))
+            if candidate_history_seed
+            else None
         ),
         "history_missing_telemetry_runs": _optional_number(
             history_summary.get("missing_telemetry_runs")
@@ -2701,6 +2736,35 @@ def _history_telemetry_coverage_by_role(
                     "missing_telemetry_is_failure"
                 )
     return coverage_by_role
+
+
+def _history_telemetry_seed_by_role(
+    context: dict[str, Any],
+    history: dict[str, Any],
+) -> dict[str, dict[str, Any]]:
+    by_role: dict[str, dict[str, Any]] = {}
+    role_by_run_id: dict[str, str] = {}
+    for role in ("baseline", "candidate"):
+        run_context = _mapping(context.get(role))
+        run_id = run_context.get("run_id")
+        if isinstance(run_id, str) and run_id:
+            role_by_run_id[run_id] = role
+
+    for entry in _list(history.get("runs")):
+        run_id = entry.get("run_id")
+        role = role_by_run_id.get(run_id) if isinstance(run_id, str) else None
+        if role is None:
+            continue
+        seed = _mapping(entry.get("runtime_telemetry_history_seed"))
+        if seed:
+            by_role[role] = dict(seed)
+
+    for role in ("baseline", "candidate"):
+        run_context = _mapping(context.get(role))
+        seed = _mapping(run_context.get("runtime_telemetry_history_seed"))
+        if seed:
+            by_role[role] = dict(seed)
+    return by_role
 
 
 def _history_missing_field_runs(history_coverage: dict[str, Any]) -> list[dict[str, Any]]:

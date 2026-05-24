@@ -565,6 +565,62 @@ def edgeenv_regression_report_with_history_telemetry_coverage_gap() -> dict:
     return report
 
 
+def edgeenv_regression_report_with_runtime_telemetry_history_seed() -> dict:
+    report = edgeenv_regression_report_with_history_telemetry_coverage_gap()
+    context = report["runtime_telemetry_context"]
+    context["history"]["summary"]["history_seed_runs"] = 2
+    context["history"]["runs"] = [
+        {
+            "run_id": "edgeenv-smoke-baseline",
+            "runtime_telemetry_history_seed": _runtime_history_seed(
+                "edgeenv-smoke-baseline",
+                sequence_id=1,
+            ),
+        },
+        {
+            "run_id": "edgeenv-smoke-candidate",
+            "runtime_telemetry_history_seed": _runtime_history_seed(
+                "edgeenv-smoke-candidate",
+                sequence_id=2,
+            ),
+        },
+    ]
+    return report
+
+
+def _runtime_history_seed(run_id: str, *, sequence_id: int) -> dict:
+    return {
+        "schema_version": "inferedge-runtime-telemetry-history-seed-v1",
+        "evidence_role": "runtime_telemetry_history_seed",
+        "registry_owner": "edgeenv",
+        "decision_owner": "lab",
+        "source_result_schema_version": "inferedge-runtime-result-v1",
+        "source_telemetry_schema_version": "inferedge-runtime-telemetry-v1",
+        "replay_scope": "single_result_to_history",
+        "replay_ready": True,
+        "production_monitoring": False,
+        "missing_telemetry_is_failure": False,
+        "source_result": {
+            "run_id": run_id,
+            "compare_key": "yolov8n__b1__h640w640__fp32",
+            "backend_key": "onnxruntime__cpu",
+            "engine_backend": "onnxruntime",
+            "device": "cpu",
+            "precision": "fp32",
+            "power_mode": "unknown",
+        },
+        "points": [
+            {
+                "execution_sequence_id": sequence_id,
+                "telemetry_timestamp": f"2026-05-22T00:00:0{sequence_id}Z",
+                "mean_ms": 100.0 + sequence_id,
+                "p99_ms": 130.0 + sequence_id,
+                "timeout_observed": False,
+            }
+        ],
+    }
+
+
 def _edgeenv_history_coverage_summary() -> dict:
     return {
         "runs_with_coverage": 2,
@@ -1162,6 +1218,35 @@ def test_compute_edgeenv_regression_metrics_prefers_history_coverage_summary():
     assert metrics["evidence_gap_count"] == 1.0
 
 
+def test_compute_edgeenv_regression_metrics_preserves_runtime_history_seed():
+    metrics = compute_edgeenv_regression_metrics(
+        edgeenv_regression_report_with_runtime_telemetry_history_seed()
+    )
+
+    assert metrics["history_telemetry_seed_runs"] == 2.0
+    assert metrics["baseline_runtime_telemetry_history_seed_schema_version"] == (
+        "inferedge-runtime-telemetry-history-seed-v1"
+    )
+    assert metrics["candidate_runtime_telemetry_history_seed_schema_version"] == (
+        "inferedge-runtime-telemetry-history-seed-v1"
+    )
+    assert metrics["candidate_runtime_telemetry_history_seed_registry_owner"] == (
+        "edgeenv"
+    )
+    assert metrics["candidate_runtime_telemetry_history_seed_decision_owner"] == "lab"
+    assert (
+        metrics["candidate_runtime_telemetry_history_seed_production_monitoring"]
+        is False
+    )
+    assert (
+        metrics[
+            "candidate_runtime_telemetry_history_seed_missing_telemetry_is_failure"
+        ]
+        is False
+    )
+    assert metrics["candidate_runtime_telemetry_history_seed_point_count"] == 1.0
+
+
 def test_compute_edgeenv_regression_metrics_extracts_orchestrator_feed_context():
     metrics = compute_edgeenv_regression_metrics(
         edgeenv_regression_report_with_orchestrator_feed_context()
@@ -1285,6 +1370,38 @@ def test_analyze_edgeenv_regression_report_warns_on_telemetry_coverage_metadata_
     ]
     assert metrics["candidate_missing_telemetry_is_failure"] is False
     assert "Inspect telemetry coverage missing fields" in evidence["recommendation"]
+
+
+def test_analyze_edgeenv_regression_report_preserves_history_seed_raw_context():
+    report = analyze_edgeenv_regression_report(
+        edgeenv_regression_report_with_runtime_telemetry_history_seed()
+    )
+
+    validate_diagnosis_report(report)
+    evidence = next(
+        item
+        for item in report["evidence"]
+        if item["type"] == "runtime_telemetry_context_coverage"
+    )
+    metrics = evidence["raw_context"]["edgeenv_regression"]
+    assert metrics["history_telemetry_seed_runs"] == 2.0
+    assert metrics["candidate_runtime_telemetry_history_seed_schema_version"] == (
+        "inferedge-runtime-telemetry-history-seed-v1"
+    )
+    assert metrics["candidate_runtime_telemetry_history_seed_registry_owner"] == (
+        "edgeenv"
+    )
+    assert metrics["candidate_runtime_telemetry_history_seed_decision_owner"] == "lab"
+    assert (
+        metrics["candidate_runtime_telemetry_history_seed_production_monitoring"]
+        is False
+    )
+    assert (
+        metrics[
+            "candidate_runtime_telemetry_history_seed_missing_telemetry_is_failure"
+        ]
+        is False
+    )
 
 
 def test_analyze_edgeenv_regression_report_warns_on_orchestrator_feed_context():

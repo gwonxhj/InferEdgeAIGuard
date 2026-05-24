@@ -292,6 +292,11 @@ AIGuard는 해당 producer-side replay summary를 우선 사용해 missing field
 run을 `runtime_telemetry_field_gap` suspected cause로 설명합니다. 이 summary가
 없을 때만 per-run `runtime_telemetry.coverage`로 fallback하며, Lab-owned
 deployment policy를 대체하지 않습니다.
+EdgeEnv가 Runtime의 `runtime_telemetry_history_seed`를 보존하면 AIGuard는
+`inferedge-runtime-telemetry-history-seed-v1`, `registry_owner=edgeenv`,
+`decision_owner=lab` marker를 deterministic raw context에 유지합니다. 이는
+replay traceability 보존이며 AIGuard가 registry나 deployment decision을
+소유한다는 뜻이 아닙니다.
 `tests/fixtures/edgeenv_regression/`에는 EdgeEnv의 committed replay fixtures를
 mirror한 작은 CLI smoke 입력이 있습니다.
 `examples/runtime_intelligence/aiguard_runtime_operation_guard_analysis.json`는

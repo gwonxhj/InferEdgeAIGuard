@@ -234,6 +234,11 @@ AIGuard는 EdgeEnv가 보존한 Orchestrator `edgeenv_mapping_hint`를 raw conte
 `operation_context_role=supplemental` 경계를 Lab bundle까지 설명할 수 있게
 합니다. 이 값들은 ownership marker이며 AIGuard가 coverage/regression을
 소유한다는 의미가 아닙니다.
+EdgeEnv가 Runtime의 `runtime_telemetry_history_seed`를 보존하면 AIGuard는
+`inferedge-runtime-telemetry-history-seed-v1`, `registry_owner=edgeenv`,
+`decision_owner=lab` marker를 raw context에 유지합니다. 이는 replay evidence
+traceability를 위한 보존이며 AIGuard가 registry나 deployment decision을
+소유한다는 의미가 아닙니다.
 `tests/fixtures/edgeenv_regression/`에는 EdgeEnv의 committed replay fixtures를
 mirror한 작은 CLI smoke 입력이 있습니다.
 `examples/runtime_intelligence/aiguard_runtime_operation_guard_analysis.json`는
