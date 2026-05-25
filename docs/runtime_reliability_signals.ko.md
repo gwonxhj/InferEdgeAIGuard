@@ -282,8 +282,9 @@ queue depth, thermal, throttling hint를 supplemental operation evidence로
 deployment decision으로 취급하지 않습니다.
 EdgeEnv가 `candidate_context.producer`를 보존한 경우에는
 `edgeenv_orchestrator_producer_lineage` evidence로 device-local producer
-source, task stage mapping, event/task count를 설명합니다. 이 항목은
-traceability evidence이며 deployment decision이나 comparability gate가 아닙니다.
+source, per-task source mapping, task stage mapping, event/task count를
+설명합니다. 이 항목은 traceability evidence이며 deployment decision이나
+comparability gate가 아닙니다.
 AIGuard는 producer `edgeenv_mapping_hint`도 deterministic raw context에
 보존합니다. 여기에는 `coverage_summary_owner=edgeenv`,
 `coverage_summary_path=runtime_telemetry_context.history.telemetry_coverage`,
