@@ -66,6 +66,7 @@ AIGuard는 이 필드를 Runtime이 제공한 operation evidence로만 해석합
 | `runtime_operation_health` | `runtime_operation_summary_risk_count` | risk label 또는 review action `>= 1` | n/a | Runtime이 operation summary risk label, evidence gap, review action을 제공함 |
 | `runtime_thermal_memory_evidence_missing` | `thermal_memory_evidence_available` | `false` on Jetson | n/a | Jetson 결과에 sustained review용 thermal/memory context가 없음 |
 | `runtime_telemetry_context_coverage` | `runtime_telemetry_evidence_gap_count` | `>= 1` | n/a | EdgeEnv telemetry context의 baseline/candidate coverage, history entry, 또는 `telemetry_coverage.missing_fields`에 gap이 있음 |
+| `edgeenv_orchestrator_producer_lineage` | `device_local_producer_context_count` | 보존된 Orchestrator context에 device-local producer metadata가 없으면 warning | n/a | EdgeEnv가 보존한 device-local Orchestrator producer lineage를 traceability evidence로 설명함 |
 
 이 threshold는 local-first deterministic review signal입니다. production SLO로
 해석하지 않습니다.
@@ -269,7 +270,8 @@ python -m inferedge_aiguard.cli reason-edgeenv-regression \
 이 경로는 EdgeEnv가 이미 계산한 same-condition regression과
 `runtime_telemetry_context` coverage를 `runtime_latency_regression`,
 `runtime_throughput_regression`, `runtime_memory_regression`,
-`runtime_telemetry_context_coverage`, `runtime_telemetry_replay_context`
+`runtime_telemetry_context_coverage`, `runtime_telemetry_replay_context`,
+`edgeenv_orchestrator_producer_lineage`
 evidence로 변환합니다. AIGuard는 comparability를 다시 계산하지 않으며,
 non-comparable 또는 same-condition이 아닌 report는
 `edgeenv_comparability_guardrail` skipped evidence로 남깁니다.
@@ -278,6 +280,10 @@ EdgeEnv가 baseline 또는 candidate telemetry context 아래에
 queue depth, thermal, throttling hint를 supplemental operation evidence로
 읽습니다. 이 feed는 Orchestrator verdict, EdgeEnv comparability gate, Lab
 deployment decision으로 취급하지 않습니다.
+EdgeEnv가 `candidate_context.producer`를 보존한 경우에는
+`edgeenv_orchestrator_producer_lineage` evidence로 device-local producer
+source, task stage mapping, event/task count를 설명합니다. 이 항목은
+traceability evidence이며 deployment decision이나 comparability gate가 아닙니다.
 AIGuard는 producer `edgeenv_mapping_hint`도 deterministic raw context에
 보존합니다. 여기에는 `coverage_summary_owner=edgeenv`,
 `coverage_summary_path=runtime_telemetry_context.history.telemetry_coverage`,

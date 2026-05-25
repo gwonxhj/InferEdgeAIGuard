@@ -214,7 +214,8 @@ python -m inferedge_aiguard.cli reason-edgeenv-regression \
 이 경로는 EdgeEnv의 comparability-first 결과를 존중하면서
 `runtime_latency_regression`, `runtime_throughput_regression`,
 `runtime_memory_regression`, `runtime_telemetry_context_coverage`,
-`runtime_telemetry_replay_context` evidence를 생성합니다. EdgeEnv가
+`runtime_telemetry_replay_context`, `edgeenv_orchestrator_producer_lineage`
+evidence를 생성합니다. EdgeEnv가
 runtime telemetry context에 thermal/throttling 또는 queue depth 신호를
 포함하면 `runtime_thermal_instability`와 `runtime_queue_overload` evidence도
 additive하게 생성합니다. AIGuard는 regression 계산이나 final deployment
@@ -234,6 +235,11 @@ AIGuard는 EdgeEnv가 보존한 Orchestrator `edgeenv_mapping_hint`를 raw conte
 `operation_context_role=supplemental` 경계를 Lab bundle까지 설명할 수 있게
 합니다. 이 값들은 ownership marker이며 AIGuard가 coverage/regression을
 소유한다는 의미가 아닙니다.
+EdgeEnv가 Orchestrator `candidate_context.producer`를 보존하면 AIGuard는
+`edgeenv_orchestrator_producer_lineage` evidence를 생성해 device-local
+producer source, task stage, event/task count를 설명합니다. 이 evidence는
+traceability 확인이며 Orchestrator/AIGuard가 deployment decision owner가
+된다는 의미가 아닙니다.
 EdgeEnv가 Runtime의 `runtime_telemetry_history_seed`를 보존하면 AIGuard는
 `inferedge-runtime-telemetry-history-seed-v1`, `registry_owner=edgeenv`,
 `decision_owner=lab` marker를 raw context에 유지합니다. 이는 replay evidence
