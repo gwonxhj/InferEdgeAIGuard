@@ -686,6 +686,15 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
         ),
         "baseline_orchestrator_context_present": baseline_orchestrator_context_present,
         "candidate_orchestrator_context_present": candidate_orchestrator_context_present,
+        "orchestrator_source_repository": candidate_orchestrator_context.get(
+            "source_repository"
+        ),
+        "orchestrator_artifact_role": candidate_orchestrator_context.get(
+            "artifact_role"
+        ),
+        "orchestrator_producer_contract": candidate_orchestrator_context.get(
+            "producer_contract"
+        ),
         "orchestrator_candidate_context_telemetry_source": (
             candidate_orchestrator_candidate_context.get("telemetry_source")
         ),
@@ -704,6 +713,9 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
         ),
         "orchestrator_mapping_hint_candidate_context_required_fields": _string_list(
             candidate_edgeenv_mapping_hint.get("candidate_context_required_fields")
+        ),
+        "orchestrator_mapping_hint_aiguard_evidence_candidates": _string_list(
+            candidate_edgeenv_mapping_hint.get("aiguard_evidence_candidates")
         ),
         "baseline_max_temperature_c": baseline_max_temperature_c,
         "candidate_max_temperature_c": candidate_max_temperature_c,

@@ -74,6 +74,9 @@
       "orchestrator_operation_context": {
         "schema_version": "inferedge-orchestrator-edgeenv-runtime-telemetry-feed-v1",
         "role": "orchestrator_operation_context_for_edgeenv",
+        "source_repository": "InferEdgeOrchestrator",
+        "artifact_role": "orchestrator-supplemental-operation-context",
+        "producer_contract": "inferedge-orchestrator-edgeenv-runtime-telemetry-feed-v1",
         "source": "orchestration_summary",
         "run_id": "edgeenv-smoke-candidate",
         "not_a_regression_judgement": true,
@@ -111,6 +114,10 @@
             "telemetry_source",
             "operation",
             "resource"
+          ],
+          "aiguard_evidence_candidates": [
+            "runtime_queue_overload",
+            "runtime_thermal_instability"
           ]
         }
       }
