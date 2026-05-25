@@ -1676,6 +1676,11 @@ def _edgeenv_regression_evidence(
     replay_evidence = _edgeenv_telemetry_replay_evidence(metrics, thresholds)
     if replay_evidence is not None:
         evidence.append(replay_evidence)
+    producer_lineage_evidence = _edgeenv_orchestrator_producer_lineage_evidence(
+        metrics
+    )
+    if producer_lineage_evidence is not None:
+        evidence.append(producer_lineage_evidence)
     thermal_evidence = _edgeenv_runtime_thermal_telemetry_evidence(
         metrics,
         thresholds,
@@ -1970,6 +1975,133 @@ def _edgeenv_telemetry_replay_evidence(
     )
 
 
+def _edgeenv_orchestrator_producer_lineage_evidence(
+    metrics: dict[str, Any],
+) -> dict[str, Any] | None:
+    if not metrics.get("runtime_telemetry_context_present"):
+        return None
+
+    candidate_expected = metrics.get("candidate_orchestrator_context_present") is True
+    missing_context_count = metrics.get("history_missing_orchestrator_context_count")
+    missing_expected = (
+        isinstance(missing_context_count, (int, float))
+        and not isinstance(missing_context_count, bool)
+        and missing_context_count > 0
+    )
+    if not candidate_expected and not missing_expected:
+        return None
+
+    candidate_ok = (
+        bool(metrics.get("orchestrator_candidate_device_local_producer_sources"))
+        and metrics.get("orchestrator_candidate_operation_context_role")
+        == "supplemental"
+        and _positive_number(metrics.get("orchestrator_candidate_producer_event_count"))
+        and _positive_number(
+            metrics.get("orchestrator_candidate_device_local_event_count")
+        )
+        and _positive_number(
+            metrics.get("orchestrator_candidate_device_local_task_count")
+        )
+    )
+    missing_ok = (
+        bool(
+            metrics.get(
+                "history_missing_orchestrator_candidate_device_local_producer_sources"
+            )
+        )
+        and metrics.get("history_missing_orchestrator_candidate_operation_context_role")
+        == "supplemental"
+        and _positive_number(
+            metrics.get("history_missing_orchestrator_candidate_producer_event_count")
+        )
+        and _positive_number(
+            metrics.get(
+                "history_missing_orchestrator_candidate_device_local_event_count"
+            )
+        )
+        and _positive_number(
+            metrics.get(
+                "history_missing_orchestrator_candidate_device_local_task_count"
+            )
+        )
+    )
+
+    expected_count = int(candidate_expected) + int(missing_expected)
+    observed_count = int(candidate_ok) + int(missing_ok)
+    status = "passed" if observed_count >= expected_count else "warning"
+    suspected_causes = []
+    if status != "passed":
+        suspected_causes = [
+            "device_local_producer_lineage_gap",
+            "orchestrator_context_without_producer_metadata",
+        ]
+    if status == "passed":
+        explanation = (
+            "Device-local Orchestrator producer lineage is preserved for "
+            f"{observed_count} of {expected_count} expected operation contexts."
+        )
+    else:
+        explanation = (
+            "Device-local Orchestrator producer lineage is missing for "
+            f"{expected_count - observed_count} of {expected_count} expected "
+            "operation contexts."
+        )
+
+    return build_evidence_item(
+        evidence_type="edgeenv_orchestrator_producer_lineage",
+        metric_name="device_local_producer_context_count",
+        observed_value=observed_count,
+        baseline_value=expected_count,
+        threshold=expected_count,
+        delta=observed_count - expected_count,
+        delta_pct=None,
+        increase_factor=None,
+        severity="medium" if status != "passed" else "low",
+        status=status,
+        explanation=explanation,
+        why_it_matters=(
+            "Device-local producer lineage explains which Orchestrator source "
+            "created supplemental operation context. Preserving it lets Lab "
+            "review runtime evidence traceability without making AIGuard or "
+            "Orchestrator the deployment decision owner."
+        ),
+        suspected_causes=suspected_causes,
+        recommendation=(
+            "Rebuild the EdgeEnv telemetry history with preserved "
+            "candidate_context.producer metadata before relying on operation "
+            "context handoff evidence."
+            if status != "passed"
+            else "Device-local Orchestrator producer lineage is preserved in "
+            "the EdgeEnv runtime telemetry context."
+        ),
+        raw_context={
+            "edgeenv_regression": metrics,
+            "producer_lineage": {
+                "candidate_expected": candidate_expected,
+                "candidate_device_local_sources": metrics.get(
+                    "orchestrator_candidate_device_local_producer_sources"
+                ),
+                "candidate_stage_by_task": metrics.get(
+                    "orchestrator_candidate_producer_stage_by_task"
+                ),
+                "missing_expected": missing_expected,
+                "missing_device_local_sources": metrics.get(
+                    "history_missing_orchestrator_candidate_device_local_producer_sources"
+                ),
+                "missing_context_run_ids": metrics.get(
+                    "history_missing_orchestrator_context_run_ids"
+                ),
+                "operation_context_role": metrics.get(
+                    "orchestrator_candidate_operation_context_role"
+                ),
+                "missing_operation_context_role": metrics.get(
+                    "history_missing_orchestrator_candidate_operation_context_role"
+                ),
+            },
+        },
+    )
+
+
 def _edgeenv_runtime_thermal_telemetry_evidence(
     metrics: dict[str, Any],
     thresholds: dict[str, float],
@@ -2085,6 +2217,14 @@ def _edgeenv_runtime_context_status(severity: str) -> str:
     if severity == "medium":
         return "warning"
     return "passed"
+
+
+def _positive_number(value: Any) -> bool:
+    return (
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and value > 0
+    )
 
 
 def _edgeenv_regression_pass_evidence(metrics: dict[str, Any]) -> dict[str, Any]:

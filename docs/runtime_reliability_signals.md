@@ -88,6 +88,7 @@ Lab review.
 | `runtime_memory_regression` | `memory_peak_delta_pct` | `>= 30.0` | n/a | EdgeEnv same-condition regression indicates memory headroom risk |
 | `runtime_telemetry_context_coverage` | `runtime_telemetry_evidence_gap_count` | `>= 1` | n/a | EdgeEnv telemetry context is present but baseline/candidate coverage, history entries, or `telemetry_coverage.missing_fields` have gaps |
 | `runtime_telemetry_replay_context` | `runtime_telemetry_history_missing_run_count` | `>= 1` or baseline/candidate sequence order mismatch | n/a | EdgeEnv telemetry history replay has missing telemetry or ordering concerns |
+| `edgeenv_orchestrator_producer_lineage` | `device_local_producer_context_count` | warning when preserved Orchestrator context lacks device-local producer metadata | n/a | EdgeEnv preserved device-local Orchestrator producer lineage as traceability evidence |
 | `runtime_thermal_instability` | `candidate_max_temperature_c` / `candidate_throttling_detected` | temperature `>= 70.0` or throttling `true` | temperature `>= 85.0` | EdgeEnv telemetry or attached Orchestrator feed indicates thermal/throttling pressure |
 | `runtime_queue_overload` | `candidate_queue_depth` | `>= 3.0` | `>= 8.0` | EdgeEnv telemetry or attached Orchestrator feed indicates queue backlog pressure |
 | `edgeenv_comparability_guardrail` | `edgeenv_comparable` | skipped when not comparable or not same-condition | n/a | AIGuard refuses to reinterpret non-comparable EdgeEnv reports as same-condition regression |
@@ -317,7 +318,8 @@ python -m inferedge_aiguard.cli reason-edgeenv-regression \
 This path emits deterministic runtime anomaly evidence such as
 `runtime_latency_regression`, `runtime_throughput_regression`,
 `runtime_memory_regression`, `runtime_telemetry_context_coverage`, and
-`runtime_telemetry_replay_context`. If EdgeEnv preserved an
+`runtime_telemetry_replay_context`, and
+`edgeenv_orchestrator_producer_lineage`. If EdgeEnv preserved an
 `orchestrator_operation_context` under the baseline or candidate telemetry
 context, AIGuard reads queue depth, thermal, and throttling hints from that
 nested context as supplemental operation evidence. It does not treat the feed as
@@ -334,6 +336,10 @@ AIGuard also carries through the Orchestrator producer markers
 `producer_contract=inferedge-orchestrator-edgeenv-runtime-telemetry-feed-v1`
 when EdgeEnv provides them. These markers keep the Lab artifact bundle traceable
 without making AIGuard the Orchestrator feed producer.
+When EdgeEnv preserves `candidate_context.producer`, AIGuard emits
+`edgeenv_orchestrator_producer_lineage` to show device-local producer sources,
+task stage mapping, and positive event/task coverage. This is a traceability
+evidence item, not a new deployment decision or comparability gate.
 When the nested candidate context also includes a producer lineage block,
 AIGuard preserves `candidate_context.producer` and flattened device-local
 markers such as `producer_sources`, `device_local_producer_sources`,

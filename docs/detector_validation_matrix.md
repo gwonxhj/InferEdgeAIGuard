@@ -58,6 +58,7 @@ not the final Lab deployment policy.
 | EdgeEnv regression | `memory_peak_delta_pct` | warning `30.0` | `pass` | `suspicious` / `review_required` | `evidence[].type=runtime_memory_regression` |
 | EdgeEnv telemetry context | `runtime_telemetry_evidence_gap_count` | warning `>= 1` | `pass` | `suspicious` | `evidence[].type=runtime_telemetry_context_coverage` |
 | EdgeEnv telemetry replay | `runtime_telemetry_history_missing_run_count` | warning `>= 1` or sequence order mismatch | `pass` | `suspicious` | `evidence[].type=runtime_telemetry_replay_context` |
+| EdgeEnv Orchestrator producer lineage | `device_local_producer_context_count` | warning when preserved Orchestrator context lacks device-local producer metadata | `pass` | `suspicious` | `evidence[].type=edgeenv_orchestrator_producer_lineage` |
 
 ## Next Candidate Detectors
 
