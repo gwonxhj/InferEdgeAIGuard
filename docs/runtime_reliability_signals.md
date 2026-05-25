@@ -337,6 +337,12 @@ without making AIGuard the Orchestrator feed producer.
 Candidate telemetry gaps and baseline/candidate execution sequence inversion
 are preserved as EdgeEnv replay-context warnings, not recomputed
 comparability decisions.
+If EdgeEnv attaches an Orchestrator operation context to
+`runtime_telemetry_context.history.missing_telemetry[]`, AIGuard keeps the
+missing-run context run IDs, producer markers, and mapping hints in
+`raw_context.edgeenv_regression`. The missing telemetry entry remains replay
+evidence gap context; it is not promoted to successful Runtime telemetry or a
+deployment decision.
 AIGuard prefers EdgeEnv's
 `runtime_telemetry_context.history.telemetry_coverage` summary for coverage
 missing-field runs and uses per-run coverage only as a backward-compatible

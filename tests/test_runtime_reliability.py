@@ -761,6 +761,26 @@ def edgeenv_regression_report_with_orchestrator_feed_context() -> dict:
     return report
 
 
+def edgeenv_regression_report_with_missing_telemetry_orchestrator_context() -> dict:
+    report = edgeenv_regression_report_with_candidate_telemetry_gap()
+    context = report["runtime_telemetry_context"]
+    orchestrator_report = edgeenv_regression_report_with_orchestrator_feed_context()
+    orchestrator_context = orchestrator_report["runtime_telemetry_context"][
+        "candidate"
+    ]["orchestrator_operation_context"]
+    context["history"]["summary"]["orchestrator_feed_runs"] = 1
+    context["history"]["missing_telemetry"] = [
+        {
+            "run_id": "edgeenv-smoke-candidate",
+            "reason": "runtime_telemetry_missing",
+            "missing_telemetry_is_failure": False,
+            "orchestrator_context_present": True,
+            "orchestrator_operation_context": orchestrator_context,
+        }
+    ]
+    return report
+
+
 def runtime_result_with_operation_signals() -> dict:
     return {
         "schema_version": "inferedge-runtime-result-v1",
@@ -1294,6 +1314,43 @@ def test_compute_edgeenv_regression_metrics_extracts_orchestrator_feed_context()
     assert metrics["candidate_queue_depth"] == 7.0
 
 
+def test_compute_edgeenv_regression_metrics_preserves_missing_orchestrator_context():
+    metrics = compute_edgeenv_regression_metrics(
+        edgeenv_regression_report_with_missing_telemetry_orchestrator_context()
+    )
+
+    assert metrics["history_missing_telemetry_runs"] == 1.0
+    assert metrics["history_orchestrator_feed_runs"] == 1.0
+    assert metrics["candidate_orchestrator_context_present"] is False
+    assert metrics["history_missing_orchestrator_context_count"] == 1.0
+    assert metrics["history_missing_orchestrator_context_run_ids"] == [
+        "edgeenv-smoke-candidate"
+    ]
+    assert metrics["history_missing_orchestrator_source_repository"] == (
+        "InferEdgeOrchestrator"
+    )
+    assert metrics["history_missing_orchestrator_artifact_role"] == (
+        "orchestrator-supplemental-operation-context"
+    )
+    assert metrics["history_missing_orchestrator_producer_contract"] == (
+        "inferedge-orchestrator-edgeenv-runtime-telemetry-feed-v1"
+    )
+    assert metrics[
+        "history_missing_orchestrator_candidate_context_telemetry_source"
+    ] == "inferedge_orchestrator_operation_summary"
+    assert metrics["history_missing_orchestrator_edgeenv_mapping_hint"][
+        "coverage_summary_owner"
+    ] == "edgeenv"
+    assert set(
+        metrics[
+            "history_missing_orchestrator_mapping_hint_aiguard_evidence_candidates"
+        ]
+    ) == {
+        "runtime_queue_overload",
+        "runtime_thermal_instability",
+    }
+
+
 def test_analyze_edgeenv_regression_report_returns_runtime_anomaly_evidence():
     report = analyze_edgeenv_regression_report(edgeenv_regression_report())
 
@@ -1527,6 +1584,48 @@ def test_analyze_edgeenv_regression_report_warns_on_replay_history_gap():
     assert "EdgeEnv telemetry history is the replay artifact" in replay_evidence[
         "why_it_matters"
     ]
+
+
+def test_analyze_edgeenv_regression_report_preserves_missing_orchestrator_raw_context():
+    regression_report = (
+        edgeenv_regression_report_with_missing_telemetry_orchestrator_context()
+    )
+
+    report = analyze_edgeenv_regression_report(regression_report)
+
+    validate_diagnosis_report(report)
+    replay_evidence = next(
+        item
+        for item in report["evidence"]
+        if item["type"] == "runtime_telemetry_replay_context"
+    )
+    replay_context = replay_evidence["raw_context"]["edgeenv_regression"]
+    assert replay_context["history_missing_orchestrator_context_run_ids"] == [
+        "edgeenv-smoke-candidate"
+    ]
+    assert replay_context["history_missing_orchestrator_source_repository"] == (
+        "InferEdgeOrchestrator"
+    )
+    assert replay_context["history_missing_orchestrator_artifact_role"] == (
+        "orchestrator-supplemental-operation-context"
+    )
+    assert replay_context["history_missing_orchestrator_producer_contract"] == (
+        "inferedge-orchestrator-edgeenv-runtime-telemetry-feed-v1"
+    )
+    assert replay_context["history_missing_orchestrator_edgeenv_mapping_hint"][
+        "operation_context_role"
+    ] == "supplemental"
+    assert set(
+        replay_context[
+            "history_missing_orchestrator_mapping_hint_aiguard_evidence_candidates"
+        ]
+    ) == {
+        "runtime_queue_overload",
+        "runtime_thermal_instability",
+    }
+    assert report["candidate_summary"]["edgeenv_regression"][
+        "history_missing_orchestrator_context_count"
+    ] == 1.0
 
 
 def test_analyze_edgeenv_regression_report_warns_on_replay_sequence_order():

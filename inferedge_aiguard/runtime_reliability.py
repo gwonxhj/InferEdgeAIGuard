@@ -514,6 +514,16 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
         candidate_context.get("orchestrator_operation_context"),
         dict,
     )
+    missing_orchestrator_contexts = _history_missing_orchestrator_contexts(history)
+    first_missing_orchestrator_context = (
+        missing_orchestrator_contexts[0] if missing_orchestrator_contexts else {}
+    )
+    first_missing_orchestrator_candidate_context = _mapping(
+        first_missing_orchestrator_context.get("candidate_context")
+    )
+    first_missing_edgeenv_mapping_hint = _mapping(
+        first_missing_orchestrator_context.get("edgeenv_mapping_hint")
+    )
     baseline_max_temperature_c = _max_optional_number(
         _telemetry_number(
             baseline_context,
@@ -637,6 +647,35 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
         ),
         "history_missing_telemetry_runs": _optional_number(
             history_summary.get("missing_telemetry_runs")
+        ),
+        "history_missing_orchestrator_context_count": float(
+            len(missing_orchestrator_contexts)
+        ),
+        "history_missing_orchestrator_context_run_ids": [
+            item["run_id"]
+            for item in missing_orchestrator_contexts
+            if isinstance(item.get("run_id"), str)
+        ],
+        "history_missing_orchestrator_contexts": missing_orchestrator_contexts,
+        "history_missing_orchestrator_source_repository": (
+            first_missing_orchestrator_context.get("source_repository")
+        ),
+        "history_missing_orchestrator_artifact_role": (
+            first_missing_orchestrator_context.get("artifact_role")
+        ),
+        "history_missing_orchestrator_producer_contract": (
+            first_missing_orchestrator_context.get("producer_contract")
+        ),
+        "history_missing_orchestrator_candidate_context_telemetry_source": (
+            first_missing_orchestrator_candidate_context.get("telemetry_source")
+        ),
+        "history_missing_orchestrator_edgeenv_mapping_hint": dict(
+            first_missing_edgeenv_mapping_hint
+        ),
+        "history_missing_orchestrator_mapping_hint_aiguard_evidence_candidates": (
+            _string_list(
+                first_missing_edgeenv_mapping_hint.get("aiguard_evidence_candidates")
+            )
         ),
         "telemetry_coverage_source": (
             "history_telemetry_coverage"
@@ -2801,6 +2840,24 @@ def _history_missing_field_runs(history_coverage: dict[str, Any]) -> list[dict[s
             }
         )
     return normalized
+
+
+def _history_missing_orchestrator_contexts(
+    history: dict[str, Any],
+) -> list[dict[str, Any]]:
+    contexts: list[dict[str, Any]] = []
+    for item in _list(history.get("missing_telemetry")):
+        if not isinstance(item, dict):
+            continue
+        run_id = item.get("run_id")
+        context = _mapping(item.get("orchestrator_operation_context"))
+        if not context:
+            continue
+        preserved = dict(context)
+        if isinstance(run_id, str) and run_id:
+            preserved.setdefault("run_id", run_id)
+        contexts.append(preserved)
+    return contexts
 
 
 def _coverage_missing_fields(coverage: dict[str, Any]) -> list[str]:
