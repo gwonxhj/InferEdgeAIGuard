@@ -290,6 +290,14 @@ EdgeEnv가 Orchestrator producer marker를 제공하면 AIGuard는
 `producer_contract=inferedge-orchestrator-edgeenv-runtime-telemetry-feed-v1`도
 raw context에 그대로 유지합니다. 이는 Lab artifact bundle의 traceability를
 위한 것이며 AIGuard가 Orchestrator feed producer가 된다는 뜻이 아닙니다.
+nested candidate context에 producer lineage block이 포함되어 있으면,
+AIGuard는 `candidate_context.producer`와 `producer_sources`,
+`device_local_producer_sources`, `producer_sources_by_task`,
+`producer_stage_by_task`, `producer_event_count`,
+`operation_context_role=supplemental` 같은 device-local marker를
+`raw_context.edgeenv_regression`에 보존합니다. 이는 device-local input
+override provenance를 Lab이 추적할 수 있게 하기 위한 것이며, AIGuard가
+registry나 comparability owner가 된다는 뜻이 아닙니다.
 candidate telemetry gap과 baseline/candidate execution sequence inversion은
 EdgeEnv replay context에서 온 warning evidence로 보존되며, AIGuard가 이를
 comparability decision으로 재판정하지 않습니다.

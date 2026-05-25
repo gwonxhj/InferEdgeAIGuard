@@ -50,7 +50,33 @@
           "history_orchestrator_feed_runs": 1.0,
           "history_registered_runs": 2.0,
           "history_telemetry_runs": 2.0,
+          "history_telemetry_seed_runs": null,
+          "baseline_runtime_telemetry_history_seed_schema_version": null,
+          "candidate_runtime_telemetry_history_seed_schema_version": null,
+          "baseline_runtime_telemetry_history_seed_registry_owner": null,
+          "candidate_runtime_telemetry_history_seed_registry_owner": null,
+          "baseline_runtime_telemetry_history_seed_decision_owner": null,
+          "candidate_runtime_telemetry_history_seed_decision_owner": null,
+          "candidate_runtime_telemetry_history_seed_production_monitoring": null,
+          "candidate_runtime_telemetry_history_seed_missing_telemetry_is_failure": null,
+          "candidate_runtime_telemetry_history_seed_point_count": null,
           "history_missing_telemetry_runs": 0.0,
+          "history_missing_orchestrator_context_count": 0.0,
+          "history_missing_orchestrator_context_run_ids": [],
+          "history_missing_orchestrator_contexts": [],
+          "history_missing_orchestrator_source_repository": null,
+          "history_missing_orchestrator_artifact_role": null,
+          "history_missing_orchestrator_producer_contract": null,
+          "history_missing_orchestrator_candidate_context_telemetry_source": null,
+          "history_missing_orchestrator_candidate_context_producer": {},
+          "history_missing_orchestrator_candidate_producer_sources": [],
+          "history_missing_orchestrator_candidate_device_local_producer_sources": [],
+          "history_missing_orchestrator_candidate_producer_event_count": null,
+          "history_missing_orchestrator_candidate_device_local_event_count": null,
+          "history_missing_orchestrator_candidate_device_local_task_count": null,
+          "history_missing_orchestrator_candidate_operation_context_role": null,
+          "history_missing_orchestrator_edgeenv_mapping_hint": {},
+          "history_missing_orchestrator_mapping_hint_aiguard_evidence_candidates": [],
           "telemetry_coverage_source": "history_telemetry_coverage",
           "history_telemetry_coverage_missing_field_run_count": 1.0,
           "history_telemetry_coverage_missing_field_runs": [
@@ -86,6 +112,46 @@
           "orchestrator_artifact_role": "orchestrator-supplemental-operation-context",
           "orchestrator_producer_contract": "inferedge-orchestrator-edgeenv-runtime-telemetry-feed-v1",
           "orchestrator_candidate_context_telemetry_source": "inferedge_orchestrator_operation_summary",
+          "orchestrator_candidate_context_producer": {
+            "operation_context_role": "supplemental",
+            "producer_sources": [
+              "device_local_cli_override",
+              "orchestration_summary"
+            ],
+            "device_local_producer_sources": [
+              "device_local_cli_override"
+            ],
+            "producer_sources_by_task": {
+              "vision_agent": [
+                "device_local_cli_override"
+              ]
+            },
+            "producer_stage_by_task": {
+              "vision_agent": "device_local_starter"
+            },
+            "producer_event_count": 4,
+            "device_local_event_count": 2,
+            "device_local_task_count": 1
+          },
+          "orchestrator_candidate_producer_sources": [
+            "device_local_cli_override",
+            "orchestration_summary"
+          ],
+          "orchestrator_candidate_device_local_producer_sources": [
+            "device_local_cli_override"
+          ],
+          "orchestrator_candidate_producer_sources_by_task": {
+            "vision_agent": [
+              "device_local_cli_override"
+            ]
+          },
+          "orchestrator_candidate_producer_stage_by_task": {
+            "vision_agent": "device_local_starter"
+          },
+          "orchestrator_candidate_producer_event_count": 4.0,
+          "orchestrator_candidate_device_local_event_count": 2.0,
+          "orchestrator_candidate_device_local_task_count": 1.0,
+          "orchestrator_candidate_operation_context_role": "supplemental",
           "orchestrator_edgeenv_mapping_hint": {
             "copy_candidate_context_to": "runtime_telemetry_context.candidate",
             "operation_context_role": "supplemental",
@@ -168,7 +234,33 @@
           "history_orchestrator_feed_runs": 1.0,
           "history_registered_runs": 2.0,
           "history_telemetry_runs": 2.0,
+          "history_telemetry_seed_runs": null,
+          "baseline_runtime_telemetry_history_seed_schema_version": null,
+          "candidate_runtime_telemetry_history_seed_schema_version": null,
+          "baseline_runtime_telemetry_history_seed_registry_owner": null,
+          "candidate_runtime_telemetry_history_seed_registry_owner": null,
+          "baseline_runtime_telemetry_history_seed_decision_owner": null,
+          "candidate_runtime_telemetry_history_seed_decision_owner": null,
+          "candidate_runtime_telemetry_history_seed_production_monitoring": null,
+          "candidate_runtime_telemetry_history_seed_missing_telemetry_is_failure": null,
+          "candidate_runtime_telemetry_history_seed_point_count": null,
           "history_missing_telemetry_runs": 0.0,
+          "history_missing_orchestrator_context_count": 0.0,
+          "history_missing_orchestrator_context_run_ids": [],
+          "history_missing_orchestrator_contexts": [],
+          "history_missing_orchestrator_source_repository": null,
+          "history_missing_orchestrator_artifact_role": null,
+          "history_missing_orchestrator_producer_contract": null,
+          "history_missing_orchestrator_candidate_context_telemetry_source": null,
+          "history_missing_orchestrator_candidate_context_producer": {},
+          "history_missing_orchestrator_candidate_producer_sources": [],
+          "history_missing_orchestrator_candidate_device_local_producer_sources": [],
+          "history_missing_orchestrator_candidate_producer_event_count": null,
+          "history_missing_orchestrator_candidate_device_local_event_count": null,
+          "history_missing_orchestrator_candidate_device_local_task_count": null,
+          "history_missing_orchestrator_candidate_operation_context_role": null,
+          "history_missing_orchestrator_edgeenv_mapping_hint": {},
+          "history_missing_orchestrator_mapping_hint_aiguard_evidence_candidates": [],
           "telemetry_coverage_source": "history_telemetry_coverage",
           "history_telemetry_coverage_missing_field_run_count": 1.0,
           "history_telemetry_coverage_missing_field_runs": [
@@ -204,6 +296,46 @@
           "orchestrator_artifact_role": "orchestrator-supplemental-operation-context",
           "orchestrator_producer_contract": "inferedge-orchestrator-edgeenv-runtime-telemetry-feed-v1",
           "orchestrator_candidate_context_telemetry_source": "inferedge_orchestrator_operation_summary",
+          "orchestrator_candidate_context_producer": {
+            "operation_context_role": "supplemental",
+            "producer_sources": [
+              "device_local_cli_override",
+              "orchestration_summary"
+            ],
+            "device_local_producer_sources": [
+              "device_local_cli_override"
+            ],
+            "producer_sources_by_task": {
+              "vision_agent": [
+                "device_local_cli_override"
+              ]
+            },
+            "producer_stage_by_task": {
+              "vision_agent": "device_local_starter"
+            },
+            "producer_event_count": 4,
+            "device_local_event_count": 2,
+            "device_local_task_count": 1
+          },
+          "orchestrator_candidate_producer_sources": [
+            "device_local_cli_override",
+            "orchestration_summary"
+          ],
+          "orchestrator_candidate_device_local_producer_sources": [
+            "device_local_cli_override"
+          ],
+          "orchestrator_candidate_producer_sources_by_task": {
+            "vision_agent": [
+              "device_local_cli_override"
+            ]
+          },
+          "orchestrator_candidate_producer_stage_by_task": {
+            "vision_agent": "device_local_starter"
+          },
+          "orchestrator_candidate_producer_event_count": 4.0,
+          "orchestrator_candidate_device_local_event_count": 2.0,
+          "orchestrator_candidate_device_local_task_count": 1.0,
+          "orchestrator_candidate_operation_context_role": "supplemental",
           "orchestrator_edgeenv_mapping_hint": {
             "copy_candidate_context_to": "runtime_telemetry_context.candidate",
             "operation_context_role": "supplemental",
@@ -286,7 +418,33 @@
           "history_orchestrator_feed_runs": 1.0,
           "history_registered_runs": 2.0,
           "history_telemetry_runs": 2.0,
+          "history_telemetry_seed_runs": null,
+          "baseline_runtime_telemetry_history_seed_schema_version": null,
+          "candidate_runtime_telemetry_history_seed_schema_version": null,
+          "baseline_runtime_telemetry_history_seed_registry_owner": null,
+          "candidate_runtime_telemetry_history_seed_registry_owner": null,
+          "baseline_runtime_telemetry_history_seed_decision_owner": null,
+          "candidate_runtime_telemetry_history_seed_decision_owner": null,
+          "candidate_runtime_telemetry_history_seed_production_monitoring": null,
+          "candidate_runtime_telemetry_history_seed_missing_telemetry_is_failure": null,
+          "candidate_runtime_telemetry_history_seed_point_count": null,
           "history_missing_telemetry_runs": 0.0,
+          "history_missing_orchestrator_context_count": 0.0,
+          "history_missing_orchestrator_context_run_ids": [],
+          "history_missing_orchestrator_contexts": [],
+          "history_missing_orchestrator_source_repository": null,
+          "history_missing_orchestrator_artifact_role": null,
+          "history_missing_orchestrator_producer_contract": null,
+          "history_missing_orchestrator_candidate_context_telemetry_source": null,
+          "history_missing_orchestrator_candidate_context_producer": {},
+          "history_missing_orchestrator_candidate_producer_sources": [],
+          "history_missing_orchestrator_candidate_device_local_producer_sources": [],
+          "history_missing_orchestrator_candidate_producer_event_count": null,
+          "history_missing_orchestrator_candidate_device_local_event_count": null,
+          "history_missing_orchestrator_candidate_device_local_task_count": null,
+          "history_missing_orchestrator_candidate_operation_context_role": null,
+          "history_missing_orchestrator_edgeenv_mapping_hint": {},
+          "history_missing_orchestrator_mapping_hint_aiguard_evidence_candidates": [],
           "telemetry_coverage_source": "history_telemetry_coverage",
           "history_telemetry_coverage_missing_field_run_count": 1.0,
           "history_telemetry_coverage_missing_field_runs": [
@@ -322,6 +480,46 @@
           "orchestrator_artifact_role": "orchestrator-supplemental-operation-context",
           "orchestrator_producer_contract": "inferedge-orchestrator-edgeenv-runtime-telemetry-feed-v1",
           "orchestrator_candidate_context_telemetry_source": "inferedge_orchestrator_operation_summary",
+          "orchestrator_candidate_context_producer": {
+            "operation_context_role": "supplemental",
+            "producer_sources": [
+              "device_local_cli_override",
+              "orchestration_summary"
+            ],
+            "device_local_producer_sources": [
+              "device_local_cli_override"
+            ],
+            "producer_sources_by_task": {
+              "vision_agent": [
+                "device_local_cli_override"
+              ]
+            },
+            "producer_stage_by_task": {
+              "vision_agent": "device_local_starter"
+            },
+            "producer_event_count": 4,
+            "device_local_event_count": 2,
+            "device_local_task_count": 1
+          },
+          "orchestrator_candidate_producer_sources": [
+            "device_local_cli_override",
+            "orchestration_summary"
+          ],
+          "orchestrator_candidate_device_local_producer_sources": [
+            "device_local_cli_override"
+          ],
+          "orchestrator_candidate_producer_sources_by_task": {
+            "vision_agent": [
+              "device_local_cli_override"
+            ]
+          },
+          "orchestrator_candidate_producer_stage_by_task": {
+            "vision_agent": "device_local_starter"
+          },
+          "orchestrator_candidate_producer_event_count": 4.0,
+          "orchestrator_candidate_device_local_event_count": 2.0,
+          "orchestrator_candidate_device_local_task_count": 1.0,
+          "orchestrator_candidate_operation_context_role": "supplemental",
           "orchestrator_edgeenv_mapping_hint": {
             "copy_candidate_context_to": "runtime_telemetry_context.candidate",
             "operation_context_role": "supplemental",
@@ -441,7 +639,33 @@
       "history_orchestrator_feed_runs": 1.0,
       "history_registered_runs": 2.0,
       "history_telemetry_runs": 2.0,
+      "history_telemetry_seed_runs": null,
+      "baseline_runtime_telemetry_history_seed_schema_version": null,
+      "candidate_runtime_telemetry_history_seed_schema_version": null,
+      "baseline_runtime_telemetry_history_seed_registry_owner": null,
+      "candidate_runtime_telemetry_history_seed_registry_owner": null,
+      "baseline_runtime_telemetry_history_seed_decision_owner": null,
+      "candidate_runtime_telemetry_history_seed_decision_owner": null,
+      "candidate_runtime_telemetry_history_seed_production_monitoring": null,
+      "candidate_runtime_telemetry_history_seed_missing_telemetry_is_failure": null,
+      "candidate_runtime_telemetry_history_seed_point_count": null,
       "history_missing_telemetry_runs": 0.0,
+      "history_missing_orchestrator_context_count": 0.0,
+      "history_missing_orchestrator_context_run_ids": [],
+      "history_missing_orchestrator_contexts": [],
+      "history_missing_orchestrator_source_repository": null,
+      "history_missing_orchestrator_artifact_role": null,
+      "history_missing_orchestrator_producer_contract": null,
+      "history_missing_orchestrator_candidate_context_telemetry_source": null,
+      "history_missing_orchestrator_candidate_context_producer": {},
+      "history_missing_orchestrator_candidate_producer_sources": [],
+      "history_missing_orchestrator_candidate_device_local_producer_sources": [],
+      "history_missing_orchestrator_candidate_producer_event_count": null,
+      "history_missing_orchestrator_candidate_device_local_event_count": null,
+      "history_missing_orchestrator_candidate_device_local_task_count": null,
+      "history_missing_orchestrator_candidate_operation_context_role": null,
+      "history_missing_orchestrator_edgeenv_mapping_hint": {},
+      "history_missing_orchestrator_mapping_hint_aiguard_evidence_candidates": [],
       "telemetry_coverage_source": "history_telemetry_coverage",
       "history_telemetry_coverage_missing_field_run_count": 1.0,
       "history_telemetry_coverage_missing_field_runs": [
@@ -477,6 +701,46 @@
       "orchestrator_artifact_role": "orchestrator-supplemental-operation-context",
       "orchestrator_producer_contract": "inferedge-orchestrator-edgeenv-runtime-telemetry-feed-v1",
       "orchestrator_candidate_context_telemetry_source": "inferedge_orchestrator_operation_summary",
+      "orchestrator_candidate_context_producer": {
+        "operation_context_role": "supplemental",
+        "producer_sources": [
+          "device_local_cli_override",
+          "orchestration_summary"
+        ],
+        "device_local_producer_sources": [
+          "device_local_cli_override"
+        ],
+        "producer_sources_by_task": {
+          "vision_agent": [
+            "device_local_cli_override"
+          ]
+        },
+        "producer_stage_by_task": {
+          "vision_agent": "device_local_starter"
+        },
+        "producer_event_count": 4,
+        "device_local_event_count": 2,
+        "device_local_task_count": 1
+      },
+      "orchestrator_candidate_producer_sources": [
+        "device_local_cli_override",
+        "orchestration_summary"
+      ],
+      "orchestrator_candidate_device_local_producer_sources": [
+        "device_local_cli_override"
+      ],
+      "orchestrator_candidate_producer_sources_by_task": {
+        "vision_agent": [
+          "device_local_cli_override"
+        ]
+      },
+      "orchestrator_candidate_producer_stage_by_task": {
+        "vision_agent": "device_local_starter"
+      },
+      "orchestrator_candidate_producer_event_count": 4.0,
+      "orchestrator_candidate_device_local_event_count": 2.0,
+      "orchestrator_candidate_device_local_task_count": 1.0,
+      "orchestrator_candidate_operation_context_role": "supplemental",
       "orchestrator_edgeenv_mapping_hint": {
         "copy_candidate_context_to": "runtime_telemetry_context.candidate",
         "operation_context_role": "supplemental",
@@ -610,6 +874,27 @@
               "gpu_temperature": 78.5,
               "ram_used_mb": 2048.0,
               "throttling_detected": true
+            },
+            "producer": {
+              "operation_context_role": "supplemental",
+              "producer_sources": [
+                "device_local_cli_override",
+                "orchestration_summary"
+              ],
+              "device_local_producer_sources": [
+                "device_local_cli_override"
+              ],
+              "producer_sources_by_task": {
+                "vision_agent": [
+                  "device_local_cli_override"
+                ]
+              },
+              "producer_stage_by_task": {
+                "vision_agent": "device_local_starter"
+              },
+              "producer_event_count": 4,
+              "device_local_event_count": 2,
+              "device_local_task_count": 1
             }
           },
           "edgeenv_mapping_hint": {
@@ -719,5 +1004,5 @@
       "evidence_gaps": []
     }
   },
-  "created_at": "2026-05-23T15:59:51Z"
+  "created_at": "2026-05-25T12:46:08Z"
 }

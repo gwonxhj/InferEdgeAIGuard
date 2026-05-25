@@ -334,6 +334,14 @@ AIGuard also carries through the Orchestrator producer markers
 `producer_contract=inferedge-orchestrator-edgeenv-runtime-telemetry-feed-v1`
 when EdgeEnv provides them. These markers keep the Lab artifact bundle traceable
 without making AIGuard the Orchestrator feed producer.
+When the nested candidate context also includes a producer lineage block,
+AIGuard preserves `candidate_context.producer` and flattened device-local
+markers such as `producer_sources`, `device_local_producer_sources`,
+`producer_sources_by_task`, `producer_stage_by_task`, `producer_event_count`,
+and `operation_context_role=supplemental` in
+`raw_context.edgeenv_regression`. This keeps device-local input override
+provenance visible to Lab without making AIGuard a registry or comparability
+owner.
 Candidate telemetry gaps and baseline/candidate execution sequence inversion
 are preserved as EdgeEnv replay-context warnings, not recomputed
 comparability decisions.

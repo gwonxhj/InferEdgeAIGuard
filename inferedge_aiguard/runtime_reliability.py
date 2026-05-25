@@ -507,6 +507,9 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
     candidate_orchestrator_candidate_context = _mapping(
         candidate_orchestrator_context.get("candidate_context")
     )
+    candidate_orchestrator_producer = _mapping(
+        candidate_orchestrator_candidate_context.get("producer")
+    )
     candidate_edgeenv_mapping_hint = _mapping(
         candidate_orchestrator_context.get("edgeenv_mapping_hint")
     )
@@ -520,6 +523,9 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
     )
     first_missing_orchestrator_candidate_context = _mapping(
         first_missing_orchestrator_context.get("candidate_context")
+    )
+    first_missing_orchestrator_producer = _mapping(
+        first_missing_orchestrator_candidate_context.get("producer")
     )
     first_missing_edgeenv_mapping_hint = _mapping(
         first_missing_orchestrator_context.get("edgeenv_mapping_hint")
@@ -669,6 +675,37 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
         "history_missing_orchestrator_candidate_context_telemetry_source": (
             first_missing_orchestrator_candidate_context.get("telemetry_source")
         ),
+        "history_missing_orchestrator_candidate_context_producer": dict(
+            first_missing_orchestrator_producer
+        ),
+        "history_missing_orchestrator_candidate_producer_sources": _string_list(
+            first_missing_orchestrator_producer.get("producer_sources")
+        ),
+        "history_missing_orchestrator_candidate_device_local_producer_sources": (
+            _string_list(
+                first_missing_orchestrator_producer.get(
+                    "device_local_producer_sources"
+                )
+            )
+        ),
+        "history_missing_orchestrator_candidate_producer_event_count": (
+            _optional_number(
+                first_missing_orchestrator_producer.get("producer_event_count")
+            )
+        ),
+        "history_missing_orchestrator_candidate_device_local_event_count": (
+            _optional_number(
+                first_missing_orchestrator_producer.get("device_local_event_count")
+            )
+        ),
+        "history_missing_orchestrator_candidate_device_local_task_count": (
+            _optional_number(
+                first_missing_orchestrator_producer.get("device_local_task_count")
+            )
+        ),
+        "history_missing_orchestrator_candidate_operation_context_role": (
+            first_missing_orchestrator_producer.get("operation_context_role")
+        ),
         "history_missing_orchestrator_edgeenv_mapping_hint": dict(
             first_missing_edgeenv_mapping_hint
         ),
@@ -736,6 +773,33 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
         ),
         "orchestrator_candidate_context_telemetry_source": (
             candidate_orchestrator_candidate_context.get("telemetry_source")
+        ),
+        "orchestrator_candidate_context_producer": dict(
+            candidate_orchestrator_producer
+        ),
+        "orchestrator_candidate_producer_sources": _string_list(
+            candidate_orchestrator_producer.get("producer_sources")
+        ),
+        "orchestrator_candidate_device_local_producer_sources": _string_list(
+            candidate_orchestrator_producer.get("device_local_producer_sources")
+        ),
+        "orchestrator_candidate_producer_sources_by_task": _mapping(
+            candidate_orchestrator_producer.get("producer_sources_by_task")
+        ),
+        "orchestrator_candidate_producer_stage_by_task": _mapping(
+            candidate_orchestrator_producer.get("producer_stage_by_task")
+        ),
+        "orchestrator_candidate_producer_event_count": _optional_number(
+            candidate_orchestrator_producer.get("producer_event_count")
+        ),
+        "orchestrator_candidate_device_local_event_count": _optional_number(
+            candidate_orchestrator_producer.get("device_local_event_count")
+        ),
+        "orchestrator_candidate_device_local_task_count": _optional_number(
+            candidate_orchestrator_producer.get("device_local_task_count")
+        ),
+        "orchestrator_candidate_operation_context_role": (
+            candidate_orchestrator_producer.get("operation_context_role")
         ),
         "orchestrator_edgeenv_mapping_hint": dict(candidate_edgeenv_mapping_hint),
         "orchestrator_mapping_hint_copy_candidate_context_to": (
