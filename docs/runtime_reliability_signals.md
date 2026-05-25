@@ -338,8 +338,9 @@ when EdgeEnv provides them. These markers keep the Lab artifact bundle traceable
 without making AIGuard the Orchestrator feed producer.
 When EdgeEnv preserves `candidate_context.producer`, AIGuard emits
 `edgeenv_orchestrator_producer_lineage` to show device-local producer sources,
-task stage mapping, and positive event/task coverage. This is a traceability
-evidence item, not a new deployment decision or comparability gate.
+per-task source mapping, task stage mapping, and positive event/task coverage.
+This is a traceability evidence item, not a new deployment decision or
+comparability gate.
 When the nested candidate context also includes a producer lineage block,
 AIGuard preserves `candidate_context.producer` and flattened device-local
 markers such as `producer_sources`, `device_local_producer_sources`,

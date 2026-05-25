@@ -1388,6 +1388,12 @@ def test_compute_edgeenv_regression_metrics_preserves_missing_orchestrator_conte
         "history_missing_orchestrator_candidate_device_local_producer_sources"
     ] == ["device_local_cli_override"]
     assert metrics[
+        "history_missing_orchestrator_candidate_producer_sources_by_task"
+    ] == {"vision_agent": ["device_local_cli_override"]}
+    assert metrics[
+        "history_missing_orchestrator_candidate_producer_stage_by_task"
+    ] == {"vision_agent": "device_local_starter"}
+    assert metrics[
         "history_missing_orchestrator_candidate_producer_event_count"
     ] == 4.0
     assert metrics[
@@ -1608,8 +1614,26 @@ def test_analyze_edgeenv_regression_report_warns_on_orchestrator_feed_context():
         "candidate_device_local_sources"
     ] == ["device_local_cli_override"]
     assert producer_lineage["raw_context"]["producer_lineage"][
+        "candidate_producer_sources"
+    ] == ["device_local_cli_override", "orchestration_summary"]
+    assert producer_lineage["raw_context"]["producer_lineage"][
+        "candidate_sources_by_task"
+    ] == {"vision_agent": ["device_local_cli_override"]}
+    assert producer_lineage["raw_context"]["producer_lineage"][
         "candidate_stage_by_task"
     ] == {"vision_agent": "device_local_starter"}
+    assert producer_lineage["raw_context"]["producer_lineage"][
+        "candidate_producer_event_count"
+    ] == 4.0
+    assert producer_lineage["raw_context"]["producer_lineage"][
+        "candidate_device_local_event_count"
+    ] == 2.0
+    assert producer_lineage["raw_context"]["producer_lineage"][
+        "candidate_device_local_task_count"
+    ] == 1.0
+    assert producer_lineage["raw_context"]["producer_lineage"][
+        "candidate_lineage_shape_valid"
+    ] is True
 
 
 def test_analyze_edgeenv_regression_report_warns_on_missing_producer_lineage():
@@ -1632,6 +1656,35 @@ def test_analyze_edgeenv_regression_report_warns_on_missing_producer_lineage():
     assert "device_local_producer_lineage_gap" in producer_lineage[
         "suspected_causes"
     ]
+
+
+def test_analyze_edgeenv_regression_report_warns_on_bad_producer_shape():
+    regression_report = edgeenv_regression_report_with_orchestrator_feed_context()
+    producer = regression_report["runtime_telemetry_context"]["candidate"][
+        "orchestrator_operation_context"
+    ]["candidate_context"]["producer"]
+    producer["producer_sources_by_task"] = {"vision_agent": ["orchestration_summary"]}
+
+    report = analyze_edgeenv_regression_report(regression_report)
+
+    validate_diagnosis_report(report)
+    producer_lineage = next(
+        item
+        for item in report["evidence"]
+        if item["type"] == "edgeenv_orchestrator_producer_lineage"
+    )
+    assert producer_lineage["status"] == "warning"
+    assert producer_lineage["observed_value"] == 0
+    assert producer_lineage["baseline_value"] == 1
+    assert producer_lineage["raw_context"]["producer_lineage"][
+        "candidate_device_local_sources"
+    ] == ["device_local_cli_override"]
+    assert producer_lineage["raw_context"]["producer_lineage"][
+        "candidate_sources_by_task"
+    ] == {"vision_agent": ["orchestration_summary"]}
+    assert producer_lineage["raw_context"]["producer_lineage"][
+        "candidate_lineage_shape_valid"
+    ] is False
 
 
 def test_analyze_edgeenv_regression_report_warns_on_telemetry_gap():
@@ -1745,6 +1798,15 @@ def test_analyze_edgeenv_regression_report_preserves_missing_orchestrator_raw_co
     assert producer_lineage["raw_context"]["producer_lineage"][
         "missing_device_local_sources"
     ] == ["device_local_cli_override"]
+    assert producer_lineage["raw_context"]["producer_lineage"][
+        "missing_sources_by_task"
+    ] == {"vision_agent": ["device_local_cli_override"]}
+    assert producer_lineage["raw_context"]["producer_lineage"][
+        "missing_stage_by_task"
+    ] == {"vision_agent": "device_local_starter"}
+    assert producer_lineage["raw_context"]["producer_lineage"][
+        "missing_lineage_shape_valid"
+    ] is True
     assert producer_lineage["raw_context"]["producer_lineage"][
         "missing_context_run_ids"
     ] == ["edgeenv-smoke-candidate"]

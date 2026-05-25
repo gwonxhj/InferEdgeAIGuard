@@ -688,6 +688,12 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
                 )
             )
         ),
+        "history_missing_orchestrator_candidate_producer_sources_by_task": (
+            _mapping(first_missing_orchestrator_producer.get("producer_sources_by_task"))
+        ),
+        "history_missing_orchestrator_candidate_producer_stage_by_task": (
+            _mapping(first_missing_orchestrator_producer.get("producer_stage_by_task"))
+        ),
         "history_missing_orchestrator_candidate_producer_event_count": (
             _optional_number(
                 first_missing_orchestrator_producer.get("producer_event_count")
@@ -1991,17 +1997,53 @@ def _edgeenv_orchestrator_producer_lineage_evidence(
     if not candidate_expected and not missing_expected:
         return None
 
+    candidate_shape_ok = _producer_lineage_shape_valid(
+        device_local_sources=metrics.get(
+            "orchestrator_candidate_device_local_producer_sources"
+        ),
+        producer_sources=metrics.get("orchestrator_candidate_producer_sources"),
+        sources_by_task=metrics.get("orchestrator_candidate_producer_sources_by_task"),
+        stage_by_task=metrics.get("orchestrator_candidate_producer_stage_by_task"),
+        producer_event_count=metrics.get("orchestrator_candidate_producer_event_count"),
+        device_local_event_count=metrics.get(
+            "orchestrator_candidate_device_local_event_count"
+        ),
+        device_local_task_count=metrics.get(
+            "orchestrator_candidate_device_local_task_count"
+        ),
+        operation_context_role=metrics.get(
+            "orchestrator_candidate_operation_context_role"
+        ),
+    )
+    missing_shape_ok = _producer_lineage_shape_valid(
+        device_local_sources=metrics.get(
+            "history_missing_orchestrator_candidate_device_local_producer_sources"
+        ),
+        producer_sources=metrics.get(
+            "history_missing_orchestrator_candidate_producer_sources"
+        ),
+        sources_by_task=metrics.get(
+            "history_missing_orchestrator_candidate_producer_sources_by_task"
+        ),
+        stage_by_task=metrics.get(
+            "history_missing_orchestrator_candidate_producer_stage_by_task"
+        ),
+        producer_event_count=metrics.get(
+            "history_missing_orchestrator_candidate_producer_event_count"
+        ),
+        device_local_event_count=metrics.get(
+            "history_missing_orchestrator_candidate_device_local_event_count"
+        ),
+        device_local_task_count=metrics.get(
+            "history_missing_orchestrator_candidate_device_local_task_count"
+        ),
+        operation_context_role=metrics.get(
+            "history_missing_orchestrator_candidate_operation_context_role"
+        ),
+    )
     candidate_ok = (
         bool(metrics.get("orchestrator_candidate_device_local_producer_sources"))
-        and metrics.get("orchestrator_candidate_operation_context_role")
-        == "supplemental"
-        and _positive_number(metrics.get("orchestrator_candidate_producer_event_count"))
-        and _positive_number(
-            metrics.get("orchestrator_candidate_device_local_event_count")
-        )
-        and _positive_number(
-            metrics.get("orchestrator_candidate_device_local_task_count")
-        )
+        and candidate_shape_ok
     )
     missing_ok = (
         bool(
@@ -2009,21 +2051,7 @@ def _edgeenv_orchestrator_producer_lineage_evidence(
                 "history_missing_orchestrator_candidate_device_local_producer_sources"
             )
         )
-        and metrics.get("history_missing_orchestrator_candidate_operation_context_role")
-        == "supplemental"
-        and _positive_number(
-            metrics.get("history_missing_orchestrator_candidate_producer_event_count")
-        )
-        and _positive_number(
-            metrics.get(
-                "history_missing_orchestrator_candidate_device_local_event_count"
-            )
-        )
-        and _positive_number(
-            metrics.get(
-                "history_missing_orchestrator_candidate_device_local_task_count"
-            )
-        )
+        and missing_shape_ok
     )
 
     expected_count = int(candidate_expected) + int(missing_expected)
@@ -2081,13 +2109,48 @@ def _edgeenv_orchestrator_producer_lineage_evidence(
                 "candidate_device_local_sources": metrics.get(
                     "orchestrator_candidate_device_local_producer_sources"
                 ),
+                "candidate_producer_sources": metrics.get(
+                    "orchestrator_candidate_producer_sources"
+                ),
+                "candidate_sources_by_task": metrics.get(
+                    "orchestrator_candidate_producer_sources_by_task"
+                ),
                 "candidate_stage_by_task": metrics.get(
                     "orchestrator_candidate_producer_stage_by_task"
                 ),
+                "candidate_producer_event_count": metrics.get(
+                    "orchestrator_candidate_producer_event_count"
+                ),
+                "candidate_device_local_event_count": metrics.get(
+                    "orchestrator_candidate_device_local_event_count"
+                ),
+                "candidate_device_local_task_count": metrics.get(
+                    "orchestrator_candidate_device_local_task_count"
+                ),
+                "candidate_lineage_shape_valid": candidate_shape_ok,
                 "missing_expected": missing_expected,
                 "missing_device_local_sources": metrics.get(
                     "history_missing_orchestrator_candidate_device_local_producer_sources"
                 ),
+                "missing_producer_sources": metrics.get(
+                    "history_missing_orchestrator_candidate_producer_sources"
+                ),
+                "missing_sources_by_task": metrics.get(
+                    "history_missing_orchestrator_candidate_producer_sources_by_task"
+                ),
+                "missing_stage_by_task": metrics.get(
+                    "history_missing_orchestrator_candidate_producer_stage_by_task"
+                ),
+                "missing_producer_event_count": metrics.get(
+                    "history_missing_orchestrator_candidate_producer_event_count"
+                ),
+                "missing_device_local_event_count": metrics.get(
+                    "history_missing_orchestrator_candidate_device_local_event_count"
+                ),
+                "missing_device_local_task_count": metrics.get(
+                    "history_missing_orchestrator_candidate_device_local_task_count"
+                ),
+                "missing_lineage_shape_valid": missing_shape_ok,
                 "missing_context_run_ids": metrics.get(
                     "history_missing_orchestrator_context_run_ids"
                 ),
@@ -2224,6 +2287,50 @@ def _positive_number(value: Any) -> bool:
         isinstance(value, (int, float))
         and not isinstance(value, bool)
         and value > 0
+    )
+
+
+def _producer_lineage_shape_valid(
+    *,
+    device_local_sources: Any,
+    producer_sources: Any,
+    sources_by_task: Any,
+    stage_by_task: Any,
+    producer_event_count: Any,
+    device_local_event_count: Any,
+    device_local_task_count: Any,
+    operation_context_role: Any,
+) -> bool:
+    device_sources = _string_list(device_local_sources)
+    all_sources = set(_string_list(producer_sources))
+    task_sources_map = _mapping(sources_by_task)
+    stage_map = _mapping(stage_by_task)
+    task_sources: set[str] = set()
+    for task_name, sources in task_sources_map.items():
+        if not isinstance(task_name, str) or not task_name:
+            return False
+        source_list = _string_list(sources)
+        if not source_list:
+            return False
+        task_sources.update(source_list)
+    if not device_sources:
+        return False
+    if not set(device_sources).issubset(all_sources):
+        return False
+    if not set(device_sources).issubset(task_sources):
+        return False
+    if not stage_map:
+        return False
+    for task_name, stage in stage_map.items():
+        if not isinstance(task_name, str) or not task_name:
+            return False
+        if not isinstance(stage, str) or not stage:
+            return False
+    return (
+        operation_context_role == "supplemental"
+        and _positive_number(producer_event_count)
+        and _positive_number(device_local_event_count)
+        and _positive_number(device_local_task_count)
     )
 
 
