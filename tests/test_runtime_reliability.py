@@ -738,6 +738,23 @@ def edgeenv_regression_report_with_orchestrator_feed_context() -> dict:
                 "ram_used_mb": 2048.0,
                 "throttling_detected": True,
             },
+            "producer": {
+                "operation_context_role": "supplemental",
+                "producer_sources": [
+                    "device_local_cli_override",
+                    "orchestration_summary",
+                ],
+                "device_local_producer_sources": ["device_local_cli_override"],
+                "producer_sources_by_task": {
+                    "vision_agent": ["device_local_cli_override"],
+                },
+                "producer_stage_by_task": {
+                    "vision_agent": "device_local_starter",
+                },
+                "producer_event_count": 4,
+                "device_local_event_count": 2,
+                "device_local_task_count": 1,
+            },
         },
         "edgeenv_mapping_hint": {
             "copy_candidate_context_to": "runtime_telemetry_context.candidate",
@@ -1309,6 +1326,26 @@ def test_compute_edgeenv_regression_metrics_extracts_orchestrator_feed_context()
         "runtime_queue_overload",
         "runtime_thermal_instability",
     }
+    assert metrics["orchestrator_candidate_context_producer"][
+        "operation_context_role"
+    ] == "supplemental"
+    assert metrics["orchestrator_candidate_producer_sources"] == [
+        "device_local_cli_override",
+        "orchestration_summary",
+    ]
+    assert metrics["orchestrator_candidate_device_local_producer_sources"] == [
+        "device_local_cli_override"
+    ]
+    assert metrics["orchestrator_candidate_producer_sources_by_task"] == {
+        "vision_agent": ["device_local_cli_override"]
+    }
+    assert metrics["orchestrator_candidate_producer_stage_by_task"] == {
+        "vision_agent": "device_local_starter"
+    }
+    assert metrics["orchestrator_candidate_producer_event_count"] == 4.0
+    assert metrics["orchestrator_candidate_device_local_event_count"] == 2.0
+    assert metrics["orchestrator_candidate_device_local_task_count"] == 1.0
+    assert metrics["orchestrator_candidate_operation_context_role"] == "supplemental"
     assert metrics["candidate_max_temperature_c"] == 78.5
     assert metrics["candidate_throttling_detected"] is True
     assert metrics["candidate_queue_depth"] == 7.0
@@ -1338,6 +1375,31 @@ def test_compute_edgeenv_regression_metrics_preserves_missing_orchestrator_conte
     assert metrics[
         "history_missing_orchestrator_candidate_context_telemetry_source"
     ] == "inferedge_orchestrator_operation_summary"
+    assert metrics["history_missing_orchestrator_candidate_context_producer"][
+        "operation_context_role"
+    ] == "supplemental"
+    assert metrics[
+        "history_missing_orchestrator_candidate_producer_sources"
+    ] == [
+        "device_local_cli_override",
+        "orchestration_summary",
+    ]
+    assert metrics[
+        "history_missing_orchestrator_candidate_device_local_producer_sources"
+    ] == ["device_local_cli_override"]
+    assert metrics[
+        "history_missing_orchestrator_candidate_producer_event_count"
+    ] == 4.0
+    assert metrics[
+        "history_missing_orchestrator_candidate_device_local_event_count"
+    ] == 2.0
+    assert metrics[
+        "history_missing_orchestrator_candidate_device_local_task_count"
+    ] == 1.0
+    assert (
+        metrics["history_missing_orchestrator_candidate_operation_context_role"]
+        == "supplemental"
+    )
     assert metrics["history_missing_orchestrator_edgeenv_mapping_hint"][
         "coverage_summary_owner"
     ] == "edgeenv"
@@ -1524,6 +1586,15 @@ def test_analyze_edgeenv_regression_report_warns_on_orchestrator_feed_context():
     assert queue_context["orchestrator_producer_contract"] == (
         "inferedge-orchestrator-edgeenv-runtime-telemetry-feed-v1"
     )
+    assert queue_context["orchestrator_candidate_context_producer"][
+        "operation_context_role"
+    ] == "supplemental"
+    assert queue_context["orchestrator_candidate_device_local_producer_sources"] == [
+        "device_local_cli_override"
+    ]
+    assert queue_context["orchestrator_candidate_producer_stage_by_task"] == {
+        "vision_agent": "device_local_starter"
+    }
 
 
 def test_analyze_edgeenv_regression_report_warns_on_telemetry_gap():
