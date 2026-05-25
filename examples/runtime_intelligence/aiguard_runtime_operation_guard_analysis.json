@@ -82,6 +82,9 @@
           "execution_sequence_order_valid": true,
           "baseline_orchestrator_context_present": false,
           "candidate_orchestrator_context_present": true,
+          "orchestrator_source_repository": "InferEdgeOrchestrator",
+          "orchestrator_artifact_role": "orchestrator-supplemental-operation-context",
+          "orchestrator_producer_contract": "inferedge-orchestrator-edgeenv-runtime-telemetry-feed-v1",
           "orchestrator_candidate_context_telemetry_source": "inferedge_orchestrator_operation_summary",
           "orchestrator_edgeenv_mapping_hint": {
             "copy_candidate_context_to": "runtime_telemetry_context.candidate",
@@ -93,6 +96,10 @@
               "telemetry_source",
               "operation",
               "resource"
+            ],
+            "aiguard_evidence_candidates": [
+              "runtime_queue_overload",
+              "runtime_thermal_instability"
             ]
           },
           "orchestrator_mapping_hint_copy_candidate_context_to": "runtime_telemetry_context.candidate",
@@ -104,6 +111,10 @@
             "telemetry_source",
             "operation",
             "resource"
+          ],
+          "orchestrator_mapping_hint_aiguard_evidence_candidates": [
+            "runtime_queue_overload",
+            "runtime_thermal_instability"
           ],
           "baseline_max_temperature_c": null,
           "candidate_max_temperature_c": 78.5,
@@ -189,6 +200,9 @@
           "execution_sequence_order_valid": true,
           "baseline_orchestrator_context_present": false,
           "candidate_orchestrator_context_present": true,
+          "orchestrator_source_repository": "InferEdgeOrchestrator",
+          "orchestrator_artifact_role": "orchestrator-supplemental-operation-context",
+          "orchestrator_producer_contract": "inferedge-orchestrator-edgeenv-runtime-telemetry-feed-v1",
           "orchestrator_candidate_context_telemetry_source": "inferedge_orchestrator_operation_summary",
           "orchestrator_edgeenv_mapping_hint": {
             "copy_candidate_context_to": "runtime_telemetry_context.candidate",
@@ -200,6 +214,10 @@
               "telemetry_source",
               "operation",
               "resource"
+            ],
+            "aiguard_evidence_candidates": [
+              "runtime_queue_overload",
+              "runtime_thermal_instability"
             ]
           },
           "orchestrator_mapping_hint_copy_candidate_context_to": "runtime_telemetry_context.candidate",
@@ -211,6 +229,10 @@
             "telemetry_source",
             "operation",
             "resource"
+          ],
+          "orchestrator_mapping_hint_aiguard_evidence_candidates": [
+            "runtime_queue_overload",
+            "runtime_thermal_instability"
           ],
           "baseline_max_temperature_c": null,
           "candidate_max_temperature_c": 78.5,
@@ -296,6 +318,9 @@
           "execution_sequence_order_valid": true,
           "baseline_orchestrator_context_present": false,
           "candidate_orchestrator_context_present": true,
+          "orchestrator_source_repository": "InferEdgeOrchestrator",
+          "orchestrator_artifact_role": "orchestrator-supplemental-operation-context",
+          "orchestrator_producer_contract": "inferedge-orchestrator-edgeenv-runtime-telemetry-feed-v1",
           "orchestrator_candidate_context_telemetry_source": "inferedge_orchestrator_operation_summary",
           "orchestrator_edgeenv_mapping_hint": {
             "copy_candidate_context_to": "runtime_telemetry_context.candidate",
@@ -307,6 +332,10 @@
               "telemetry_source",
               "operation",
               "resource"
+            ],
+            "aiguard_evidence_candidates": [
+              "runtime_queue_overload",
+              "runtime_thermal_instability"
             ]
           },
           "orchestrator_mapping_hint_copy_candidate_context_to": "runtime_telemetry_context.candidate",
@@ -318,6 +347,10 @@
             "telemetry_source",
             "operation",
             "resource"
+          ],
+          "orchestrator_mapping_hint_aiguard_evidence_candidates": [
+            "runtime_queue_overload",
+            "runtime_thermal_instability"
           ],
           "baseline_max_temperature_c": null,
           "candidate_max_temperature_c": 78.5,
@@ -440,6 +473,9 @@
       "execution_sequence_order_valid": true,
       "baseline_orchestrator_context_present": false,
       "candidate_orchestrator_context_present": true,
+      "orchestrator_source_repository": "InferEdgeOrchestrator",
+      "orchestrator_artifact_role": "orchestrator-supplemental-operation-context",
+      "orchestrator_producer_contract": "inferedge-orchestrator-edgeenv-runtime-telemetry-feed-v1",
       "orchestrator_candidate_context_telemetry_source": "inferedge_orchestrator_operation_summary",
       "orchestrator_edgeenv_mapping_hint": {
         "copy_candidate_context_to": "runtime_telemetry_context.candidate",
@@ -451,6 +487,10 @@
           "telemetry_source",
           "operation",
           "resource"
+        ],
+        "aiguard_evidence_candidates": [
+          "runtime_queue_overload",
+          "runtime_thermal_instability"
         ]
       },
       "orchestrator_mapping_hint_copy_candidate_context_to": "runtime_telemetry_context.candidate",
@@ -462,6 +502,10 @@
         "telemetry_source",
         "operation",
         "resource"
+      ],
+      "orchestrator_mapping_hint_aiguard_evidence_candidates": [
+        "runtime_queue_overload",
+        "runtime_thermal_instability"
       ],
       "baseline_max_temperature_c": null,
       "candidate_max_temperature_c": 78.5,
@@ -538,6 +582,9 @@
         "orchestrator_operation_context": {
           "schema_version": "inferedge-orchestrator-edgeenv-runtime-telemetry-feed-v1",
           "role": "orchestrator_operation_context_for_edgeenv",
+          "source_repository": "InferEdgeOrchestrator",
+          "artifact_role": "orchestrator-supplemental-operation-context",
+          "producer_contract": "inferedge-orchestrator-edgeenv-runtime-telemetry-feed-v1",
           "source": "orchestration_summary",
           "run_id": "edgeenv-smoke-candidate",
           "not_a_regression_judgement": true,
@@ -575,6 +622,10 @@
               "telemetry_source",
               "operation",
               "resource"
+            ],
+            "aiguard_evidence_candidates": [
+              "runtime_queue_overload",
+              "runtime_thermal_instability"
             ]
           }
         }

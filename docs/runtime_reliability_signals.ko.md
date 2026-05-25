@@ -284,6 +284,12 @@ AIGuard는 producer `edgeenv_mapping_hint`도 deterministic raw context에
 `operation_context_role=supplemental` 같은 ownership marker가 포함됩니다.
 이 필드는 소유권 경계를 설명하기 위한 것이며 AIGuard가 EdgeEnv coverage를
 다시 계산하거나 Lab deployment policy를 소유한다는 뜻이 아닙니다.
+EdgeEnv가 Orchestrator producer marker를 제공하면 AIGuard는
+`source_repository=InferEdgeOrchestrator`,
+`artifact_role=orchestrator-supplemental-operation-context`,
+`producer_contract=inferedge-orchestrator-edgeenv-runtime-telemetry-feed-v1`도
+raw context에 그대로 유지합니다. 이는 Lab artifact bundle의 traceability를
+위한 것이며 AIGuard가 Orchestrator feed producer가 된다는 뜻이 아닙니다.
 candidate telemetry gap과 baseline/candidate execution sequence inversion은
 EdgeEnv replay context에서 온 warning evidence로 보존되며, AIGuard가 이를
 comparability decision으로 재판정하지 않습니다.

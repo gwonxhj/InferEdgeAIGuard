@@ -328,6 +328,12 @@ raw context, including `coverage_summary_owner=edgeenv`,
 `coverage_summary_path=runtime_telemetry_context.history.telemetry_coverage`,
 and `operation_context_role=supplemental`. These fields document ownership; they
 do not make AIGuard recompute EdgeEnv coverage or own Lab deployment policy.
+AIGuard also carries through the Orchestrator producer markers
+`source_repository=InferEdgeOrchestrator`,
+`artifact_role=orchestrator-supplemental-operation-context`, and
+`producer_contract=inferedge-orchestrator-edgeenv-runtime-telemetry-feed-v1`
+when EdgeEnv provides them. These markers keep the Lab artifact bundle traceable
+without making AIGuard the Orchestrator feed producer.
 Candidate telemetry gaps and baseline/candidate execution sequence inversion
 are preserved as EdgeEnv replay-context warnings, not recomputed
 comparability decisions.

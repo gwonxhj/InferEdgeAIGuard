@@ -710,6 +710,11 @@ def edgeenv_regression_report_with_orchestrator_feed_context() -> dict:
     context["candidate"]["orchestrator_operation_context"] = {
         "schema_version": "inferedge-orchestrator-edgeenv-runtime-telemetry-feed-v1",
         "role": "orchestrator_operation_context_for_edgeenv",
+        "source_repository": "InferEdgeOrchestrator",
+        "artifact_role": "orchestrator-supplemental-operation-context",
+        "producer_contract": (
+            "inferedge-orchestrator-edgeenv-runtime-telemetry-feed-v1"
+        ),
         "source": "orchestration_summary",
         "run_id": "edgeenv-smoke-candidate",
         "not_a_regression_judgement": True,
@@ -746,6 +751,10 @@ def edgeenv_regression_report_with_orchestrator_feed_context() -> dict:
                 "telemetry_source",
                 "operation",
                 "resource",
+            ],
+            "aiguard_evidence_candidates": [
+                "runtime_queue_overload",
+                "runtime_thermal_instability",
             ],
         },
     }
@@ -1257,6 +1266,14 @@ def test_compute_edgeenv_regression_metrics_extracts_orchestrator_feed_context()
     assert metrics["orchestrator_candidate_context_telemetry_source"] == (
         "inferedge_orchestrator_operation_summary"
     )
+    assert metrics["orchestrator_source_repository"] == "InferEdgeOrchestrator"
+    assert (
+        metrics["orchestrator_artifact_role"]
+        == "orchestrator-supplemental-operation-context"
+    )
+    assert metrics["orchestrator_producer_contract"] == (
+        "inferedge-orchestrator-edgeenv-runtime-telemetry-feed-v1"
+    )
     assert metrics["orchestrator_mapping_hint_coverage_summary_owner"] == "edgeenv"
     assert metrics["orchestrator_mapping_hint_coverage_summary_path"] == (
         "runtime_telemetry_context.history.telemetry_coverage"
@@ -1267,6 +1284,10 @@ def test_compute_edgeenv_regression_metrics_extracts_orchestrator_feed_context()
         "telemetry_source",
         "operation",
         "resource",
+    }
+    assert set(metrics["orchestrator_mapping_hint_aiguard_evidence_candidates"]) == {
+        "runtime_queue_overload",
+        "runtime_thermal_instability",
     }
     assert metrics["candidate_max_temperature_c"] == 78.5
     assert metrics["candidate_throttling_detected"] is True
@@ -1429,6 +1450,23 @@ def test_analyze_edgeenv_regression_report_warns_on_orchestrator_feed_context():
     assert report["candidate_summary"]["edgeenv_regression"][
         "orchestrator_mapping_hint_operation_context_role"
     ] == "supplemental"
+    assert set(
+        report["candidate_summary"]["edgeenv_regression"][
+            "orchestrator_mapping_hint_aiguard_evidence_candidates"
+        ]
+    ) == {
+        "runtime_queue_overload",
+        "runtime_thermal_instability",
+    }
+    queue_context = queue_evidence["raw_context"]["edgeenv_regression"]
+    assert queue_context["orchestrator_source_repository"] == "InferEdgeOrchestrator"
+    assert (
+        queue_context["orchestrator_artifact_role"]
+        == "orchestrator-supplemental-operation-context"
+    )
+    assert queue_context["orchestrator_producer_contract"] == (
+        "inferedge-orchestrator-edgeenv-runtime-telemetry-feed-v1"
+    )
 
 
 def test_analyze_edgeenv_regression_report_warns_on_telemetry_gap():
@@ -2296,6 +2334,23 @@ def test_runtime_intelligence_example_exports_lab_ready_guard_analysis(tmp_path)
     assert saved["candidate_summary"]["edgeenv_regression"][
         "orchestrator_candidate_context_telemetry_source"
     ] == "inferedge_orchestrator_operation_summary"
+    assert saved["candidate_summary"]["edgeenv_regression"][
+        "orchestrator_source_repository"
+    ] == "InferEdgeOrchestrator"
+    assert saved["candidate_summary"]["edgeenv_regression"][
+        "orchestrator_artifact_role"
+    ] == "orchestrator-supplemental-operation-context"
+    assert saved["candidate_summary"]["edgeenv_regression"][
+        "orchestrator_producer_contract"
+    ] == "inferedge-orchestrator-edgeenv-runtime-telemetry-feed-v1"
+    assert set(
+        saved["candidate_summary"]["edgeenv_regression"][
+            "orchestrator_mapping_hint_aiguard_evidence_candidates"
+        ]
+    ) == {
+        "runtime_queue_overload",
+        "runtime_thermal_instability",
+    }
     coverage_evidence = next(
         item
         for item in saved["evidence"]
@@ -2308,5 +2363,19 @@ def test_runtime_intelligence_example_exports_lab_ready_guard_analysis(tmp_path)
     assert coverage_context["orchestrator_edgeenv_mapping_hint"][
         "coverage_summary_path"
     ] == "runtime_telemetry_context.history.telemetry_coverage"
+    assert set(
+        coverage_context["orchestrator_mapping_hint_aiguard_evidence_candidates"]
+    ) == {
+        "runtime_queue_overload",
+        "runtime_thermal_instability",
+    }
+    assert coverage_context["orchestrator_source_repository"] == "InferEdgeOrchestrator"
+    assert (
+        coverage_context["orchestrator_artifact_role"]
+        == "orchestrator-supplemental-operation-context"
+    )
+    assert coverage_context["orchestrator_producer_contract"] == (
+        "inferedge-orchestrator-edgeenv-runtime-telemetry-feed-v1"
+    )
     assert forbidden_decision_keys.isdisjoint(saved)
     assert forbidden_decision_keys.isdisjoint(expected)
