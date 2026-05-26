@@ -1318,6 +1318,30 @@ def test_compute_edgeenv_regression_metrics_preserves_runtime_history_seed():
         "power_mode": "unknown",
         "jetson_clocks": "unknown",
     }
+    assert metrics["runtime_telemetry_history_seed_run_config_marker_fields"] == [
+        "input_mode",
+        "input_preprocess",
+        "power_mode",
+        "jetson_clocks",
+        "warmup",
+        "runs",
+    ]
+    assert metrics["candidate_runtime_telemetry_history_seed_run_config_markers"] == {
+        "shape": "1x640x640",
+        "input_mode": "dummy",
+        "input_preprocess": "none",
+        "power_mode": "unknown",
+        "jetson_clocks": "unknown",
+        "warmup": 1,
+        "runs": 10,
+    }
+    assert metrics["runtime_telemetry_history_seed_run_config_marker_labels"] == [
+        (
+            "baseline/candidate=shape=1x640x640, input_mode=dummy, "
+            "input_preprocess=none, power_mode=unknown, jetson_clocks=unknown, "
+            "warmup=1, runs=10"
+        )
+    ]
 
 
 def test_compute_edgeenv_regression_metrics_extracts_orchestrator_feed_context():
@@ -1580,6 +1604,53 @@ def test_analyze_edgeenv_regression_report_preserves_history_seed_raw_context():
     assert metrics["candidate_runtime_telemetry_history_seed_run_config"][
         "runs"
     ] == 10
+    traceability_evidence = next(
+        item
+        for item in report["evidence"]
+        if item["type"] == "runtime_history_seed_run_config_traceability"
+    )
+    assert traceability_evidence["status"] == "passed"
+    assert traceability_evidence["observed_value"] == 2
+    assert traceability_evidence["baseline_value"] == 2
+    assert traceability_evidence["raw_context"]["history_seed_run_config"][
+        "marker_labels"
+    ] == [
+        (
+            "baseline/candidate=shape=1x640x640, input_mode=dummy, "
+            "input_preprocess=none, power_mode=unknown, jetson_clocks=unknown, "
+            "warmup=1, runs=10"
+        )
+    ]
+    assert "Lab review" in traceability_evidence["recommendation"]
+
+
+def test_analyze_edgeenv_regression_report_warns_on_missing_history_seed_run_config():
+    regression_report = edgeenv_regression_report_with_runtime_telemetry_history_seed()
+    regression_report["runtime_telemetry_context"]["history"]["summary"][
+        "history_seed_run_config_runs"
+    ] = 1
+    candidate_seed = regression_report["runtime_telemetry_context"]["history"][
+        "runs"
+    ][1]["runtime_telemetry_history_seed"]
+    candidate_seed.pop("run_config")
+
+    report = analyze_edgeenv_regression_report(regression_report)
+
+    validate_diagnosis_report(report)
+    traceability_evidence = next(
+        item
+        for item in report["evidence"]
+        if item["type"] == "runtime_history_seed_run_config_traceability"
+    )
+    assert traceability_evidence["status"] == "warning"
+    assert traceability_evidence["observed_value"] == 1
+    assert traceability_evidence["baseline_value"] == 2
+    assert "runtime_history_seed_run_config_traceability_gap" in (
+        traceability_evidence["suspected_causes"]
+    )
+    assert "Preserve Runtime history_seed.run_config" in (
+        traceability_evidence["recommendation"]
+    )
 
 
 def test_analyze_edgeenv_regression_report_warns_on_orchestrator_feed_context():
