@@ -88,6 +88,7 @@ Lab review.
 | `runtime_memory_regression` | `memory_peak_delta_pct` | `>= 30.0` | n/a | EdgeEnv same-condition regression indicates memory headroom risk |
 | `runtime_telemetry_context_coverage` | `runtime_telemetry_evidence_gap_count` | `>= 1` | n/a | EdgeEnv telemetry context is present but baseline/candidate coverage, history entries, or `telemetry_coverage.missing_fields` have gaps |
 | `runtime_telemetry_replay_context` | `runtime_telemetry_history_missing_run_count` | `>= 1` or baseline/candidate sequence order mismatch | n/a | EdgeEnv telemetry history replay has missing telemetry or ordering concerns |
+| `runtime_history_seed_run_config_traceability` | `runtime_history_seed_run_config_count` | warning when preserved Runtime history seeds lack run_config markers | n/a | EdgeEnv preserved Runtime history seed run_config markers as replay/comparability traceability evidence |
 | `edgeenv_orchestrator_producer_lineage` | `device_local_producer_context_count` | warning when preserved Orchestrator context lacks device-local producer metadata | n/a | EdgeEnv preserved device-local Orchestrator producer lineage as traceability evidence |
 | `runtime_thermal_instability` | `candidate_max_temperature_c` / `candidate_throttling_detected` | temperature `>= 70.0` or throttling `true` | temperature `>= 85.0` | EdgeEnv telemetry or attached Orchestrator feed indicates thermal/throttling pressure |
 | `runtime_queue_overload` | `candidate_queue_depth` | `>= 3.0` | `>= 8.0` | EdgeEnv telemetry or attached Orchestrator feed indicates queue backlog pressure |
@@ -365,8 +366,9 @@ fallback.
 When EdgeEnv preserves Runtime's `runtime_telemetry_history_seed`, AIGuard keeps
 the `inferedge-runtime-telemetry-history-seed-v1`, `registry_owner=edgeenv`, and
 `decision_owner=lab` markers in deterministic raw context. If the seed includes
-a `run_config` snapshot, AIGuard preserves that snapshot as
-replay/comparability context without creating a new verdict. This only preserves
+a `run_config` snapshot, AIGuard preserves compact shape, input
+mode/preprocess, power mode, Jetson clocks, warmup, and repeat-run markers as
+`runtime_history_seed_run_config_traceability` evidence. This only explains
 replay traceability; it does not make AIGuard the registry or deployment
 decision owner.
 `tests/fixtures/edgeenv_regression/` mirrors the committed EdgeEnv replay

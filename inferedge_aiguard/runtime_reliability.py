@@ -16,6 +16,14 @@ from .diagnosis import build_diagnosis_report, build_evidence_item
 ORCHESTRATION_SCHEMA_VERSION = "inferedge-orchestration-summary-v1"
 RUNTIME_RESULT_SCHEMA_VERSION = "inferedge-runtime-result-v1"
 REMOTE_DISPATCH_SCHEMA_VERSION = "inferedge-remote-dispatch-result-v1"
+RUN_CONFIG_MARKER_FIELDS = (
+    "input_mode",
+    "input_preprocess",
+    "power_mode",
+    "jetson_clocks",
+    "warmup",
+    "runs",
+)
 
 DEFAULT_RUNTIME_RELIABILITY_THRESHOLDS = {
     "deadline_miss_rate_review": 0.05,
@@ -477,6 +485,16 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
     )
     baseline_history_seed = history_seed_by_role.get("baseline", {})
     candidate_history_seed = history_seed_by_role.get("candidate", {})
+    baseline_history_seed_run_config = _mapping(
+        baseline_history_seed.get("run_config")
+    )
+    candidate_history_seed_run_config = _mapping(
+        candidate_history_seed.get("run_config")
+    )
+    seed_run_config_marker_labels = _history_seed_run_config_marker_labels(
+        baseline_history_seed_run_config=baseline_history_seed_run_config,
+        candidate_history_seed_run_config=candidate_history_seed_run_config,
+    )
     baseline_coverage_missing_fields = _coverage_missing_fields(baseline_coverage)
     candidate_coverage_missing_fields = _coverage_missing_fields(candidate_coverage)
     history_missing_field_count = _optional_number(
@@ -654,14 +672,26 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
             if candidate_history_seed
             else None
         ),
-        "baseline_runtime_telemetry_history_seed_run_config": _mapping(
-            baseline_history_seed.get("run_config")
+        "runtime_telemetry_history_seed_run_config_marker_fields": list(
+            RUN_CONFIG_MARKER_FIELDS
         ),
-        "candidate_runtime_telemetry_history_seed_run_config": _mapping(
-            candidate_history_seed.get("run_config")
+        "runtime_telemetry_history_seed_run_config_marker_labels": (
+            seed_run_config_marker_labels
+        ),
+        "baseline_runtime_telemetry_history_seed_run_config": (
+            baseline_history_seed_run_config
+        ),
+        "baseline_runtime_telemetry_history_seed_run_config_markers": (
+            _history_seed_run_config_markers(baseline_history_seed_run_config)
+        ),
+        "candidate_runtime_telemetry_history_seed_run_config": (
+            candidate_history_seed_run_config
+        ),
+        "candidate_runtime_telemetry_history_seed_run_config_markers": (
+            _history_seed_run_config_markers(candidate_history_seed_run_config)
         ),
         "candidate_runtime_telemetry_history_seed_run_config_present": bool(
-            _mapping(candidate_history_seed.get("run_config"))
+            candidate_history_seed_run_config
         ),
         "history_missing_telemetry_runs": _optional_number(
             history_summary.get("missing_telemetry_runs")
@@ -1699,6 +1729,9 @@ def _edgeenv_regression_evidence(
     )
     if producer_lineage_evidence is not None:
         evidence.append(producer_lineage_evidence)
+    seed_run_config_evidence = _edgeenv_history_seed_run_config_evidence(metrics)
+    if seed_run_config_evidence is not None:
+        evidence.append(seed_run_config_evidence)
     thermal_evidence = _edgeenv_runtime_thermal_telemetry_evidence(
         metrics,
         thresholds,
@@ -2172,6 +2205,80 @@ def _edgeenv_orchestrator_producer_lineage_evidence(
                 "missing_operation_context_role": metrics.get(
                     "history_missing_orchestrator_candidate_operation_context_role"
                 ),
+            },
+        },
+    )
+
+
+def _edgeenv_history_seed_run_config_evidence(
+    metrics: dict[str, Any],
+) -> dict[str, Any] | None:
+    seed_runs = metrics.get("history_telemetry_seed_runs")
+    run_config_runs = metrics.get("history_telemetry_seed_run_config_runs")
+    if seed_runs is None and run_config_runs is None:
+        return None
+
+    expected_count = (
+        int(seed_runs)
+        if isinstance(seed_runs, (int, float)) and not isinstance(seed_runs, bool)
+        else 0
+    )
+    observed_count = (
+        int(run_config_runs)
+        if isinstance(run_config_runs, (int, float))
+        and not isinstance(run_config_runs, bool)
+        else 0
+    )
+    status = (
+        "passed"
+        if expected_count > 0 and observed_count >= expected_count
+        else "warning"
+    )
+    marker_labels = _string_list(
+        metrics.get("runtime_telemetry_history_seed_run_config_marker_labels")
+    )
+    suspected_causes = (
+        []
+        if status == "passed"
+        else ["runtime_history_seed_run_config_traceability_gap"]
+    )
+    return build_evidence_item(
+        evidence_type="runtime_history_seed_run_config_traceability",
+        metric_name="runtime_history_seed_run_config_count",
+        observed_value=observed_count,
+        baseline_value=expected_count,
+        threshold=expected_count,
+        delta=observed_count - expected_count,
+        delta_pct=None,
+        increase_factor=None,
+        severity="low" if status == "passed" else "medium",
+        status=status,
+        explanation=(
+            "Runtime history seed run_config markers are preserved for "
+            f"{observed_count} of {expected_count} EdgeEnv history seed runs."
+        ),
+        why_it_matters=(
+            "Run_config markers such as shape, preprocess, power mode, Jetson "
+            "clocks, warmup, and repeat runs explain replay comparability context "
+            "without making AIGuard the deployment decision owner."
+        ),
+        suspected_causes=suspected_causes,
+        recommendation=(
+            "Preserve Runtime history_seed.run_config in EdgeEnv history before "
+            "using AIGuard runtime telemetry reasoning."
+            if status != "passed"
+            else "Runtime history seed run_config markers are preserved as "
+            "traceability context for Lab review."
+        ),
+        raw_context={
+            "edgeenv_regression": metrics,
+            "history_seed_run_config": {
+                "expected_seed_runs": expected_count,
+                "observed_run_config_runs": observed_count,
+                "marker_fields": metrics.get(
+                    "runtime_telemetry_history_seed_run_config_marker_fields"
+                ),
+                "marker_labels": marker_labels,
             },
         },
     )
@@ -3139,6 +3246,64 @@ def _history_telemetry_seed_by_role(
         if seed:
             by_role[role] = dict(seed)
     return by_role
+
+
+def _history_seed_run_config_marker_labels(
+    *,
+    baseline_history_seed_run_config: dict[str, Any],
+    candidate_history_seed_run_config: dict[str, Any],
+) -> list[str]:
+    labels: list[str] = []
+    if (
+        baseline_history_seed_run_config
+        and baseline_history_seed_run_config == candidate_history_seed_run_config
+    ):
+        marker_label = _history_seed_run_config_marker_label(
+            baseline_history_seed_run_config
+        )
+        if marker_label:
+            return [f"baseline/candidate={marker_label}"]
+    if baseline_history_seed_run_config:
+        marker_label = _history_seed_run_config_marker_label(
+            baseline_history_seed_run_config
+        )
+        if marker_label:
+            labels.append(f"baseline={marker_label}")
+    if candidate_history_seed_run_config:
+        marker_label = _history_seed_run_config_marker_label(
+            candidate_history_seed_run_config
+        )
+        if marker_label:
+            labels.append(f"candidate={marker_label}")
+    return labels
+
+
+def _history_seed_run_config_markers(
+    run_config: dict[str, Any],
+) -> dict[str, Any]:
+    markers: dict[str, Any] = {}
+    shape_label = _history_seed_run_config_shape_label(run_config)
+    if shape_label:
+        markers["shape"] = shape_label
+    for field in RUN_CONFIG_MARKER_FIELDS:
+        if field in run_config:
+            markers[field] = run_config.get(field)
+    return markers
+
+
+def _history_seed_run_config_marker_label(run_config: dict[str, Any]) -> str:
+    markers = _history_seed_run_config_markers(run_config)
+    parts = [f"{key}={value}" for key, value in markers.items()]
+    return ", ".join(parts)
+
+
+def _history_seed_run_config_shape_label(run_config: dict[str, Any]) -> str:
+    batch = run_config.get("batch")
+    height = run_config.get("height")
+    width = run_config.get("width")
+    if batch is None and height is None and width is None:
+        return ""
+    return f"{batch or '-'}x{height or '-'}x{width or '-'}"
 
 
 def _history_missing_field_runs(history_coverage: dict[str, Any]) -> list[dict[str, Any]]:
