@@ -139,6 +139,25 @@ def validate_edgeenv_handoff_guard_evidence_alignment(
         for field, expected in expected_boundary_flags.items()
         if boundary_flags.get(field) is not expected
     ]
+    handoff_summary = _mapping(edgeenv_handoff.get("edgeenv_report_summary"))
+    producer_lineage_evidence = _first_evidence_item(
+        evidence_items,
+        EDGEENV_ORCHESTRATOR_PRODUCER_LINEAGE_EVIDENCE_TYPE,
+    )
+    handoff_guard_alignment_run_ids = _unique_string_values(
+        handoff_summary.get("producer_lineage_guard_alignment_run_ids")
+    )
+    guard_analysis_guard_alignment_run_ids = (
+        _guard_analysis_producer_lineage_guard_alignment_run_ids(
+            producer_lineage_evidence
+        )
+    )
+    guard_alignment_summary_errors = _guard_alignment_summary_errors(
+        handoff_summary,
+        handoff_guard_alignment_run_ids=handoff_guard_alignment_run_ids,
+        guard_analysis_guard_alignment_run_ids=guard_analysis_guard_alignment_run_ids,
+        producer_lineage_evidence=producer_lineage_evidence,
+    )
 
     errors = []
     if not isinstance(raw_required_evidence_types, list):
@@ -153,6 +172,8 @@ def validate_edgeenv_handoff_guard_evidence_alignment(
         errors.append("missing_required_guard_evidence")
     if boundary_errors:
         errors.append("boundary_flag_mismatch")
+    if guard_alignment_summary_errors:
+        errors.append("producer_lineage_guard_alignment_summary_mismatch")
 
     status = "failed" if errors else "passed"
     recommendation = (
@@ -182,8 +203,102 @@ def validate_edgeenv_handoff_guard_evidence_alignment(
             for field in expected_boundary_flags
         },
         "boundary_errors": boundary_errors,
+        "handoff_producer_lineage_guard_alignment_run_ids": (
+            handoff_guard_alignment_run_ids
+        ),
+        "guard_analysis_producer_lineage_guard_alignment_run_ids": (
+            guard_analysis_guard_alignment_run_ids
+        ),
+        "guard_alignment_summary_errors": guard_alignment_summary_errors,
         "errors": errors,
     }
+
+
+def _first_evidence_item(
+    evidence_items: list[dict[str, Any]],
+    evidence_type: str,
+) -> dict[str, Any] | None:
+    for item in evidence_items:
+        if item.get("type") == evidence_type:
+            return item
+    return None
+
+
+def _guard_analysis_producer_lineage_guard_alignment_run_ids(
+    producer_lineage_evidence: dict[str, Any] | None,
+) -> list[str]:
+    if not isinstance(producer_lineage_evidence, dict):
+        return []
+    raw_context = _mapping(producer_lineage_evidence.get("raw_context"))
+    edgeenv_context = _mapping(raw_context.get("edgeenv_regression"))
+    producer_lineage = _mapping(raw_context.get("producer_lineage"))
+    run_ids: list[str] = []
+
+    if (
+        producer_lineage.get("candidate_expected") is True
+        and producer_lineage.get("candidate_guard_alignment_valid") is True
+    ):
+        candidate_run_id = edgeenv_context.get("candidate_run_id")
+        if _non_empty_string(candidate_run_id):
+            run_ids.append(candidate_run_id)
+
+    if (
+        producer_lineage.get("missing_expected") is True
+        and producer_lineage.get("missing_guard_alignment_valid") is True
+    ):
+        for run_id in _string_list(producer_lineage.get("missing_context_run_ids")):
+            if run_id not in run_ids:
+                run_ids.append(run_id)
+
+    return run_ids
+
+
+def _guard_alignment_summary_errors(
+    handoff_summary: dict[str, Any],
+    *,
+    handoff_guard_alignment_run_ids: list[str],
+    guard_analysis_guard_alignment_run_ids: list[str],
+    producer_lineage_evidence: dict[str, Any] | None,
+) -> list[dict[str, Any]]:
+    if not handoff_summary:
+        return []
+
+    errors: list[dict[str, Any]] = []
+    observed_present = handoff_summary.get("producer_lineage_guard_alignment_present")
+    expected_present = bool(guard_analysis_guard_alignment_run_ids)
+    if observed_present is not expected_present:
+        errors.append(
+            {
+                "field": "producer_lineage_guard_alignment_present",
+                "expected": expected_present,
+                "observed": observed_present,
+            }
+        )
+
+    if handoff_guard_alignment_run_ids != guard_analysis_guard_alignment_run_ids:
+        errors.append(
+            {
+                "field": "producer_lineage_guard_alignment_run_ids",
+                "expected": guard_analysis_guard_alignment_run_ids,
+                "observed": handoff_guard_alignment_run_ids,
+            }
+        )
+
+    producer_lineage_status = (
+        producer_lineage_evidence.get("status")
+        if isinstance(producer_lineage_evidence, dict)
+        else None
+    )
+    if expected_present and producer_lineage_status != "passed":
+        errors.append(
+            {
+                "field": "edgeenv_orchestrator_producer_lineage.status",
+                "expected": "passed",
+                "observed": producer_lineage_status,
+            }
+        )
+
+    return errors
 
 
 def analyze_orchestration_summary(
