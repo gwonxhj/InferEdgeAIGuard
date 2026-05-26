@@ -310,6 +310,12 @@ def _format_portfolio_demo_summary(summary: dict[str, Any]) -> str:
 
 
 def _format_edgeenv_handoff_alignment_summary(summary: dict[str, Any]) -> str:
+    handoff_alignment_run_ids = _format_list(
+        summary.get("handoff_producer_lineage_guard_alignment_run_ids", [])
+    )
+    guard_alignment_run_ids = _format_list(
+        summary.get("guard_analysis_producer_lineage_guard_alignment_run_ids", [])
+    )
     lines = [
         "InferEdgeAIGuard EdgeEnv handoff alignment summary",
         f"- status: {summary.get('status', 'unknown')}",
@@ -332,7 +338,28 @@ def _format_edgeenv_handoff_alignment_summary(summary: dict[str, Any]) -> str:
             "- supplemental_guard_evidence_types: "
             f"{_format_list(summary.get('supplemental_guard_evidence_types', []))}"
         ),
+        (
+            "- handoff_producer_lineage_guard_alignment_run_ids: "
+            f"{handoff_alignment_run_ids}"
+        ),
+        (
+            "- guard_analysis_producer_lineage_guard_alignment_run_ids: "
+            f"{guard_alignment_run_ids}"
+        ),
     ]
+    guard_alignment_summary_errors = summary.get(
+        "guard_alignment_summary_errors",
+        [],
+    )
+    if guard_alignment_summary_errors:
+        lines.append("- guard_alignment_summary_errors:")
+        for error in guard_alignment_summary_errors:
+            lines.append(
+                "  - "
+                f"field={error.get('field')} | "
+                f"expected={error.get('expected')} | "
+                f"observed={error.get('observed')}"
+            )
     boundary_errors = summary.get("boundary_errors", [])
     if boundary_errors:
         lines.append("- boundary_errors:")

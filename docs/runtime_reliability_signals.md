@@ -387,8 +387,12 @@ Lab-owned deployment decision.
 `check-edgeenv-handoff-alignment` verifies that EdgeEnv's
 `external_aiguard_required_evidence_types` are present in
 `guard_analysis.evidence`. It also checks the handoff boundary flags that keep
-AIGuard external and Lab as final decision owner. This is a deterministic smoke
-gate for artifact alignment, not a new deployment decision path.
+AIGuard external and Lab as final decision owner. When EdgeEnv exposes
+`edgeenv_report_summary.producer_lineage_guard_alignment_run_ids`, the same
+gate compares that summary with AIGuard's
+`edgeenv_orchestrator_producer_lineage` raw context so producer-lineage marker
+handoff cannot drift silently. This is a deterministic smoke gate for artifact
+alignment, not a new deployment decision path.
 AIGuard does not recompute comparability; if EdgeEnv marks the report as
 non-comparable or not same-condition, AIGuard emits
 `edgeenv_comparability_guardrail` as skipped evidence.

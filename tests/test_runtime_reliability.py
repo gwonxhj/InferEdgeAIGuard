@@ -639,6 +639,16 @@ def edgeenv_runtime_intelligence_lab_handoff() -> dict:
     return {
         "schema_version": "edgeenv-runtime-intelligence-lab-handoff-v1",
         "role": "edgeenv-runtime-intelligence-lab-handoff",
+        "edgeenv_report_summary": {
+            "runtime_telemetry_context_present": True,
+            "orchestrator_context_present": True,
+            "device_local_producer_context_present": True,
+            "device_local_producer_context_run_ids": ["edgeenv-smoke-candidate"],
+            "producer_lineage_guard_alignment_present": True,
+            "producer_lineage_guard_alignment_run_ids": [
+                "edgeenv-smoke-candidate",
+            ],
+        },
         "lab_bundle_alignment": {
             "external_aiguard_required_evidence_types": [
                 "runtime_telemetry_context_coverage",
@@ -2912,6 +2922,13 @@ def test_validate_edgeenv_handoff_guard_evidence_alignment_passes():
     assert alignment["diagnosis_owner"] == "aiguard"
     assert alignment["missing_required_evidence_types"] == []
     assert alignment["boundary_errors"] == []
+    assert alignment["guard_alignment_summary_errors"] == []
+    assert alignment["handoff_producer_lineage_guard_alignment_run_ids"] == [
+        "edgeenv-smoke-candidate",
+    ]
+    assert alignment["guard_analysis_producer_lineage_guard_alignment_run_ids"] == [
+        "edgeenv-smoke-candidate",
+    ]
     assert alignment["required_evidence_types"] == [
         "runtime_telemetry_context_coverage",
         "edgeenv_orchestrator_producer_lineage",
@@ -2970,6 +2987,31 @@ def test_validate_edgeenv_handoff_guard_evidence_alignment_fails_boundary_mismat
         }
     ]
     assert "boundary_flag_mismatch" in alignment["errors"]
+
+
+def test_validate_edgeenv_handoff_guard_evidence_alignment_fails_summary_mismatch():
+    guard_analysis = analyze_edgeenv_regression_report(
+        edgeenv_regression_report_with_orchestrator_feed_context()
+    )
+    handoff = edgeenv_runtime_intelligence_lab_handoff()
+    handoff["edgeenv_report_summary"][
+        "producer_lineage_guard_alignment_run_ids"
+    ] = []
+
+    alignment = validate_edgeenv_handoff_guard_evidence_alignment(
+        handoff,
+        guard_analysis,
+    )
+
+    assert alignment["status"] == "failed"
+    assert "producer_lineage_guard_alignment_summary_mismatch" in alignment["errors"]
+    assert alignment["guard_alignment_summary_errors"] == [
+        {
+            "field": "producer_lineage_guard_alignment_run_ids",
+            "expected": ["edgeenv-smoke-candidate"],
+            "observed": [],
+        }
+    ]
 
 
 def test_check_edgeenv_handoff_alignment_cli_exports_gate_summary(tmp_path):

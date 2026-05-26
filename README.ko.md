@@ -156,9 +156,13 @@ role과 맞추며, AIGuard는 deterministic evidence만 생성하고 deployment
 decision은 만들지 않습니다.
 `check-edgeenv-handoff-alignment`는 EdgeEnv handoff의
 `external_aiguard_required_evidence_types`가 실제 `guard_analysis.evidence`
-type set으로 충족되는지 확인합니다. 이 gate는 누락 evidence와 ownership
-boundary flag mismatch를 찾기 위한 smoke이며, AIGuard가 Lab의 final
-deployment decision을 대신한다는 의미가 아닙니다.
+type set으로 충족되는지 확인합니다. 또한
+`edgeenv_report_summary.producer_lineage_guard_alignment_run_ids`를
+AIGuard의 `edgeenv_orchestrator_producer_lineage` raw context와 대조해
+EdgeEnv producer summary와 AIGuard deterministic evidence가 같은
+producer-lineage marker를 가리키는지 확인합니다. 이 gate는 누락 evidence와
+ownership boundary flag mismatch를 찾기 위한 smoke이며, AIGuard가 Lab의
+final deployment decision을 대신한다는 의미가 아닙니다.
 
 이 기능은 AIGuard를 final deployment decision owner로 바꾸지 않습니다. AIGuard는
 runtime reliability risk를 설명하는 optional evidence provider이고, 최종 판단은
