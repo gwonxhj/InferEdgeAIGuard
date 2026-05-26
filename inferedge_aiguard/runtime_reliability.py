@@ -19,6 +19,7 @@ REMOTE_DISPATCH_SCHEMA_VERSION = "inferedge-remote-dispatch-result-v1"
 REMOTE_RUNTIME_EVENT_SUMMARY_SCHEMA_VERSION = (
     "inferedge-remote-runtime-event-summary-v1"
 )
+REMOTE_DISPATCH_STARTER_OPERATION_BOUNDARY = "remote dispatch starter evidence only"
 EDGEENV_HANDOFF_GUARD_ALIGNMENT_SCHEMA_VERSION = (
     "inferedge-aiguard-edgeenv-handoff-alignment-v1"
 )
@@ -1300,6 +1301,11 @@ def compute_remote_dispatch_metrics(remote_dispatch_result: dict[str, Any]) -> d
         "remote_runtime_event_summary_event_count": _optional_non_negative_number(
             remote_runtime_event_summary.get("event_count")
         ),
+        "remote_runtime_event_summary_runtime_event_count": (
+            _optional_non_negative_number(
+                remote_runtime_event_summary.get("runtime_event_count")
+            )
+        ),
         "remote_runtime_event_summary_event_type_counts": _count_mapping(
             remote_runtime_event_summary.get("event_type_counts")
         ),
@@ -1325,6 +1331,9 @@ def compute_remote_dispatch_metrics(remote_dispatch_result: dict[str, Any]) -> d
         ),
         "remote_runtime_event_summary_production_remote_execution": _bool_value(
             remote_runtime_event_summary.get("production_remote_execution")
+        ),
+        "remote_runtime_event_summary_operation_boundary": _first_string(
+            remote_runtime_event_summary.get("operation_boundary")
         ),
         "remote_runtime_event_summary_consistent": (
             not remote_runtime_event_summary_errors
@@ -1359,6 +1368,22 @@ def _remote_runtime_event_summary_errors(
         and int(event_count) != len(runtime_events)
     ):
         errors.append("remote_runtime_event_summary_event_count_mismatch")
+
+    runtime_event_count = _optional_non_negative_number(
+        summary.get("runtime_event_count")
+    )
+    if (
+        runtime_event_count is not None
+        and runtime_events
+        and int(runtime_event_count) != len(runtime_events)
+    ):
+        errors.append("remote_runtime_event_summary_runtime_event_count_mismatch")
+    if (
+        event_count is not None
+        and runtime_event_count is not None
+        and int(event_count) != int(runtime_event_count)
+    ):
+        errors.append("remote_runtime_event_summary_count_alias_mismatch")
 
     expected_event_type_counts = _count_event_values(runtime_events, "event")
     observed_event_type_counts = _count_mapping(summary.get("event_type_counts"))
@@ -1400,7 +1425,11 @@ def _remote_runtime_event_summary_errors(
     ):
         errors.append("remote_runtime_event_summary_final_status_mismatch")
 
-    if _bool_value(summary.get("production_remote_execution")):
+    operation_boundary = _first_string(summary.get("operation_boundary"))
+    if _bool_value(summary.get("production_remote_execution")) or (
+        operation_boundary
+        and operation_boundary != REMOTE_DISPATCH_STARTER_OPERATION_BOUNDARY
+    ):
         errors.append("remote_runtime_event_summary_boundary_mismatch")
 
     operation_fallback_recovered = _bool_value(
