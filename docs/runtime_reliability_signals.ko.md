@@ -362,6 +362,13 @@ execution 상태를 `remote_execution_plan_only`,
 worker path가 불안정했다는 뜻이므로 review evidence로 남깁니다. 이는 starter
 evidence이며 production remote execution을 완료했다는 의미가 아닙니다.
 
+Orchestrator가 additive `remote_runtime_event_summary`를 제공하면 AIGuard는 이를
+deterministic raw context에 보존하고 compact event/status/error/fallback/final
+status count가 원본 `runtime_events` 및 `remote_operation_summary`와 일치하는지
+확인합니다. 불일치하면 downstream Lab report가 오래된 compact summary를
+신뢰하지 않도록 `remote_runtime_event_summary_mismatch` warning evidence로
+남깁니다.
+
 ## 출력
 
 출력은 기존 diagnosis report schema를 사용합니다.

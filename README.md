@@ -288,7 +288,10 @@ python -m inferedge_aiguard.cli reason \
 `remote_execution_failed`, `remote_execution_recovered_by_fallback` 같은
 evidence로 변환합니다. fallback이 성공해도 primary worker instability는
 review evidence로 남깁니다. 이는 production remote execution 판정이 아니라
-explicit starter execution evidence입니다.
+explicit starter execution evidence입니다. Orchestrator가
+`remote_runtime_event_summary`를 제공하면 AIGuard는 compact event/status/error
+summary를 raw context에 보존하고 원본 event list와 맞지 않을 때
+`remote_runtime_event_summary_mismatch` warning evidence를 생성합니다.
 
 ## Quick Examples
 
