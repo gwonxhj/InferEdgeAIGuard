@@ -266,6 +266,9 @@ precomputed artifact도 같은 명령으로 만들 수 있습니다.
 python -m inferedge_aiguard.cli reason-edgeenv-regression \
   --input examples/runtime_intelligence/edgeenv_runtime_regression_with_orchestrator_feed.json \
   --save-json examples/runtime_intelligence/aiguard_runtime_operation_guard_analysis.json
+python -m inferedge_aiguard.cli check-edgeenv-handoff-alignment \
+  --edgeenv-handoff reports/edgeenv_runtime_intelligence_lab_handoff.json \
+  --guard-analysis examples/runtime_intelligence/aiguard_runtime_operation_guard_analysis.json
 ```
 
 이 경로는 EdgeEnv가 이미 계산한 same-condition regression과
@@ -328,6 +331,12 @@ mirror한 작은 CLI smoke 입력이 있습니다.
 Lab bundle naming에 맞춘 precomputed `guard_analysis` artifact 예시입니다.
 AIGuard는 이 artifact에서 runtime anomaly evidence만 제공하고, Lab-owned
 deployment decision을 생성하지 않습니다.
+`check-edgeenv-handoff-alignment`는 EdgeEnv의
+`external_aiguard_required_evidence_types`가 `guard_analysis.evidence`에
+존재하는지 검증합니다. 또한 AIGuard가 external evidence provider이고 Lab이
+final decision owner라는 handoff boundary flag도 함께 확인합니다. 이는
+artifact alignment를 위한 deterministic smoke gate이며 새 deployment decision
+경로가 아닙니다.
 
 Remote dispatch starter result도 직접 분석할 수 있습니다.
 

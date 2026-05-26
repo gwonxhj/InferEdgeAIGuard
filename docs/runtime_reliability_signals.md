@@ -314,6 +314,9 @@ precomputed artifact that Lab ingests as optional evidence:
 python -m inferedge_aiguard.cli reason-edgeenv-regression \
   --input examples/runtime_intelligence/edgeenv_runtime_regression_with_orchestrator_feed.json \
   --save-json examples/runtime_intelligence/aiguard_runtime_operation_guard_analysis.json
+python -m inferedge_aiguard.cli check-edgeenv-handoff-alignment \
+  --edgeenv-handoff reports/edgeenv_runtime_intelligence_lab_handoff.json \
+  --guard-analysis examples/runtime_intelligence/aiguard_runtime_operation_guard_analysis.json
 ```
 
 This path emits deterministic runtime anomaly evidence such as
@@ -377,6 +380,11 @@ fixtures as small CLI smoke inputs.
 is the precomputed `guard_analysis` artifact example aligned with Lab bundle
 naming. AIGuard provides runtime anomaly evidence there; it does not produce a
 Lab-owned deployment decision.
+`check-edgeenv-handoff-alignment` verifies that EdgeEnv's
+`external_aiguard_required_evidence_types` are present in
+`guard_analysis.evidence`. It also checks the handoff boundary flags that keep
+AIGuard external and Lab as final decision owner. This is a deterministic smoke
+gate for artifact alignment, not a new deployment decision path.
 AIGuard does not recompute comparability; if EdgeEnv marks the report as
 non-comparable or not same-condition, AIGuard emits
 `edgeenv_comparability_guardrail` as skipped evidence.

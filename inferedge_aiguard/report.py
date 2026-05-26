@@ -12,6 +12,10 @@ from .portfolio_demo import (
     portfolio_demo_bundle_to_markdown,
 )
 
+EDGEENV_HANDOFF_GUARD_ALIGNMENT_SCHEMA_VERSION = (
+    "inferedge-aiguard-edgeenv-handoff-alignment-v1"
+)
+
 
 def format_summary(summary: dict[str, Any]) -> str:
     """Format an analyze or compare summary for CLI output."""
@@ -30,6 +34,8 @@ def format_summary(summary: dict[str, Any]) -> str:
         return _format_diagnosis_report_summary(summary)
     if summary.get("schema_version") == PORTFOLIO_DEMO_SCHEMA_VERSION:
         return _format_portfolio_demo_summary(summary)
+    if summary.get("schema_version") == EDGEENV_HANDOFF_GUARD_ALIGNMENT_SCHEMA_VERSION:
+        return _format_edgeenv_handoff_alignment_summary(summary)
 
     lines: list[str] = []
 
@@ -228,6 +234,8 @@ def save_summary_markdown(summary: dict[str, Any], output_path: str | Path) -> N
         content = diagnosis_report_to_markdown(summary)
     elif summary.get("schema_version") == PORTFOLIO_DEMO_SCHEMA_VERSION:
         content = portfolio_demo_bundle_to_markdown(summary)
+    elif summary.get("schema_version") == EDGEENV_HANDOFF_GUARD_ALIGNMENT_SCHEMA_VERSION:
+        content = _markdown_edgeenv_handoff_alignment_report(summary)
     else:
         content = _markdown_basic_report(summary)
     path.write_text(content, encoding="utf-8")
@@ -248,6 +256,8 @@ def _markdown_title(summary: dict[str, Any]) -> str:
         return "# InferEdgeAIGuard Evidence Diagnosis Report"
     if summary.get("schema_version") == PORTFOLIO_DEMO_SCHEMA_VERSION:
         return "# InferEdgeAIGuard Portfolio Demo Cases"
+    if summary.get("schema_version") == EDGEENV_HANDOFF_GUARD_ALIGNMENT_SCHEMA_VERSION:
+        return "# InferEdgeAIGuard EdgeEnv Handoff Alignment Report"
     if "base_count" in summary:
         return "# InferEdgeAIGuard Compare Report"
     return "# InferEdgeAIGuard Analyze Report"
@@ -297,6 +307,101 @@ def _format_portfolio_demo_summary(summary: dict[str, Any]) -> str:
             f"severity={report.get('severity')}"
         )
     return "\n".join(lines)
+
+
+def _format_edgeenv_handoff_alignment_summary(summary: dict[str, Any]) -> str:
+    lines = [
+        "InferEdgeAIGuard EdgeEnv handoff alignment summary",
+        f"- status: {summary.get('status', 'unknown')}",
+        f"- recommendation: {summary.get('recommendation', 'unknown')}",
+        f"- decision_owner: {summary.get('decision_owner', 'unknown')}",
+        f"- diagnosis_owner: {summary.get('diagnosis_owner', 'unknown')}",
+        (
+            "- required_evidence_types: "
+            f"{_format_list(summary.get('required_evidence_types', []))}"
+        ),
+        (
+            "- guard_analysis_evidence_types: "
+            f"{_format_list(summary.get('guard_analysis_evidence_types', []))}"
+        ),
+        (
+            "- missing_required_evidence_types: "
+            f"{_format_list(summary.get('missing_required_evidence_types', []))}"
+        ),
+        (
+            "- supplemental_guard_evidence_types: "
+            f"{_format_list(summary.get('supplemental_guard_evidence_types', []))}"
+        ),
+    ]
+    boundary_errors = summary.get("boundary_errors", [])
+    if boundary_errors:
+        lines.append("- boundary_errors:")
+        for error in boundary_errors:
+            lines.append(
+                "  - "
+                f"field={error.get('field')} | "
+                f"expected={error.get('expected')} | "
+                f"observed={error.get('observed')}"
+            )
+    errors = summary.get("errors", [])
+    if errors:
+        lines.append(f"- errors: {_format_list(errors)}")
+    return "\n".join(lines)
+
+
+def _markdown_edgeenv_handoff_alignment_report(summary: dict[str, Any]) -> str:
+    sections = [
+        _markdown_title(summary),
+        "## Summary",
+        _markdown_table(
+            ["Metric", "Value"],
+            [
+                ["status", summary.get("status", "unknown")],
+                ["recommendation", summary.get("recommendation", "unknown")],
+                ["decision_owner", summary.get("decision_owner", "unknown")],
+                ["diagnosis_owner", summary.get("diagnosis_owner", "unknown")],
+                [
+                    "required_evidence_type_count",
+                    summary.get("required_evidence_type_count", 0),
+                ],
+                [
+                    "guard_evidence_type_count",
+                    summary.get("guard_evidence_type_count", 0),
+                ],
+            ],
+        ),
+        "## Evidence Alignment",
+        _markdown_table(
+            ["Field", "Values"],
+            [
+                [
+                    "required_evidence_types",
+                    _format_markdown_list(summary.get("required_evidence_types", [])),
+                ],
+                [
+                    "guard_analysis_evidence_types",
+                    _format_markdown_list(
+                        summary.get("guard_analysis_evidence_types", [])
+                    ),
+                ],
+                [
+                    "missing_required_evidence_types",
+                    _format_markdown_list(
+                        summary.get("missing_required_evidence_types", [])
+                    ),
+                ],
+                [
+                    "supplemental_guard_evidence_types",
+                    _format_markdown_list(
+                        summary.get("supplemental_guard_evidence_types", [])
+                    ),
+                ],
+                ["errors", _format_markdown_list(summary.get("errors", []))],
+            ],
+        ),
+        _markdown_raw_cli_summary(summary),
+    ]
+    return "\n\n".join(sections) + "\n"
 
 
 def _markdown_basic_report(summary: dict[str, Any]) -> str:
