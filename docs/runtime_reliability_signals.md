@@ -345,6 +345,10 @@ When EdgeEnv preserves `candidate_context.producer`, AIGuard emits
 per-task source mapping, task stage mapping, and positive event/task coverage.
 This is a traceability evidence item, not a new deployment decision or
 comparability gate.
+When the preserved Orchestrator context includes
+`downstream_guard_alignment.producer_lineage_evidence_type=edgeenv_orchestrator_producer_lineage`,
+AIGuard validates that marker and keeps producer-lineage reasoning separate
+from queue/thermal operation evidence candidates.
 When the nested candidate context also includes a producer lineage block,
 AIGuard preserves `candidate_context.producer` and flattened device-local
 markers such as `producer_sources`, `device_local_producer_sources`,
