@@ -19,6 +19,7 @@ from .runtime_reliability import (
     analyze_orchestration_summary,
     analyze_remote_dispatch_result,
     analyze_runtime_result,
+    validate_edgeenv_handoff_guard_evidence_alignment,
 )
 from .schema import load_output_json
 
@@ -147,6 +148,25 @@ def build_parser() -> argparse.ArgumentParser:
     )
     _add_save_options(reason_edgeenv_regression_parser)
 
+    check_edgeenv_handoff_parser = subparsers.add_parser(
+        "check-edgeenv-handoff-alignment",
+        help=(
+            "Check EdgeEnv handoff required AIGuard evidence types against "
+            "guard_analysis"
+        ),
+    )
+    check_edgeenv_handoff_parser.add_argument(
+        "--edgeenv-handoff",
+        required=True,
+        help="Path to EdgeEnv Runtime Intelligence Lab handoff JSON",
+    )
+    check_edgeenv_handoff_parser.add_argument(
+        "--guard-analysis",
+        required=True,
+        help="Path to AIGuard guard_analysis JSON",
+    )
+    _add_save_options(check_edgeenv_handoff_parser)
+
     portfolio_demo_parser = subparsers.add_parser(
         "portfolio-demo",
         help="Replay bundled AIGuard portfolio demo cases",
@@ -267,6 +287,20 @@ def main(argv: list[str] | None = None) -> int:
             save_md=args.save_md,
         )
         return 0
+
+    if args.command == "check-edgeenv-handoff-alignment":
+        edgeenv_handoff = _load_json_dict(args.edgeenv_handoff)
+        guard_analysis = _load_json_dict(args.guard_analysis)
+        summary = validate_edgeenv_handoff_guard_evidence_alignment(
+            edgeenv_handoff,
+            guard_analysis,
+        )
+        _emit_summary(
+            summary,
+            save_json=args.save_json,
+            save_md=args.save_md,
+        )
+        return 0 if summary.get("status") == "passed" else 2
 
     if args.command == "portfolio-demo":
         _emit_summary(

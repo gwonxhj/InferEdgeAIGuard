@@ -209,6 +209,9 @@ python -m inferedge_aiguard.cli reason \
 python -m inferedge_aiguard.cli reason-edgeenv-regression \
   --input examples/runtime_intelligence/edgeenv_runtime_regression_with_orchestrator_feed.json \
   --save-json examples/runtime_intelligence/aiguard_runtime_operation_guard_analysis.json
+python -m inferedge_aiguard.cli check-edgeenv-handoff-alignment \
+  --edgeenv-handoff reports/edgeenv_runtime_intelligence_lab_handoff.json \
+  --guard-analysis examples/runtime_intelligence/aiguard_runtime_operation_guard_analysis.json
 ```
 
 이 경로는 EdgeEnv의 comparability-first 결과를 존중하면서
@@ -256,6 +259,11 @@ Lab Runtime Intelligence bundle에 넣을 수 있는 precomputed
 `guard_analysis` artifact 예시입니다. 파일명은 Lab bundle의 AIGuard artifact
 role과 맞추며, AIGuard는 여기서도 deterministic evidence만 생성하고
 deployment decision은 만들지 않습니다.
+`check-edgeenv-handoff-alignment`는 EdgeEnv handoff의
+`external_aiguard_required_evidence_types`가 실제 `guard_analysis.evidence`
+type set으로 충족되는지 확인합니다. 이 gate는 누락 evidence와 ownership
+boundary flag mismatch를 찾기 위한 smoke이며, AIGuard가 Lab의 final
+deployment decision을 대신한다는 의미가 아닙니다.
 
 Remote dispatch starter 결과도 deterministic evidence로 해석할 수 있습니다.
 

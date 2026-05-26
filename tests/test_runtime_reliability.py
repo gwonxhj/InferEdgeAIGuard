@@ -12,6 +12,7 @@ from inferedge_aiguard.runtime_reliability import (
     compute_remote_dispatch_metrics,
     compute_runtime_reliability_metrics,
     compute_runtime_operation_metrics,
+    validate_edgeenv_handoff_guard_evidence_alignment,
 )
 from inferedge_aiguard.schema import validate_diagnosis_report
 
@@ -634,6 +635,29 @@ def _runtime_history_seed(run_id: str, *, sequence_id: int) -> dict:
     }
 
 
+def edgeenv_runtime_intelligence_lab_handoff() -> dict:
+    return {
+        "schema_version": "edgeenv-runtime-intelligence-lab-handoff-v1",
+        "role": "edgeenv-runtime-intelligence-lab-handoff",
+        "lab_bundle_alignment": {
+            "external_aiguard_required_evidence_types": [
+                "runtime_telemetry_context_coverage",
+                "edgeenv_orchestrator_producer_lineage",
+                "runtime_history_seed_run_config_traceability",
+                "runtime_queue_overload",
+                "runtime_thermal_instability",
+            ],
+            "boundary_flags": {
+                "aiguard_guard_analysis_is_external": True,
+                "edgeenv_does_not_generate_guard_analysis": True,
+                "aiguard_is_final_decision_owner": False,
+                "lab_is_final_decision_owner": True,
+                "production_observability_platform": False,
+            },
+        },
+    }
+
+
 def _edgeenv_history_coverage_summary() -> dict:
     return {
         "runs_with_coverage": 2,
@@ -707,7 +731,7 @@ def _edgeenv_history_coverage_summary() -> dict:
 
 
 def edgeenv_regression_report_with_orchestrator_feed_context() -> dict:
-    report = edgeenv_regression_report()
+    report = edgeenv_regression_report_with_runtime_telemetry_history_seed()
     report["regression_detected"] = False
     report["evidence"] = {}
     context = report["runtime_telemetry_context"]
@@ -2696,6 +2720,7 @@ def test_runtime_intelligence_example_exports_lab_ready_guard_analysis(tmp_path)
     assert expected_evidence_types == {
         "runtime_telemetry_context_coverage",
         "edgeenv_orchestrator_producer_lineage",
+        "runtime_history_seed_run_config_traceability",
         "runtime_thermal_instability",
         "runtime_queue_overload",
     }
@@ -2777,3 +2802,117 @@ def test_runtime_intelligence_example_exports_lab_ready_guard_analysis(tmp_path)
     ] == ["device_local_cli_override"]
     assert forbidden_decision_keys.isdisjoint(saved)
     assert forbidden_decision_keys.isdisjoint(expected)
+
+
+def test_validate_edgeenv_handoff_guard_evidence_alignment_passes():
+    guard_analysis = analyze_edgeenv_regression_report(
+        edgeenv_regression_report_with_orchestrator_feed_context()
+    )
+    alignment = validate_edgeenv_handoff_guard_evidence_alignment(
+        edgeenv_runtime_intelligence_lab_handoff(),
+        guard_analysis,
+    )
+
+    assert alignment["status"] == "passed"
+    assert alignment["recommendation"] == "alignment_satisfied"
+    assert alignment["decision_owner"] == "lab"
+    assert alignment["diagnosis_owner"] == "aiguard"
+    assert alignment["missing_required_evidence_types"] == []
+    assert alignment["boundary_errors"] == []
+    assert alignment["required_evidence_types"] == [
+        "runtime_telemetry_context_coverage",
+        "edgeenv_orchestrator_producer_lineage",
+        "runtime_history_seed_run_config_traceability",
+        "runtime_queue_overload",
+        "runtime_thermal_instability",
+    ]
+
+
+def test_validate_edgeenv_handoff_guard_evidence_alignment_fails_on_missing_type():
+    guard_analysis = analyze_edgeenv_regression_report(
+        edgeenv_regression_report_with_orchestrator_feed_context()
+    )
+    guard_analysis["evidence"] = [
+        item
+        for item in guard_analysis["evidence"]
+        if item["type"] != "runtime_history_seed_run_config_traceability"
+    ]
+
+    alignment = validate_edgeenv_handoff_guard_evidence_alignment(
+        edgeenv_runtime_intelligence_lab_handoff(),
+        guard_analysis,
+    )
+
+    assert alignment["status"] == "failed"
+    assert alignment["missing_required_evidence_types"] == [
+        "runtime_history_seed_run_config_traceability"
+    ]
+    assert "missing_required_guard_evidence" in alignment["errors"]
+    assert (
+        alignment["recommendation"]
+        == "regenerate_guard_analysis_or_update_handoff_contract"
+    )
+
+
+def test_validate_edgeenv_handoff_guard_evidence_alignment_fails_boundary_mismatch():
+    guard_analysis = analyze_edgeenv_regression_report(
+        edgeenv_regression_report_with_orchestrator_feed_context()
+    )
+    handoff = edgeenv_runtime_intelligence_lab_handoff()
+    handoff["lab_bundle_alignment"]["boundary_flags"][
+        "aiguard_is_final_decision_owner"
+    ] = True
+
+    alignment = validate_edgeenv_handoff_guard_evidence_alignment(
+        handoff,
+        guard_analysis,
+    )
+
+    assert alignment["status"] == "failed"
+    assert alignment["boundary_errors"] == [
+        {
+            "field": "aiguard_is_final_decision_owner",
+            "expected": False,
+            "observed": True,
+        }
+    ]
+    assert "boundary_flag_mismatch" in alignment["errors"]
+
+
+def test_check_edgeenv_handoff_alignment_cli_exports_gate_summary(tmp_path):
+    guard_analysis = analyze_edgeenv_regression_report(
+        edgeenv_regression_report_with_orchestrator_feed_context()
+    )
+    handoff_path = tmp_path / "edgeenv_handoff.json"
+    guard_path = tmp_path / "guard_analysis.json"
+    output_path = tmp_path / "edgeenv_handoff_alignment.json"
+    handoff_path.write_text(
+        json.dumps(edgeenv_runtime_intelligence_lab_handoff()),
+        encoding="utf-8",
+    )
+    guard_path.write_text(json.dumps(guard_analysis), encoding="utf-8")
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "check-edgeenv-handoff-alignment",
+            "--edgeenv-handoff",
+            str(handoff_path),
+            "--guard-analysis",
+            str(guard_path),
+            "--save-json",
+            str(output_path),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    saved = json.loads(output_path.read_text(encoding="utf-8"))
+    assert result.returncode == 0
+    assert "EdgeEnv handoff alignment summary" in result.stdout
+    assert saved["status"] == "passed"
+    assert saved["recommendation"] == "alignment_satisfied"

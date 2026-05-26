@@ -16,6 +16,9 @@ from .diagnosis import build_diagnosis_report, build_evidence_item
 ORCHESTRATION_SCHEMA_VERSION = "inferedge-orchestration-summary-v1"
 RUNTIME_RESULT_SCHEMA_VERSION = "inferedge-runtime-result-v1"
 REMOTE_DISPATCH_SCHEMA_VERSION = "inferedge-remote-dispatch-result-v1"
+EDGEENV_HANDOFF_GUARD_ALIGNMENT_SCHEMA_VERSION = (
+    "inferedge-aiguard-edgeenv-handoff-alignment-v1"
+)
 RUN_CONFIG_MARKER_FIELDS = (
     "input_mode",
     "input_preprocess",
@@ -64,6 +67,116 @@ DEFAULT_RUNTIME_RELIABILITY_THRESHOLDS = {
     "edgeenv_telemetry_temperature_c_review": 70.0,
     "edgeenv_telemetry_temperature_c_blocked": 85.0,
 }
+
+
+def validate_edgeenv_handoff_guard_evidence_alignment(
+    edgeenv_handoff: dict[str, Any],
+    guard_analysis: dict[str, Any],
+) -> dict[str, Any]:
+    """Validate EdgeEnv handoff required evidence against AIGuard output.
+
+    This is a cross-repo smoke helper. EdgeEnv declares the external AIGuard
+    evidence types Lab should expect; AIGuard verifies its guard_analysis
+    satisfies that minimum without taking over Lab's deployment decision.
+    """
+
+    lab_bundle_alignment = _mapping(edgeenv_handoff.get("lab_bundle_alignment"))
+    raw_required_evidence_types = lab_bundle_alignment.get(
+        "external_aiguard_required_evidence_types"
+    )
+    required_evidence_types = _unique_string_values(raw_required_evidence_types)
+    invalid_required_evidence_types = _invalid_string_values(
+        raw_required_evidence_types
+    )
+
+    raw_evidence = guard_analysis.get("evidence")
+    evidence_items = _list(raw_evidence)
+    guard_evidence_types = _unique_string_values(
+        [item.get("type") for item in evidence_items]
+    )
+    invalid_guard_evidence_items = [
+        {
+            "index": index,
+            "reason": "missing_or_invalid_type",
+        }
+        for index, item in enumerate(raw_evidence if isinstance(raw_evidence, list) else [])
+        if not isinstance(item, dict) or not _non_empty_string(item.get("type"))
+    ]
+    if raw_evidence is not None and not isinstance(raw_evidence, list):
+        invalid_guard_evidence_items.append(
+            {
+                "index": None,
+                "reason": "evidence_not_list",
+            }
+        )
+
+    required_set = set(required_evidence_types)
+    guard_set = set(guard_evidence_types)
+    missing_required_evidence_types = sorted(required_set - guard_set)
+    supplemental_guard_evidence_types = sorted(guard_set - required_set)
+
+    boundary_flags = _mapping(lab_bundle_alignment.get("boundary_flags"))
+    expected_boundary_flags = {
+        "aiguard_guard_analysis_is_external": True,
+        "edgeenv_does_not_generate_guard_analysis": True,
+        "aiguard_is_final_decision_owner": False,
+        "lab_is_final_decision_owner": True,
+        "production_observability_platform": False,
+    }
+    boundary_errors = [
+        {
+            "field": field,
+            "expected": expected,
+            "observed": boundary_flags.get(field),
+        }
+        for field, expected in expected_boundary_flags.items()
+        if boundary_flags.get(field) is not expected
+    ]
+
+    errors = []
+    if not isinstance(raw_required_evidence_types, list):
+        errors.append("missing_external_aiguard_required_evidence_types")
+    if invalid_required_evidence_types:
+        errors.append("invalid_required_evidence_type")
+    if not isinstance(raw_evidence, list):
+        errors.append("guard_analysis_evidence_not_list")
+    if invalid_guard_evidence_items:
+        errors.append("invalid_guard_evidence_item_type")
+    if missing_required_evidence_types:
+        errors.append("missing_required_guard_evidence")
+    if boundary_errors:
+        errors.append("boundary_flag_mismatch")
+
+    status = "failed" if errors else "passed"
+    recommendation = (
+        "alignment_satisfied"
+        if status == "passed"
+        else "regenerate_guard_analysis_or_update_handoff_contract"
+    )
+
+    return {
+        "schema_version": EDGEENV_HANDOFF_GUARD_ALIGNMENT_SCHEMA_VERSION,
+        "status": status,
+        "recommendation": recommendation,
+        "decision_owner": "lab",
+        "diagnosis_owner": "aiguard",
+        "handoff_schema_version": edgeenv_handoff.get("schema_version"),
+        "guard_analysis_schema_version": guard_analysis.get("schema_version"),
+        "required_evidence_type_count": len(required_evidence_types),
+        "guard_evidence_type_count": len(guard_evidence_types),
+        "required_evidence_types": required_evidence_types,
+        "guard_analysis_evidence_types": guard_evidence_types,
+        "missing_required_evidence_types": missing_required_evidence_types,
+        "supplemental_guard_evidence_types": supplemental_guard_evidence_types,
+        "invalid_required_evidence_types": invalid_required_evidence_types,
+        "invalid_guard_evidence_items": invalid_guard_evidence_items,
+        "boundary_flags": {
+            field: boundary_flags.get(field)
+            for field in expected_boundary_flags
+        },
+        "boundary_errors": boundary_errors,
+        "errors": errors,
+    }
 
 
 def analyze_orchestration_summary(
@@ -3123,6 +3236,31 @@ def _totals(runtime_summary: dict[str, Any]) -> dict[str, Any]:
 
 def _mapping(value: Any) -> dict[str, Any]:
     return value if isinstance(value, dict) else {}
+
+
+def _non_empty_string(value: Any) -> bool:
+    return isinstance(value, str) and bool(value.strip())
+
+
+def _unique_string_values(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    seen: set[str] = set()
+    values: list[str] = []
+    for item in value:
+        if not _non_empty_string(item):
+            continue
+        normalized = item.strip()
+        if normalized not in seen:
+            seen.add(normalized)
+            values.append(normalized)
+    return values
+
+
+def _invalid_string_values(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [str(item) for item in value if not _non_empty_string(item)]
 
 
 def _non_negative_number(value: Any) -> float:
