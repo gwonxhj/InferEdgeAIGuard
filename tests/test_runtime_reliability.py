@@ -1077,6 +1077,7 @@ def attach_remote_runtime_event_summary(
     result["remote_runtime_event_summary"] = {
         "schema_version": "inferedge-remote-runtime-event-summary-v1",
         "event_count": len(runtime_events),
+        "runtime_event_count": len(runtime_events),
         "event_type_counts": _count_test_event_values(runtime_events, "event"),
         "status_counts": _count_test_event_values(runtime_events, "status"),
         "error_category_counts": _count_test_event_values(
@@ -1096,6 +1097,7 @@ def attach_remote_runtime_event_summary(
         "fallback_recovered": fallback_recovered,
         "final_status": final_status,
         "production_remote_execution": False,
+        "operation_boundary": "remote dispatch starter evidence only",
         "evidence_role": "remote_dispatch_runtime_event_compact_summary",
         "latest_event": runtime_events[-1]["event"],
     }
@@ -2443,6 +2445,10 @@ def test_analyze_remote_dispatch_result_preserves_remote_runtime_event_summary()
     assert metrics["remote_runtime_event_summary_consistent"] is True
     assert metrics["remote_runtime_event_summary_errors"] == []
     assert metrics["remote_runtime_event_summary_event_count"] == 3
+    assert metrics["remote_runtime_event_summary_runtime_event_count"] == 3
+    assert metrics["remote_runtime_event_summary_operation_boundary"] == (
+        "remote dispatch starter evidence only"
+    )
     assert metrics["remote_runtime_event_summary_event_type_counts"] == {
         "remote_dispatch_selected": 1,
         "remote_execution_failed": 1,
@@ -2464,6 +2470,12 @@ def test_analyze_remote_dispatch_result_preserves_remote_runtime_event_summary()
     assert recovery["raw_context"]["remote_dispatch"][
         "remote_runtime_event_summary"
     ] == result["remote_runtime_event_summary"]
+    assert recovery["raw_context"]["remote_dispatch"][
+        "remote_runtime_event_summary_runtime_event_count"
+    ] == 3
+    assert recovery["raw_context"]["remote_dispatch"][
+        "remote_runtime_event_summary_operation_boundary"
+    ] == "remote dispatch starter evidence only"
 
 
 def test_analyze_remote_dispatch_result_warns_on_remote_runtime_event_summary_mismatch():
@@ -2472,7 +2484,11 @@ def test_analyze_remote_dispatch_result_warns_on_remote_runtime_event_summary_mi
         final_status="succeeded",
     )
     result["remote_runtime_event_summary"]["event_count"] = 99
+    result["remote_runtime_event_summary"]["runtime_event_count"] = 88
     result["remote_runtime_event_summary"]["final_status"] = "failed"
+    result["remote_runtime_event_summary"]["operation_boundary"] = (
+        "production remote execution"
+    )
 
     report = analyze_remote_dispatch_result(result)
 
@@ -2484,7 +2500,16 @@ def test_analyze_remote_dispatch_result_warns_on_remote_runtime_event_summary_mi
     assert "remote_runtime_event_summary_event_count_mismatch" in (
         mismatch["suspected_causes"]
     )
+    assert "remote_runtime_event_summary_runtime_event_count_mismatch" in (
+        mismatch["suspected_causes"]
+    )
+    assert "remote_runtime_event_summary_count_alias_mismatch" in (
+        mismatch["suspected_causes"]
+    )
     assert "remote_runtime_event_summary_final_status_mismatch" in (
+        mismatch["suspected_causes"]
+    )
+    assert "remote_runtime_event_summary_boundary_mismatch" in (
         mismatch["suspected_causes"]
     )
     assert (
