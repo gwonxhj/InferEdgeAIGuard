@@ -245,6 +245,10 @@ EdgeEnv가 Orchestrator `candidate_context.producer`를 보존하면 AIGuard는
 producer source, per-task source mapping, task stage, event/task count를
 설명합니다. 이 evidence는 traceability 확인이며 Orchestrator/AIGuard가
 deployment decision owner가 된다는 의미가 아닙니다.
+이때 EdgeEnv가 보존한
+`downstream_guard_alignment.producer_lineage_evidence_type=edgeenv_orchestrator_producer_lineage`
+marker도 함께 확인해 producer-lineage evidence를 queue/thermal operation
+evidence와 분리합니다.
 EdgeEnv가 Runtime의 `runtime_telemetry_history_seed`를 보존하면 AIGuard는
 `inferedge-runtime-telemetry-history-seed-v1`, `registry_owner=edgeenv`,
 `decision_owner=lab` marker를 raw context에 유지합니다. EdgeEnv가 seed

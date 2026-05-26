@@ -134,6 +134,12 @@
           "history_missing_orchestrator_candidate_operation_context_role": null,
           "history_missing_orchestrator_edgeenv_mapping_hint": {},
           "history_missing_orchestrator_mapping_hint_aiguard_evidence_candidates": [],
+          "history_missing_orchestrator_downstream_guard_alignment": {},
+          "history_missing_orchestrator_guard_alignment_declared_by": null,
+          "history_missing_orchestrator_guard_alignment_producer_lineage_evidence_type": null,
+          "history_missing_orchestrator_guard_alignment_operation_evidence_candidates": [],
+          "history_missing_orchestrator_guard_alignment_orchestrator_is_final_decision_owner": null,
+          "history_missing_orchestrator_guard_alignment_lab_is_final_decision_owner": null,
           "telemetry_coverage_source": "history_telemetry_coverage",
           "history_telemetry_coverage_missing_field_run_count": 1.0,
           "history_telemetry_coverage_missing_field_runs": [
@@ -239,6 +245,29 @@
             "runtime_queue_overload",
             "runtime_thermal_instability"
           ],
+          "orchestrator_downstream_guard_alignment": {
+            "declared_by": "orchestrator",
+            "producer_lineage_evidence_type": "edgeenv_orchestrator_producer_lineage",
+            "operation_evidence_candidates": [
+              "runtime_queue_overload",
+              "runtime_thermal_instability"
+            ],
+            "validated_by": [
+              "edgeenv runs telemetry inspect-history",
+              "inferedge-aiguard reason-edgeenv-regression",
+              "inferedgelab runtime-intelligence bundle manifest gate"
+            ],
+            "orchestrator_is_final_decision_owner": false,
+            "lab_is_final_decision_owner": true
+          },
+          "orchestrator_guard_alignment_declared_by": "orchestrator",
+          "orchestrator_guard_alignment_producer_lineage_evidence_type": "edgeenv_orchestrator_producer_lineage",
+          "orchestrator_guard_alignment_operation_evidence_candidates": [
+            "runtime_queue_overload",
+            "runtime_thermal_instability"
+          ],
+          "orchestrator_guard_alignment_orchestrator_is_final_decision_owner": false,
+          "orchestrator_guard_alignment_lab_is_final_decision_owner": true,
           "baseline_max_temperature_c": null,
           "candidate_max_temperature_c": 78.5,
           "baseline_throttling_detected": null,
@@ -371,6 +400,12 @@
           "history_missing_orchestrator_candidate_operation_context_role": null,
           "history_missing_orchestrator_edgeenv_mapping_hint": {},
           "history_missing_orchestrator_mapping_hint_aiguard_evidence_candidates": [],
+          "history_missing_orchestrator_downstream_guard_alignment": {},
+          "history_missing_orchestrator_guard_alignment_declared_by": null,
+          "history_missing_orchestrator_guard_alignment_producer_lineage_evidence_type": null,
+          "history_missing_orchestrator_guard_alignment_operation_evidence_candidates": [],
+          "history_missing_orchestrator_guard_alignment_orchestrator_is_final_decision_owner": null,
+          "history_missing_orchestrator_guard_alignment_lab_is_final_decision_owner": null,
           "telemetry_coverage_source": "history_telemetry_coverage",
           "history_telemetry_coverage_missing_field_run_count": 1.0,
           "history_telemetry_coverage_missing_field_runs": [
@@ -476,6 +511,29 @@
             "runtime_queue_overload",
             "runtime_thermal_instability"
           ],
+          "orchestrator_downstream_guard_alignment": {
+            "declared_by": "orchestrator",
+            "producer_lineage_evidence_type": "edgeenv_orchestrator_producer_lineage",
+            "operation_evidence_candidates": [
+              "runtime_queue_overload",
+              "runtime_thermal_instability"
+            ],
+            "validated_by": [
+              "edgeenv runs telemetry inspect-history",
+              "inferedge-aiguard reason-edgeenv-regression",
+              "inferedgelab runtime-intelligence bundle manifest gate"
+            ],
+            "orchestrator_is_final_decision_owner": false,
+            "lab_is_final_decision_owner": true
+          },
+          "orchestrator_guard_alignment_declared_by": "orchestrator",
+          "orchestrator_guard_alignment_producer_lineage_evidence_type": "edgeenv_orchestrator_producer_lineage",
+          "orchestrator_guard_alignment_operation_evidence_candidates": [
+            "runtime_queue_overload",
+            "runtime_thermal_instability"
+          ],
+          "orchestrator_guard_alignment_orchestrator_is_final_decision_owner": false,
+          "orchestrator_guard_alignment_lab_is_final_decision_owner": true,
           "baseline_max_temperature_c": null,
           "candidate_max_temperature_c": 78.5,
           "baseline_throttling_detected": null,
@@ -506,6 +564,27 @@
           "candidate_device_local_event_count": 2.0,
           "candidate_device_local_task_count": 1.0,
           "candidate_lineage_shape_valid": true,
+          "candidate_guard_alignment": {
+            "declared_by": "orchestrator",
+            "producer_lineage_evidence_type": "edgeenv_orchestrator_producer_lineage",
+            "operation_evidence_candidates": [
+              "runtime_queue_overload",
+              "runtime_thermal_instability"
+            ],
+            "validated_by": [
+              "edgeenv runs telemetry inspect-history",
+              "inferedge-aiguard reason-edgeenv-regression",
+              "inferedgelab runtime-intelligence bundle manifest gate"
+            ],
+            "orchestrator_is_final_decision_owner": false,
+            "lab_is_final_decision_owner": true
+          },
+          "candidate_guard_alignment_valid": true,
+          "candidate_guard_alignment_producer_lineage_evidence_type": "edgeenv_orchestrator_producer_lineage",
+          "candidate_guard_alignment_operation_evidence_candidates": [
+            "runtime_queue_overload",
+            "runtime_thermal_instability"
+          ],
           "missing_expected": false,
           "missing_device_local_sources": [],
           "missing_producer_sources": [],
@@ -515,6 +594,10 @@
           "missing_device_local_event_count": null,
           "missing_device_local_task_count": null,
           "missing_lineage_shape_valid": false,
+          "missing_guard_alignment": {},
+          "missing_guard_alignment_valid": false,
+          "missing_guard_alignment_producer_lineage_evidence_type": null,
+          "missing_guard_alignment_operation_evidence_candidates": [],
           "missing_context_run_ids": [],
           "operation_context_role": "supplemental",
           "missing_operation_context_role": null
@@ -642,6 +725,12 @@
           "history_missing_orchestrator_candidate_operation_context_role": null,
           "history_missing_orchestrator_edgeenv_mapping_hint": {},
           "history_missing_orchestrator_mapping_hint_aiguard_evidence_candidates": [],
+          "history_missing_orchestrator_downstream_guard_alignment": {},
+          "history_missing_orchestrator_guard_alignment_declared_by": null,
+          "history_missing_orchestrator_guard_alignment_producer_lineage_evidence_type": null,
+          "history_missing_orchestrator_guard_alignment_operation_evidence_candidates": [],
+          "history_missing_orchestrator_guard_alignment_orchestrator_is_final_decision_owner": null,
+          "history_missing_orchestrator_guard_alignment_lab_is_final_decision_owner": null,
           "telemetry_coverage_source": "history_telemetry_coverage",
           "history_telemetry_coverage_missing_field_run_count": 1.0,
           "history_telemetry_coverage_missing_field_runs": [
@@ -747,6 +836,29 @@
             "runtime_queue_overload",
             "runtime_thermal_instability"
           ],
+          "orchestrator_downstream_guard_alignment": {
+            "declared_by": "orchestrator",
+            "producer_lineage_evidence_type": "edgeenv_orchestrator_producer_lineage",
+            "operation_evidence_candidates": [
+              "runtime_queue_overload",
+              "runtime_thermal_instability"
+            ],
+            "validated_by": [
+              "edgeenv runs telemetry inspect-history",
+              "inferedge-aiguard reason-edgeenv-regression",
+              "inferedgelab runtime-intelligence bundle manifest gate"
+            ],
+            "orchestrator_is_final_decision_owner": false,
+            "lab_is_final_decision_owner": true
+          },
+          "orchestrator_guard_alignment_declared_by": "orchestrator",
+          "orchestrator_guard_alignment_producer_lineage_evidence_type": "edgeenv_orchestrator_producer_lineage",
+          "orchestrator_guard_alignment_operation_evidence_candidates": [
+            "runtime_queue_overload",
+            "runtime_thermal_instability"
+          ],
+          "orchestrator_guard_alignment_orchestrator_is_final_decision_owner": false,
+          "orchestrator_guard_alignment_lab_is_final_decision_owner": true,
           "baseline_max_temperature_c": null,
           "candidate_max_temperature_c": 78.5,
           "baseline_throttling_detected": null,
@@ -898,6 +1010,12 @@
           "history_missing_orchestrator_candidate_operation_context_role": null,
           "history_missing_orchestrator_edgeenv_mapping_hint": {},
           "history_missing_orchestrator_mapping_hint_aiguard_evidence_candidates": [],
+          "history_missing_orchestrator_downstream_guard_alignment": {},
+          "history_missing_orchestrator_guard_alignment_declared_by": null,
+          "history_missing_orchestrator_guard_alignment_producer_lineage_evidence_type": null,
+          "history_missing_orchestrator_guard_alignment_operation_evidence_candidates": [],
+          "history_missing_orchestrator_guard_alignment_orchestrator_is_final_decision_owner": null,
+          "history_missing_orchestrator_guard_alignment_lab_is_final_decision_owner": null,
           "telemetry_coverage_source": "history_telemetry_coverage",
           "history_telemetry_coverage_missing_field_run_count": 1.0,
           "history_telemetry_coverage_missing_field_runs": [
@@ -1003,6 +1121,29 @@
             "runtime_queue_overload",
             "runtime_thermal_instability"
           ],
+          "orchestrator_downstream_guard_alignment": {
+            "declared_by": "orchestrator",
+            "producer_lineage_evidence_type": "edgeenv_orchestrator_producer_lineage",
+            "operation_evidence_candidates": [
+              "runtime_queue_overload",
+              "runtime_thermal_instability"
+            ],
+            "validated_by": [
+              "edgeenv runs telemetry inspect-history",
+              "inferedge-aiguard reason-edgeenv-regression",
+              "inferedgelab runtime-intelligence bundle manifest gate"
+            ],
+            "orchestrator_is_final_decision_owner": false,
+            "lab_is_final_decision_owner": true
+          },
+          "orchestrator_guard_alignment_declared_by": "orchestrator",
+          "orchestrator_guard_alignment_producer_lineage_evidence_type": "edgeenv_orchestrator_producer_lineage",
+          "orchestrator_guard_alignment_operation_evidence_candidates": [
+            "runtime_queue_overload",
+            "runtime_thermal_instability"
+          ],
+          "orchestrator_guard_alignment_orchestrator_is_final_decision_owner": false,
+          "orchestrator_guard_alignment_lab_is_final_decision_owner": true,
           "baseline_max_temperature_c": null,
           "candidate_max_temperature_c": 78.5,
           "baseline_throttling_detected": null,
@@ -1139,6 +1280,12 @@
           "history_missing_orchestrator_candidate_operation_context_role": null,
           "history_missing_orchestrator_edgeenv_mapping_hint": {},
           "history_missing_orchestrator_mapping_hint_aiguard_evidence_candidates": [],
+          "history_missing_orchestrator_downstream_guard_alignment": {},
+          "history_missing_orchestrator_guard_alignment_declared_by": null,
+          "history_missing_orchestrator_guard_alignment_producer_lineage_evidence_type": null,
+          "history_missing_orchestrator_guard_alignment_operation_evidence_candidates": [],
+          "history_missing_orchestrator_guard_alignment_orchestrator_is_final_decision_owner": null,
+          "history_missing_orchestrator_guard_alignment_lab_is_final_decision_owner": null,
           "telemetry_coverage_source": "history_telemetry_coverage",
           "history_telemetry_coverage_missing_field_run_count": 1.0,
           "history_telemetry_coverage_missing_field_runs": [
@@ -1244,6 +1391,29 @@
             "runtime_queue_overload",
             "runtime_thermal_instability"
           ],
+          "orchestrator_downstream_guard_alignment": {
+            "declared_by": "orchestrator",
+            "producer_lineage_evidence_type": "edgeenv_orchestrator_producer_lineage",
+            "operation_evidence_candidates": [
+              "runtime_queue_overload",
+              "runtime_thermal_instability"
+            ],
+            "validated_by": [
+              "edgeenv runs telemetry inspect-history",
+              "inferedge-aiguard reason-edgeenv-regression",
+              "inferedgelab runtime-intelligence bundle manifest gate"
+            ],
+            "orchestrator_is_final_decision_owner": false,
+            "lab_is_final_decision_owner": true
+          },
+          "orchestrator_guard_alignment_declared_by": "orchestrator",
+          "orchestrator_guard_alignment_producer_lineage_evidence_type": "edgeenv_orchestrator_producer_lineage",
+          "orchestrator_guard_alignment_operation_evidence_candidates": [
+            "runtime_queue_overload",
+            "runtime_thermal_instability"
+          ],
+          "orchestrator_guard_alignment_orchestrator_is_final_decision_owner": false,
+          "orchestrator_guard_alignment_lab_is_final_decision_owner": true,
           "baseline_max_temperature_c": null,
           "candidate_max_temperature_c": 78.5,
           "baseline_throttling_detected": null,
@@ -1419,6 +1589,12 @@
       "history_missing_orchestrator_candidate_operation_context_role": null,
       "history_missing_orchestrator_edgeenv_mapping_hint": {},
       "history_missing_orchestrator_mapping_hint_aiguard_evidence_candidates": [],
+      "history_missing_orchestrator_downstream_guard_alignment": {},
+      "history_missing_orchestrator_guard_alignment_declared_by": null,
+      "history_missing_orchestrator_guard_alignment_producer_lineage_evidence_type": null,
+      "history_missing_orchestrator_guard_alignment_operation_evidence_candidates": [],
+      "history_missing_orchestrator_guard_alignment_orchestrator_is_final_decision_owner": null,
+      "history_missing_orchestrator_guard_alignment_lab_is_final_decision_owner": null,
       "telemetry_coverage_source": "history_telemetry_coverage",
       "history_telemetry_coverage_missing_field_run_count": 1.0,
       "history_telemetry_coverage_missing_field_runs": [
@@ -1524,6 +1700,29 @@
         "runtime_queue_overload",
         "runtime_thermal_instability"
       ],
+      "orchestrator_downstream_guard_alignment": {
+        "declared_by": "orchestrator",
+        "producer_lineage_evidence_type": "edgeenv_orchestrator_producer_lineage",
+        "operation_evidence_candidates": [
+          "runtime_queue_overload",
+          "runtime_thermal_instability"
+        ],
+        "validated_by": [
+          "edgeenv runs telemetry inspect-history",
+          "inferedge-aiguard reason-edgeenv-regression",
+          "inferedgelab runtime-intelligence bundle manifest gate"
+        ],
+        "orchestrator_is_final_decision_owner": false,
+        "lab_is_final_decision_owner": true
+      },
+      "orchestrator_guard_alignment_declared_by": "orchestrator",
+      "orchestrator_guard_alignment_producer_lineage_evidence_type": "edgeenv_orchestrator_producer_lineage",
+      "orchestrator_guard_alignment_operation_evidence_candidates": [
+        "runtime_queue_overload",
+        "runtime_thermal_instability"
+      ],
+      "orchestrator_guard_alignment_orchestrator_is_final_decision_owner": false,
+      "orchestrator_guard_alignment_lab_is_final_decision_owner": true,
       "baseline_max_temperature_c": null,
       "candidate_max_temperature_c": 78.5,
       "baseline_throttling_detected": null,
@@ -1665,6 +1864,21 @@
               "runtime_queue_overload",
               "runtime_thermal_instability"
             ]
+          },
+          "downstream_guard_alignment": {
+            "declared_by": "orchestrator",
+            "producer_lineage_evidence_type": "edgeenv_orchestrator_producer_lineage",
+            "operation_evidence_candidates": [
+              "runtime_queue_overload",
+              "runtime_thermal_instability"
+            ],
+            "validated_by": [
+              "edgeenv runs telemetry inspect-history",
+              "inferedge-aiguard reason-edgeenv-regression",
+              "inferedgelab runtime-intelligence bundle manifest gate"
+            ],
+            "orchestrator_is_final_decision_owner": false,
+            "lab_is_final_decision_owner": true
           }
         }
       },
@@ -1851,5 +2065,5 @@
       "evidence_gaps": []
     }
   },
-  "created_at": "2026-05-26T06:50:22Z"
+  "created_at": "2026-05-26T10:21:55Z"
 }

@@ -289,6 +289,10 @@ EdgeEnv가 `candidate_context.producer`를 보존한 경우에는
 source, per-task source mapping, task stage mapping, event/task count를
 설명합니다. 이 항목은 traceability evidence이며 deployment decision이나
 comparability gate가 아닙니다.
+보존된 Orchestrator context에
+`downstream_guard_alignment.producer_lineage_evidence_type=edgeenv_orchestrator_producer_lineage`
+가 포함되어 있으면 AIGuard는 이 marker도 검증해 producer-lineage reasoning을
+queue/thermal operation evidence 후보와 분리합니다.
 AIGuard는 producer `edgeenv_mapping_hint`도 deterministic raw context에
 보존합니다. 여기에는 `coverage_summary_owner=edgeenv`,
 `coverage_summary_path=runtime_telemetry_context.history.telemetry_coverage`,

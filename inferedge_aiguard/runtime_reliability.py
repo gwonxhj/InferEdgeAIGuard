@@ -19,6 +19,13 @@ REMOTE_DISPATCH_SCHEMA_VERSION = "inferedge-remote-dispatch-result-v1"
 EDGEENV_HANDOFF_GUARD_ALIGNMENT_SCHEMA_VERSION = (
     "inferedge-aiguard-edgeenv-handoff-alignment-v1"
 )
+EDGEENV_ORCHESTRATOR_PRODUCER_LINEAGE_EVIDENCE_TYPE = (
+    "edgeenv_orchestrator_producer_lineage"
+)
+EDGEENV_ORCHESTRATOR_OPERATION_EVIDENCE_CANDIDATES = (
+    "runtime_queue_overload",
+    "runtime_thermal_instability",
+)
 RUN_CONFIG_MARKER_FIELDS = (
     "input_mode",
     "input_preprocess",
@@ -644,6 +651,9 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
     candidate_edgeenv_mapping_hint = _mapping(
         candidate_orchestrator_context.get("edgeenv_mapping_hint")
     )
+    candidate_downstream_guard_alignment = _mapping(
+        candidate_orchestrator_context.get("downstream_guard_alignment")
+    )
     candidate_orchestrator_context_present = isinstance(
         candidate_context.get("orchestrator_operation_context"),
         dict,
@@ -660,6 +670,9 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
     )
     first_missing_edgeenv_mapping_hint = _mapping(
         first_missing_orchestrator_context.get("edgeenv_mapping_hint")
+    )
+    first_missing_downstream_guard_alignment = _mapping(
+        first_missing_orchestrator_context.get("downstream_guard_alignment")
     )
     baseline_max_temperature_c = _max_optional_number(
         _telemetry_number(
@@ -875,6 +888,38 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
                 first_missing_edgeenv_mapping_hint.get("aiguard_evidence_candidates")
             )
         ),
+        "history_missing_orchestrator_downstream_guard_alignment": dict(
+            first_missing_downstream_guard_alignment
+        ),
+        "history_missing_orchestrator_guard_alignment_declared_by": (
+            first_missing_downstream_guard_alignment.get("declared_by")
+        ),
+        "history_missing_orchestrator_guard_alignment_producer_lineage_evidence_type": (
+            first_missing_downstream_guard_alignment.get(
+                "producer_lineage_evidence_type"
+            )
+        ),
+        "history_missing_orchestrator_guard_alignment_operation_evidence_candidates": (
+            _string_list(
+                first_missing_downstream_guard_alignment.get(
+                    "operation_evidence_candidates"
+                )
+            )
+        ),
+        "history_missing_orchestrator_guard_alignment_orchestrator_is_final_decision_owner": (
+            _optional_bool(
+                first_missing_downstream_guard_alignment.get(
+                    "orchestrator_is_final_decision_owner"
+                )
+            )
+        ),
+        "history_missing_orchestrator_guard_alignment_lab_is_final_decision_owner": (
+            _optional_bool(
+                first_missing_downstream_guard_alignment.get(
+                    "lab_is_final_decision_owner"
+                )
+            )
+        ),
         "telemetry_coverage_source": (
             "history_telemetry_coverage"
             if history_coverage
@@ -980,6 +1025,38 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
         ),
         "orchestrator_mapping_hint_aiguard_evidence_candidates": _string_list(
             candidate_edgeenv_mapping_hint.get("aiguard_evidence_candidates")
+        ),
+        "orchestrator_downstream_guard_alignment": dict(
+            candidate_downstream_guard_alignment
+        ),
+        "orchestrator_guard_alignment_declared_by": (
+            candidate_downstream_guard_alignment.get("declared_by")
+        ),
+        "orchestrator_guard_alignment_producer_lineage_evidence_type": (
+            candidate_downstream_guard_alignment.get(
+                "producer_lineage_evidence_type"
+            )
+        ),
+        "orchestrator_guard_alignment_operation_evidence_candidates": (
+            _string_list(
+                candidate_downstream_guard_alignment.get(
+                    "operation_evidence_candidates"
+                )
+            )
+        ),
+        "orchestrator_guard_alignment_orchestrator_is_final_decision_owner": (
+            _optional_bool(
+                candidate_downstream_guard_alignment.get(
+                    "orchestrator_is_final_decision_owner"
+                )
+            )
+        ),
+        "orchestrator_guard_alignment_lab_is_final_decision_owner": (
+            _optional_bool(
+                candidate_downstream_guard_alignment.get(
+                    "lab_is_final_decision_owner"
+                )
+            )
         ),
         "baseline_max_temperature_c": baseline_max_temperature_c,
         "candidate_max_temperature_c": candidate_max_temperature_c,
@@ -2173,6 +2250,21 @@ def _edgeenv_orchestrator_producer_lineage_evidence(
             "orchestrator_candidate_operation_context_role"
         ),
     )
+    candidate_guard_alignment_ok = _producer_lineage_guard_alignment_valid(
+        declared_by=metrics.get("orchestrator_guard_alignment_declared_by"),
+        producer_lineage_evidence_type=metrics.get(
+            "orchestrator_guard_alignment_producer_lineage_evidence_type"
+        ),
+        operation_evidence_candidates=metrics.get(
+            "orchestrator_guard_alignment_operation_evidence_candidates"
+        ),
+        orchestrator_is_final_decision_owner=metrics.get(
+            "orchestrator_guard_alignment_orchestrator_is_final_decision_owner"
+        ),
+        lab_is_final_decision_owner=metrics.get(
+            "orchestrator_guard_alignment_lab_is_final_decision_owner"
+        ),
+    )
     missing_shape_ok = _producer_lineage_shape_valid(
         device_local_sources=metrics.get(
             "history_missing_orchestrator_candidate_device_local_producer_sources"
@@ -2199,9 +2291,27 @@ def _edgeenv_orchestrator_producer_lineage_evidence(
             "history_missing_orchestrator_candidate_operation_context_role"
         ),
     )
+    missing_guard_alignment_ok = _producer_lineage_guard_alignment_valid(
+        declared_by=metrics.get(
+            "history_missing_orchestrator_guard_alignment_declared_by"
+        ),
+        producer_lineage_evidence_type=metrics.get(
+            "history_missing_orchestrator_guard_alignment_producer_lineage_evidence_type"
+        ),
+        operation_evidence_candidates=metrics.get(
+            "history_missing_orchestrator_guard_alignment_operation_evidence_candidates"
+        ),
+        orchestrator_is_final_decision_owner=metrics.get(
+            "history_missing_orchestrator_guard_alignment_orchestrator_is_final_decision_owner"
+        ),
+        lab_is_final_decision_owner=metrics.get(
+            "history_missing_orchestrator_guard_alignment_lab_is_final_decision_owner"
+        ),
+    )
     candidate_ok = (
         bool(metrics.get("orchestrator_candidate_device_local_producer_sources"))
         and candidate_shape_ok
+        and candidate_guard_alignment_ok
     )
     missing_ok = (
         bool(
@@ -2210,6 +2320,7 @@ def _edgeenv_orchestrator_producer_lineage_evidence(
             )
         )
         and missing_shape_ok
+        and missing_guard_alignment_ok
     )
 
     expected_count = int(candidate_expected) + int(missing_expected)
@@ -2221,6 +2332,20 @@ def _edgeenv_orchestrator_producer_lineage_evidence(
             "device_local_producer_lineage_gap",
             "orchestrator_context_without_producer_metadata",
         ]
+        if (
+            candidate_expected
+            and bool(metrics.get("orchestrator_candidate_device_local_producer_sources"))
+            and not candidate_guard_alignment_ok
+        ) or (
+            missing_expected
+            and bool(
+                metrics.get(
+                    "history_missing_orchestrator_candidate_device_local_producer_sources"
+                )
+            )
+            and not missing_guard_alignment_ok
+        ):
+            suspected_causes.append("orchestrator_guard_alignment_marker_gap")
     if status == "passed":
         explanation = (
             "Device-local Orchestrator producer lineage is preserved for "
@@ -2286,6 +2411,20 @@ def _edgeenv_orchestrator_producer_lineage_evidence(
                     "orchestrator_candidate_device_local_task_count"
                 ),
                 "candidate_lineage_shape_valid": candidate_shape_ok,
+                "candidate_guard_alignment": metrics.get(
+                    "orchestrator_downstream_guard_alignment"
+                ),
+                "candidate_guard_alignment_valid": candidate_guard_alignment_ok,
+                "candidate_guard_alignment_producer_lineage_evidence_type": (
+                    metrics.get(
+                        "orchestrator_guard_alignment_producer_lineage_evidence_type"
+                    )
+                ),
+                "candidate_guard_alignment_operation_evidence_candidates": (
+                    metrics.get(
+                        "orchestrator_guard_alignment_operation_evidence_candidates"
+                    )
+                ),
                 "missing_expected": missing_expected,
                 "missing_device_local_sources": metrics.get(
                     "history_missing_orchestrator_candidate_device_local_producer_sources"
@@ -2309,6 +2448,20 @@ def _edgeenv_orchestrator_producer_lineage_evidence(
                     "history_missing_orchestrator_candidate_device_local_task_count"
                 ),
                 "missing_lineage_shape_valid": missing_shape_ok,
+                "missing_guard_alignment": metrics.get(
+                    "history_missing_orchestrator_downstream_guard_alignment"
+                ),
+                "missing_guard_alignment_valid": missing_guard_alignment_ok,
+                "missing_guard_alignment_producer_lineage_evidence_type": (
+                    metrics.get(
+                        "history_missing_orchestrator_guard_alignment_producer_lineage_evidence_type"
+                    )
+                ),
+                "missing_guard_alignment_operation_evidence_candidates": (
+                    metrics.get(
+                        "history_missing_orchestrator_guard_alignment_operation_evidence_candidates"
+                    )
+                ),
                 "missing_context_run_ids": metrics.get(
                     "history_missing_orchestrator_context_run_ids"
                 ),
@@ -2563,6 +2716,31 @@ def _producer_lineage_shape_valid(
         and _positive_number(producer_event_count)
         and _positive_number(device_local_event_count)
         and _positive_number(device_local_task_count)
+    )
+
+
+def _producer_lineage_guard_alignment_valid(
+    *,
+    declared_by: Any,
+    producer_lineage_evidence_type: Any,
+    operation_evidence_candidates: Any,
+    orchestrator_is_final_decision_owner: Any,
+    lab_is_final_decision_owner: Any,
+) -> bool:
+    operation_candidates = set(_string_list(operation_evidence_candidates))
+    required_operation_candidates = set(
+        EDGEENV_ORCHESTRATOR_OPERATION_EVIDENCE_CANDIDATES
+    )
+    producer_lineage_type_matches = (
+        producer_lineage_evidence_type
+        == EDGEENV_ORCHESTRATOR_PRODUCER_LINEAGE_EVIDENCE_TYPE
+    )
+    return (
+        declared_by == "orchestrator"
+        and producer_lineage_type_matches
+        and required_operation_candidates.issubset(operation_candidates)
+        and orchestrator_is_final_decision_owner is False
+        and lab_is_final_decision_owner is True
     )
 
 

@@ -811,6 +811,23 @@ def edgeenv_regression_report_with_orchestrator_feed_context() -> dict:
                 "runtime_thermal_instability",
             ],
         },
+        "downstream_guard_alignment": {
+            "declared_by": "orchestrator",
+            "producer_lineage_evidence_type": (
+                "edgeenv_orchestrator_producer_lineage"
+            ),
+            "operation_evidence_candidates": [
+                "runtime_queue_overload",
+                "runtime_thermal_instability",
+            ],
+            "validated_by": [
+                "edgeenv runs telemetry inspect-history",
+                "inferedge-aiguard reason-edgeenv-regression",
+                "inferedgelab runtime-intelligence bundle manifest gate",
+            ],
+            "orchestrator_is_final_decision_owner": False,
+            "lab_is_final_decision_owner": True,
+        },
     }
     return report
 
@@ -1401,6 +1418,21 @@ def test_compute_edgeenv_regression_metrics_extracts_orchestrator_feed_context()
         "runtime_queue_overload",
         "runtime_thermal_instability",
     }
+    assert metrics["orchestrator_guard_alignment_declared_by"] == "orchestrator"
+    assert metrics[
+        "orchestrator_guard_alignment_producer_lineage_evidence_type"
+    ] == "edgeenv_orchestrator_producer_lineage"
+    assert set(
+        metrics["orchestrator_guard_alignment_operation_evidence_candidates"]
+    ) == {
+        "runtime_queue_overload",
+        "runtime_thermal_instability",
+    }
+    assert (
+        metrics["orchestrator_guard_alignment_orchestrator_is_final_decision_owner"]
+        is False
+    )
+    assert metrics["orchestrator_guard_alignment_lab_is_final_decision_owner"] is True
     assert metrics["orchestrator_candidate_context_producer"][
         "operation_context_role"
     ] == "supplemental"
@@ -1761,6 +1793,20 @@ def test_analyze_edgeenv_regression_report_warns_on_orchestrator_feed_context():
     assert producer_lineage["raw_context"]["producer_lineage"][
         "candidate_lineage_shape_valid"
     ] is True
+    assert producer_lineage["raw_context"]["producer_lineage"][
+        "candidate_guard_alignment_valid"
+    ] is True
+    assert producer_lineage["raw_context"]["producer_lineage"][
+        "candidate_guard_alignment_producer_lineage_evidence_type"
+    ] == "edgeenv_orchestrator_producer_lineage"
+    assert set(
+        producer_lineage["raw_context"]["producer_lineage"][
+            "candidate_guard_alignment_operation_evidence_candidates"
+        ]
+    ) == {
+        "runtime_queue_overload",
+        "runtime_thermal_instability",
+    }
 
 
 def test_analyze_edgeenv_regression_report_warns_on_missing_producer_lineage():
@@ -1812,6 +1858,39 @@ def test_analyze_edgeenv_regression_report_warns_on_bad_producer_shape():
     assert producer_lineage["raw_context"]["producer_lineage"][
         "candidate_lineage_shape_valid"
     ] is False
+
+
+def test_analyze_edgeenv_regression_report_warns_on_bad_guard_alignment():
+    regression_report = edgeenv_regression_report_with_orchestrator_feed_context()
+    regression_report["runtime_telemetry_context"]["candidate"][
+        "orchestrator_operation_context"
+    ]["downstream_guard_alignment"][
+        "producer_lineage_evidence_type"
+    ] = "runtime_queue_overload"
+
+    report = analyze_edgeenv_regression_report(regression_report)
+
+    validate_diagnosis_report(report)
+    producer_lineage = next(
+        item
+        for item in report["evidence"]
+        if item["type"] == "edgeenv_orchestrator_producer_lineage"
+    )
+    assert producer_lineage["status"] == "warning"
+    assert producer_lineage["observed_value"] == 0
+    assert producer_lineage["baseline_value"] == 1
+    assert "orchestrator_guard_alignment_marker_gap" in producer_lineage[
+        "suspected_causes"
+    ]
+    assert producer_lineage["raw_context"]["producer_lineage"][
+        "candidate_lineage_shape_valid"
+    ] is True
+    assert producer_lineage["raw_context"]["producer_lineage"][
+        "candidate_guard_alignment_valid"
+    ] is False
+    assert producer_lineage["raw_context"]["producer_lineage"][
+        "candidate_guard_alignment_producer_lineage_evidence_type"
+    ] == "runtime_queue_overload"
 
 
 def test_analyze_edgeenv_regression_report_warns_on_telemetry_gap():
@@ -1903,6 +1982,17 @@ def test_analyze_edgeenv_regression_report_preserves_missing_orchestrator_raw_co
     assert replay_context["history_missing_orchestrator_edgeenv_mapping_hint"][
         "operation_context_role"
     ] == "supplemental"
+    assert replay_context[
+        "history_missing_orchestrator_guard_alignment_producer_lineage_evidence_type"
+    ] == "edgeenv_orchestrator_producer_lineage"
+    assert set(
+        replay_context[
+            "history_missing_orchestrator_guard_alignment_operation_evidence_candidates"
+        ]
+    ) == {
+        "runtime_queue_overload",
+        "runtime_thermal_instability",
+    }
     assert set(
         replay_context[
             "history_missing_orchestrator_mapping_hint_aiguard_evidence_candidates"
@@ -1933,6 +2023,9 @@ def test_analyze_edgeenv_regression_report_preserves_missing_orchestrator_raw_co
     ] == {"vision_agent": "device_local_starter"}
     assert producer_lineage["raw_context"]["producer_lineage"][
         "missing_lineage_shape_valid"
+    ] is True
+    assert producer_lineage["raw_context"]["producer_lineage"][
+        "missing_guard_alignment_valid"
     ] is True
     assert producer_lineage["raw_context"]["producer_lineage"][
         "missing_context_run_ids"
