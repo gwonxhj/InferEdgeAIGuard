@@ -364,7 +364,9 @@ missing-field runs and uses per-run coverage only as a backward-compatible
 fallback.
 When EdgeEnv preserves Runtime's `runtime_telemetry_history_seed`, AIGuard keeps
 the `inferedge-runtime-telemetry-history-seed-v1`, `registry_owner=edgeenv`, and
-`decision_owner=lab` markers in deterministic raw context. This only preserves
+`decision_owner=lab` markers in deterministic raw context. If the seed includes
+a `run_config` snapshot, AIGuard preserves that snapshot as
+replay/comparability context without creating a new verdict. This only preserves
 replay traceability; it does not make AIGuard the registry or deployment
 decision owner.
 `tests/fixtures/edgeenv_regression/` mirrors the committed EdgeEnv replay

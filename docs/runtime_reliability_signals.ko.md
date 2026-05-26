@@ -315,9 +315,10 @@ run을 `runtime_telemetry_field_gap` suspected cause로 설명합니다. 이 sum
 deployment policy를 대체하지 않습니다.
 EdgeEnv가 Runtime의 `runtime_telemetry_history_seed`를 보존하면 AIGuard는
 `inferedge-runtime-telemetry-history-seed-v1`, `registry_owner=edgeenv`,
-`decision_owner=lab` marker를 deterministic raw context에 유지합니다. 이는
-replay traceability 보존이며 AIGuard가 registry나 deployment decision을
-소유한다는 뜻이 아닙니다.
+`decision_owner=lab` marker를 deterministic raw context에 유지합니다. EdgeEnv가
+seed `run_config` snapshot도 보존하면 AIGuard는 이를 replay/comparability
+context로 함께 유지하되 새 verdict로 승격하지 않습니다. 이는 replay traceability
+보존이며 AIGuard가 registry나 deployment decision을 소유한다는 뜻이 아닙니다.
 `tests/fixtures/edgeenv_regression/`에는 EdgeEnv의 committed replay fixtures를
 mirror한 작은 CLI smoke 입력이 있습니다.
 `examples/runtime_intelligence/aiguard_runtime_operation_guard_analysis.json`는
