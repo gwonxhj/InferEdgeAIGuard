@@ -1061,6 +1061,56 @@ def remote_dispatch_fallback_recovered_result() -> dict:
     return result
 
 
+def attach_remote_runtime_event_summary(
+    result: dict,
+    *,
+    final_status: str,
+    fallback_recovered: bool = False,
+) -> dict:
+    runtime_events = result["runtime_events"]
+    result["remote_operation_summary"] = {
+        "schema_version": "inferedge-remote-operation-summary-v1",
+        "final_status": final_status,
+        "fallback_recovered": fallback_recovered,
+        "production_remote_execution": False,
+    }
+    result["remote_runtime_event_summary"] = {
+        "schema_version": "inferedge-remote-runtime-event-summary-v1",
+        "event_count": len(runtime_events),
+        "event_type_counts": _count_test_event_values(runtime_events, "event"),
+        "status_counts": _count_test_event_values(runtime_events, "status"),
+        "error_category_counts": _count_test_event_values(
+            runtime_events,
+            "error_category",
+        ),
+        "selected_worker_id": result["selected_worker_id"],
+        "fallback_worker_ids": result["retry_fallback_plan"].get(
+            "fallback_worker_ids",
+            [],
+        ),
+        "fallback_event_count": sum(
+            1
+            for event in runtime_events
+            if str(event.get("event", "")).startswith("remote_fallback_")
+        ),
+        "fallback_recovered": fallback_recovered,
+        "final_status": final_status,
+        "production_remote_execution": False,
+        "evidence_role": "remote_dispatch_runtime_event_compact_summary",
+        "latest_event": runtime_events[-1]["event"],
+    }
+    return result
+
+
+def _count_test_event_values(events: list[dict], key: str) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for event in events:
+        value = event.get(key)
+        if isinstance(value, str) and value:
+            counts[value] = counts.get(value, 0) + 1
+    return counts
+
+
 def remote_dispatch_plan_only_result() -> dict:
     result = remote_dispatch_success_result()
     result["remote_execution"]["execution_requested"] = False
@@ -2371,6 +2421,77 @@ def test_analyze_remote_dispatch_result_warns_when_fallback_recovers_primary_fai
     assert (
         report["candidate_summary"]["remote_dispatch"]["fallback_recovered"]
         is True
+    )
+
+
+def test_analyze_remote_dispatch_result_preserves_remote_runtime_event_summary():
+    result = attach_remote_runtime_event_summary(
+        remote_dispatch_fallback_recovered_result(),
+        final_status="succeeded",
+        fallback_recovered=True,
+    )
+
+    report = analyze_remote_dispatch_result(result)
+
+    validate_diagnosis_report(report)
+    assert report["guard_verdict"] == "review_required"
+    metrics = report["candidate_summary"]["remote_dispatch"]
+    assert metrics["remote_runtime_event_summary_present"] is True
+    assert metrics["remote_runtime_event_summary_schema_version"] == (
+        "inferedge-remote-runtime-event-summary-v1"
+    )
+    assert metrics["remote_runtime_event_summary_consistent"] is True
+    assert metrics["remote_runtime_event_summary_errors"] == []
+    assert metrics["remote_runtime_event_summary_event_count"] == 3
+    assert metrics["remote_runtime_event_summary_event_type_counts"] == {
+        "remote_dispatch_selected": 1,
+        "remote_execution_failed": 1,
+        "remote_fallback_execution_completed": 1,
+    }
+    assert metrics["remote_runtime_event_summary_error_category_counts"] == {
+        "connection_error": 1
+    }
+    assert metrics["remote_runtime_event_summary_fallback_event_count"] == 1
+    assert metrics["remote_runtime_event_summary_fallback_recovered"] is True
+    assert metrics["remote_runtime_event_summary_final_status"] == "succeeded"
+    evidence_types = {item["type"] for item in report["evidence"]}
+    assert "remote_runtime_event_summary_mismatch" not in evidence_types
+    recovery = next(
+        item
+        for item in report["evidence"]
+        if item["type"] == "remote_execution_recovered_by_fallback"
+    )
+    assert recovery["raw_context"]["remote_dispatch"][
+        "remote_runtime_event_summary"
+    ] == result["remote_runtime_event_summary"]
+
+
+def test_analyze_remote_dispatch_result_warns_on_remote_runtime_event_summary_mismatch():
+    result = attach_remote_runtime_event_summary(
+        remote_dispatch_success_result(),
+        final_status="succeeded",
+    )
+    result["remote_runtime_event_summary"]["event_count"] = 99
+    result["remote_runtime_event_summary"]["final_status"] = "failed"
+
+    report = analyze_remote_dispatch_result(result)
+
+    validate_diagnosis_report(report)
+    evidence_types = [item["type"] for item in report["evidence"]]
+    assert evidence_types[0] == "remote_runtime_event_summary_mismatch"
+    mismatch = report["evidence"][0]
+    assert mismatch["status"] == "warning"
+    assert "remote_runtime_event_summary_event_count_mismatch" in (
+        mismatch["suspected_causes"]
+    )
+    assert "remote_runtime_event_summary_final_status_mismatch" in (
+        mismatch["suspected_causes"]
+    )
+    assert (
+        report["candidate_summary"]["remote_dispatch"][
+            "remote_runtime_event_summary_consistent"
+        ]
+        is False
     )
 
 

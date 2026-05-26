@@ -16,6 +16,9 @@ from .diagnosis import build_diagnosis_report, build_evidence_item
 ORCHESTRATION_SCHEMA_VERSION = "inferedge-orchestration-summary-v1"
 RUNTIME_RESULT_SCHEMA_VERSION = "inferedge-runtime-result-v1"
 REMOTE_DISPATCH_SCHEMA_VERSION = "inferedge-remote-dispatch-result-v1"
+REMOTE_RUNTIME_EVENT_SUMMARY_SCHEMA_VERSION = (
+    "inferedge-remote-runtime-event-summary-v1"
+)
 EDGEENV_HANDOFF_GUARD_ALIGNMENT_SCHEMA_VERSION = (
     "inferedge-aiguard-edgeenv-handoff-alignment-v1"
 )
@@ -1214,6 +1217,12 @@ def compute_remote_dispatch_metrics(remote_dispatch_result: dict[str, Any]) -> d
     remote_execution = _mapping(remote_dispatch_result.get("remote_execution"))
     remote_plan = _mapping(remote_dispatch_result.get("remote_execution_plan"))
     remote_result = _mapping(remote_dispatch_result.get("remote_execution_result"))
+    remote_operation_summary = _mapping(
+        remote_dispatch_result.get("remote_operation_summary")
+    )
+    remote_runtime_event_summary = _mapping(
+        remote_dispatch_result.get("remote_runtime_event_summary")
+    )
     retry_plan = _mapping(remote_dispatch_result.get("retry_fallback_plan"))
     fallback_result = _mapping(remote_dispatch_result.get("fallback_execution_result"))
     fallback_attempts = _list(fallback_result.get("attempts"))
@@ -1239,6 +1248,13 @@ def compute_remote_dispatch_metrics(remote_dispatch_result: dict[str, Any]) -> d
     fallback_attempted_worker_ids = _string_list(
         fallback_result.get("attempted_worker_ids")
     ) or _string_list(retry_plan.get("fallback_attempted_worker_ids"))
+    remote_runtime_event_summary_errors = _remote_runtime_event_summary_errors(
+        summary=remote_runtime_event_summary,
+        runtime_events=runtime_events,
+        remote_operation_summary=remote_operation_summary,
+        execution_status=execution_status,
+        fallback_final_status=fallback_final_status,
+    )
     return {
         "schema_version": remote_dispatch_result.get("schema_version"),
         "dispatch_status": dispatch_status,
@@ -1275,11 +1291,147 @@ def compute_remote_dispatch_metrics(remote_dispatch_result: dict[str, Any]) -> d
         ),
         "runtime_event_count": len(runtime_events),
         "runtime_events": runtime_events,
+        "remote_operation_summary": remote_operation_summary,
+        "remote_runtime_event_summary": remote_runtime_event_summary,
+        "remote_runtime_event_summary_present": bool(remote_runtime_event_summary),
+        "remote_runtime_event_summary_schema_version": (
+            remote_runtime_event_summary.get("schema_version")
+        ),
+        "remote_runtime_event_summary_event_count": _optional_non_negative_number(
+            remote_runtime_event_summary.get("event_count")
+        ),
+        "remote_runtime_event_summary_event_type_counts": _count_mapping(
+            remote_runtime_event_summary.get("event_type_counts")
+        ),
+        "remote_runtime_event_summary_status_counts": _count_mapping(
+            remote_runtime_event_summary.get("status_counts")
+        ),
+        "remote_runtime_event_summary_error_category_counts": _count_mapping(
+            remote_runtime_event_summary.get("error_category_counts")
+        ),
+        "remote_runtime_event_summary_fallback_event_count": (
+            _optional_non_negative_number(
+                remote_runtime_event_summary.get("fallback_event_count")
+            )
+        ),
+        "remote_runtime_event_summary_final_status": _first_string(
+            remote_runtime_event_summary.get("final_status")
+        ),
+        "remote_runtime_event_summary_fallback_recovered": _bool_value(
+            remote_runtime_event_summary.get("fallback_recovered")
+        ),
+        "remote_runtime_event_summary_latest_event": _first_string(
+            remote_runtime_event_summary.get("latest_event")
+        ),
+        "remote_runtime_event_summary_production_remote_execution": _bool_value(
+            remote_runtime_event_summary.get("production_remote_execution")
+        ),
+        "remote_runtime_event_summary_consistent": (
+            not remote_runtime_event_summary_errors
+        ),
+        "remote_runtime_event_summary_errors": remote_runtime_event_summary_errors,
         "production_remote_execution": _bool_value(
             remote_execution.get("production_remote_execution")
         )
         or _bool_value(remote_result.get("production_remote_execution")),
     }
+
+
+def _remote_runtime_event_summary_errors(
+    *,
+    summary: dict[str, Any],
+    runtime_events: list[dict[str, Any]],
+    remote_operation_summary: dict[str, Any],
+    execution_status: str,
+    fallback_final_status: str | None,
+) -> list[str]:
+    if not summary:
+        return []
+
+    errors: list[str] = []
+    if summary.get("schema_version") != REMOTE_RUNTIME_EVENT_SUMMARY_SCHEMA_VERSION:
+        errors.append("remote_runtime_event_summary_schema_mismatch")
+
+    event_count = _optional_non_negative_number(summary.get("event_count"))
+    if (
+        event_count is not None
+        and runtime_events
+        and int(event_count) != len(runtime_events)
+    ):
+        errors.append("remote_runtime_event_summary_event_count_mismatch")
+
+    expected_event_type_counts = _count_event_values(runtime_events, "event")
+    observed_event_type_counts = _count_mapping(summary.get("event_type_counts"))
+    if (
+        observed_event_type_counts
+        and runtime_events
+        and observed_event_type_counts != expected_event_type_counts
+    ):
+        errors.append("remote_runtime_event_summary_event_type_counts_mismatch")
+
+    expected_status_counts = _count_event_values(runtime_events, "status")
+    observed_status_counts = _count_mapping(summary.get("status_counts"))
+    if (
+        observed_status_counts
+        and runtime_events
+        and observed_status_counts != expected_status_counts
+    ):
+        errors.append("remote_runtime_event_summary_status_counts_mismatch")
+
+    expected_error_counts = _count_event_values(runtime_events, "error_category")
+    observed_error_counts = _count_mapping(summary.get("error_category_counts"))
+    if (
+        observed_error_counts
+        and runtime_events
+        and observed_error_counts != expected_error_counts
+    ):
+        errors.append("remote_runtime_event_summary_error_category_counts_mismatch")
+
+    expected_final_status = _first_string(
+        remote_operation_summary.get("final_status"),
+        fallback_final_status,
+        execution_status,
+    )
+    summary_final_status = _first_string(summary.get("final_status"))
+    if (
+        summary_final_status
+        and expected_final_status
+        and summary_final_status != expected_final_status
+    ):
+        errors.append("remote_runtime_event_summary_final_status_mismatch")
+
+    if _bool_value(summary.get("production_remote_execution")):
+        errors.append("remote_runtime_event_summary_boundary_mismatch")
+
+    operation_fallback_recovered = _bool_value(
+        remote_operation_summary.get("fallback_recovered")
+    )
+    summary_fallback_recovered = _bool_value(summary.get("fallback_recovered"))
+    if (
+        summary_fallback_recovered
+        and fallback_final_status
+        and fallback_final_status != "succeeded"
+    ):
+        errors.append("remote_runtime_event_summary_fallback_recovery_mismatch")
+    if (
+        remote_operation_summary
+        and summary_fallback_recovered != operation_fallback_recovered
+    ):
+        errors.append("remote_runtime_event_summary_operation_fallback_mismatch")
+
+    return errors
+
+
+def _count_event_values(
+    events: list[dict[str, Any]],
+    key: str,
+) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for event in events:
+        value = event.get(key)
+        if isinstance(value, str) and value:
+            counts[value] = counts.get(value, 0) + 1
+    return counts
 
 
 def compute_runtime_operation_metrics(runtime_result: dict[str, Any]) -> dict[str, Any]:
@@ -2915,6 +3067,11 @@ def _remote_dispatch_evidence(
     thresholds: dict[str, float],
 ) -> list[dict[str, Any]]:
     evidence: list[dict[str, Any]] = []
+    if metrics.get("remote_runtime_event_summary_present") and not metrics.get(
+        "remote_runtime_event_summary_consistent"
+    ):
+        evidence.append(_remote_runtime_event_summary_mismatch_evidence(metrics))
+
     if metrics.get("dispatch_failed"):
         evidence.append(_remote_dispatch_failure_evidence(metrics, thresholds))
 
@@ -2934,6 +3091,37 @@ def _remote_dispatch_evidence(
     if not evidence:
         evidence.append(_remote_dispatch_pass_evidence(metrics))
     return evidence
+
+
+def _remote_runtime_event_summary_mismatch_evidence(
+    metrics: dict[str, Any],
+) -> dict[str, Any]:
+    errors = _string_list(metrics.get("remote_runtime_event_summary_errors"))
+    return build_evidence_item(
+        evidence_type="remote_runtime_event_summary_mismatch",
+        metric_name="remote_runtime_event_summary_errors",
+        observed_value=len(errors),
+        baseline_value=0,
+        threshold=0,
+        delta=None,
+        delta_pct=None,
+        increase_factor=None,
+        severity="medium",
+        status="warning",
+        why_it_matters=(
+            "AIGuard consumes Orchestrator's compact remote runtime event summary "
+            "as supplemental operation evidence. If the compact summary does not "
+            "match the event list or operation summary, downstream reports may "
+            "misread fallback or remote execution status."
+        ),
+        suspected_causes=errors,
+        recommendation=(
+            "Regenerate the remote dispatch artifact from the current "
+            "InferEdgeOrchestrator starter so runtime_events, "
+            "remote_operation_summary, and remote_runtime_event_summary align."
+        ),
+        raw_context={"remote_dispatch": metrics},
+    )
 
 
 def _remote_dispatch_failure_evidence(

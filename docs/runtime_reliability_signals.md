@@ -293,6 +293,13 @@ Recovered fallback remains review evidence because it proves the resilience path
 worked, but also shows that the primary worker path was unstable. This remains
 starter evidence, not a claim of production remote execution.
 
+When Orchestrator includes additive `remote_runtime_event_summary`, AIGuard
+preserves it in deterministic raw context and checks that its compact event,
+status, error, fallback, and final-status counts match the original
+`runtime_events` / `remote_operation_summary`. A mismatch becomes
+`remote_runtime_event_summary_mismatch` warning evidence so downstream Lab
+reports do not accidentally trust stale compact summaries.
+
 EdgeEnv runtime regression reports can be analyzed directly:
 
 ```bash
