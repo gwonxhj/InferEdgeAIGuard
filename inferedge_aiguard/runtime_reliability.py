@@ -622,6 +622,9 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
         "history_telemetry_seed_runs": _optional_number(
             history_summary.get("history_seed_runs")
         ),
+        "history_telemetry_seed_run_config_runs": _optional_number(
+            history_summary.get("history_seed_run_config_runs")
+        ),
         "baseline_runtime_telemetry_history_seed_schema_version": (
             baseline_history_seed.get("schema_version")
         ),
@@ -650,6 +653,15 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
             float(len(_list(candidate_history_seed.get("points"))))
             if candidate_history_seed
             else None
+        ),
+        "baseline_runtime_telemetry_history_seed_run_config": _mapping(
+            baseline_history_seed.get("run_config")
+        ),
+        "candidate_runtime_telemetry_history_seed_run_config": _mapping(
+            candidate_history_seed.get("run_config")
+        ),
+        "candidate_runtime_telemetry_history_seed_run_config_present": bool(
+            _mapping(candidate_history_seed.get("run_config"))
         ),
         "history_missing_telemetry_runs": _optional_number(
             history_summary.get("missing_telemetry_runs")

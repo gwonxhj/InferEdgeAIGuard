@@ -569,6 +569,7 @@ def edgeenv_regression_report_with_runtime_telemetry_history_seed() -> dict:
     report = edgeenv_regression_report_with_history_telemetry_coverage_gap()
     context = report["runtime_telemetry_context"]
     context["history"]["summary"]["history_seed_runs"] = 2
+    context["history"]["summary"]["history_seed_run_config_runs"] = 2
     context["history"]["runs"] = [
         {
             "run_id": "edgeenv-smoke-baseline",
@@ -608,6 +609,18 @@ def _runtime_history_seed(run_id: str, *, sequence_id: int) -> dict:
             "device": "cpu",
             "precision": "fp32",
             "power_mode": "unknown",
+        },
+        "run_config": {
+            "batch": 1,
+            "height": 640,
+            "width": 640,
+            "warmup": 1,
+            "runs": 10,
+            "timeout_ms": None,
+            "input_mode": "dummy",
+            "input_preprocess": "none",
+            "power_mode": "unknown",
+            "jetson_clocks": "unknown",
         },
         "points": [
             {
@@ -1270,6 +1283,7 @@ def test_compute_edgeenv_regression_metrics_preserves_runtime_history_seed():
     )
 
     assert metrics["history_telemetry_seed_runs"] == 2.0
+    assert metrics["history_telemetry_seed_run_config_runs"] == 2.0
     assert metrics["baseline_runtime_telemetry_history_seed_schema_version"] == (
         "inferedge-runtime-telemetry-history-seed-v1"
     )
@@ -1291,6 +1305,19 @@ def test_compute_edgeenv_regression_metrics_preserves_runtime_history_seed():
         is False
     )
     assert metrics["candidate_runtime_telemetry_history_seed_point_count"] == 1.0
+    assert metrics["candidate_runtime_telemetry_history_seed_run_config_present"] is True
+    assert metrics["candidate_runtime_telemetry_history_seed_run_config"] == {
+        "batch": 1,
+        "height": 640,
+        "width": 640,
+        "warmup": 1,
+        "runs": 10,
+        "timeout_ms": None,
+        "input_mode": "dummy",
+        "input_preprocess": "none",
+        "power_mode": "unknown",
+        "jetson_clocks": "unknown",
+    }
 
 
 def test_compute_edgeenv_regression_metrics_extracts_orchestrator_feed_context():
@@ -1531,6 +1558,7 @@ def test_analyze_edgeenv_regression_report_preserves_history_seed_raw_context():
     )
     metrics = evidence["raw_context"]["edgeenv_regression"]
     assert metrics["history_telemetry_seed_runs"] == 2.0
+    assert metrics["history_telemetry_seed_run_config_runs"] == 2.0
     assert metrics["candidate_runtime_telemetry_history_seed_schema_version"] == (
         "inferedge-runtime-telemetry-history-seed-v1"
     )
@@ -1548,6 +1576,10 @@ def test_analyze_edgeenv_regression_report_preserves_history_seed_raw_context():
         ]
         is False
     )
+    assert metrics["candidate_runtime_telemetry_history_seed_run_config_present"] is True
+    assert metrics["candidate_runtime_telemetry_history_seed_run_config"][
+        "runs"
+    ] == 10
 
 
 def test_analyze_edgeenv_regression_report_warns_on_orchestrator_feed_context():
