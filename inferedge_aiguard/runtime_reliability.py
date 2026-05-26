@@ -1294,6 +1294,10 @@ def compute_remote_dispatch_metrics(remote_dispatch_result: dict[str, Any]) -> d
         "runtime_events": runtime_events,
         "remote_operation_summary": remote_operation_summary,
         "remote_runtime_event_summary": remote_runtime_event_summary,
+        "operation_boundary": _first_string(
+            remote_runtime_event_summary.get("operation_boundary"),
+            remote_operation_summary.get("operation_boundary"),
+        ),
         "remote_runtime_event_summary_present": bool(remote_runtime_event_summary),
         "remote_runtime_event_summary_schema_version": (
             remote_runtime_event_summary.get("schema_version")
