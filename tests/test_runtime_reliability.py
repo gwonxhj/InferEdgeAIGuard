@@ -2446,6 +2446,7 @@ def test_analyze_remote_dispatch_result_preserves_remote_runtime_event_summary()
     assert metrics["remote_runtime_event_summary_errors"] == []
     assert metrics["remote_runtime_event_summary_event_count"] == 3
     assert metrics["remote_runtime_event_summary_runtime_event_count"] == 3
+    assert metrics["operation_boundary"] == "remote dispatch starter evidence only"
     assert metrics["remote_runtime_event_summary_operation_boundary"] == (
         "remote dispatch starter evidence only"
     )
@@ -2473,6 +2474,9 @@ def test_analyze_remote_dispatch_result_preserves_remote_runtime_event_summary()
     assert recovery["raw_context"]["remote_dispatch"][
         "remote_runtime_event_summary_runtime_event_count"
     ] == 3
+    assert recovery["raw_context"]["remote_dispatch"][
+        "operation_boundary"
+    ] == "remote dispatch starter evidence only"
     assert recovery["raw_context"]["remote_dispatch"][
         "remote_runtime_event_summary_operation_boundary"
     ] == "remote dispatch starter evidence only"

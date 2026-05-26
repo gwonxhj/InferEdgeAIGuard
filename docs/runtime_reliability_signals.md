@@ -298,8 +298,9 @@ preserves it in deterministic raw context and checks that its compact event,
 status, error, fallback, and final-status counts match the original
 `runtime_events` / `remote_operation_summary`. It also preserves the
 Lab-facing `runtime_event_count` alias and the
-`operation_boundary: remote dispatch starter evidence only` marker so the
-starter boundary remains visible downstream. A mismatch becomes
+`operation_boundary: remote dispatch starter evidence only` marker in both the
+top-level raw context and compact summary so the starter boundary remains
+visible downstream. A mismatch becomes
 `remote_runtime_event_summary_mismatch` warning evidence so downstream Lab
 reports do not accidentally trust stale compact summaries.
 
