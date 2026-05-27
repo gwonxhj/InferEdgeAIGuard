@@ -776,6 +776,9 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
     candidate_downstream_guard_alignment = _mapping(
         candidate_orchestrator_context.get("downstream_guard_alignment")
     )
+    candidate_remote_runtime_event_summary = _mapping(
+        candidate_orchestrator_context.get("remote_runtime_event_summary")
+    )
     candidate_orchestrator_context_present = isinstance(
         candidate_context.get("orchestrator_operation_context"),
         dict,
@@ -795,6 +798,9 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
     )
     first_missing_downstream_guard_alignment = _mapping(
         first_missing_orchestrator_context.get("downstream_guard_alignment")
+    )
+    first_missing_remote_runtime_event_summary = _mapping(
+        first_missing_orchestrator_context.get("remote_runtime_event_summary")
     )
     baseline_max_temperature_c = _max_optional_number(
         _telemetry_number(
@@ -1002,6 +1008,25 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
         "history_missing_orchestrator_candidate_operation_context_role": (
             first_missing_orchestrator_producer.get("operation_context_role")
         ),
+        "history_missing_orchestrator_remote_runtime_event_summary": dict(
+            first_missing_remote_runtime_event_summary
+        ),
+        "history_missing_orchestrator_remote_runtime_event_summary_present": bool(
+            first_missing_remote_runtime_event_summary
+        ),
+        "history_missing_orchestrator_remote_runtime_event_summary_evidence_role": (
+            first_missing_remote_runtime_event_summary.get("evidence_role")
+        ),
+        "history_missing_orchestrator_remote_runtime_event_summary_operation_boundary": (
+            first_missing_remote_runtime_event_summary.get("operation_boundary")
+        ),
+        "history_missing_orchestrator_remote_runtime_event_summary_production_remote_execution": (
+            _optional_bool(
+                first_missing_remote_runtime_event_summary.get(
+                    "production_remote_execution"
+                )
+            )
+        ),
         "history_missing_orchestrator_edgeenv_mapping_hint": dict(
             first_missing_edgeenv_mapping_hint
         ),
@@ -1128,6 +1153,25 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
         ),
         "orchestrator_candidate_operation_context_role": (
             candidate_orchestrator_producer.get("operation_context_role")
+        ),
+        "orchestrator_remote_runtime_event_summary": dict(
+            candidate_remote_runtime_event_summary
+        ),
+        "orchestrator_remote_runtime_event_summary_present": bool(
+            candidate_remote_runtime_event_summary
+        ),
+        "orchestrator_remote_runtime_event_summary_evidence_role": (
+            candidate_remote_runtime_event_summary.get("evidence_role")
+        ),
+        "orchestrator_remote_runtime_event_summary_operation_boundary": (
+            candidate_remote_runtime_event_summary.get("operation_boundary")
+        ),
+        "orchestrator_remote_runtime_event_summary_production_remote_execution": (
+            _optional_bool(
+                candidate_remote_runtime_event_summary.get(
+                    "production_remote_execution"
+                )
+            )
         ),
         "orchestrator_edgeenv_mapping_hint": dict(candidate_edgeenv_mapping_hint),
         "orchestrator_mapping_hint_copy_candidate_context_to": (
@@ -2754,6 +2798,24 @@ def _edgeenv_orchestrator_producer_lineage_evidence(
                         "orchestrator_guard_alignment_operation_evidence_candidates"
                     )
                 ),
+                "candidate_remote_runtime_event_summary": metrics.get(
+                    "orchestrator_remote_runtime_event_summary"
+                ),
+                "candidate_remote_runtime_event_summary_evidence_role": (
+                    metrics.get(
+                        "orchestrator_remote_runtime_event_summary_evidence_role"
+                    )
+                ),
+                "candidate_remote_runtime_event_summary_operation_boundary": (
+                    metrics.get(
+                        "orchestrator_remote_runtime_event_summary_operation_boundary"
+                    )
+                ),
+                "candidate_remote_runtime_event_summary_production_remote_execution": (
+                    metrics.get(
+                        "orchestrator_remote_runtime_event_summary_production_remote_execution"
+                    )
+                ),
                 "missing_expected": missing_expected,
                 "missing_device_local_sources": metrics.get(
                     "history_missing_orchestrator_candidate_device_local_producer_sources"
@@ -2789,6 +2851,24 @@ def _edgeenv_orchestrator_producer_lineage_evidence(
                 "missing_guard_alignment_operation_evidence_candidates": (
                     metrics.get(
                         "history_missing_orchestrator_guard_alignment_operation_evidence_candidates"
+                    )
+                ),
+                "missing_remote_runtime_event_summary": metrics.get(
+                    "history_missing_orchestrator_remote_runtime_event_summary"
+                ),
+                "missing_remote_runtime_event_summary_evidence_role": (
+                    metrics.get(
+                        "history_missing_orchestrator_remote_runtime_event_summary_evidence_role"
+                    )
+                ),
+                "missing_remote_runtime_event_summary_operation_boundary": (
+                    metrics.get(
+                        "history_missing_orchestrator_remote_runtime_event_summary_operation_boundary"
+                    )
+                ),
+                "missing_remote_runtime_event_summary_production_remote_execution": (
+                    metrics.get(
+                        "history_missing_orchestrator_remote_runtime_event_summary_production_remote_execution"
                     )
                 ),
                 "missing_context_run_ids": metrics.get(
