@@ -323,6 +323,18 @@ def _format_edgeenv_handoff_alignment_summary(summary: dict[str, Any]) -> str:
         f"- decision_owner: {summary.get('decision_owner', 'unknown')}",
         f"- diagnosis_owner: {summary.get('diagnosis_owner', 'unknown')}",
         (
+            "- lab_expected_report_markers: "
+            f"{_format_list(summary.get('lab_expected_report_markers', []))}"
+        ),
+        (
+            "- report_marker_context_role: "
+            f"{summary.get('report_marker_context_role', 'unknown')}"
+        ),
+        (
+            "- aiguard_validates_expected_report_markers: "
+            f"{summary.get('aiguard_validates_expected_report_markers', False)}"
+        ),
+        (
             "- required_evidence_types: "
             f"{_format_list(summary.get('required_evidence_types', []))}"
         ),
@@ -395,6 +407,22 @@ def _markdown_edgeenv_handoff_alignment_report(summary: dict[str, Any]) -> str:
                     "guard_evidence_type_count",
                     summary.get("guard_evidence_type_count", 0),
                 ],
+                [
+                    "lab_expected_report_marker_count",
+                    summary.get("lab_expected_report_marker_count", 0),
+                ],
+                [
+                    "lab_report_marker_owner",
+                    summary.get("lab_report_marker_owner", "unknown"),
+                ],
+                [
+                    "report_marker_context_role",
+                    summary.get("report_marker_context_role", "unknown"),
+                ],
+                [
+                    "aiguard_validates_expected_report_markers",
+                    summary.get("aiguard_validates_expected_report_markers", False),
+                ],
             ],
         ),
         "## Evidence Alignment",
@@ -421,6 +449,12 @@ def _markdown_edgeenv_handoff_alignment_report(summary: dict[str, Any]) -> str:
                     "supplemental_guard_evidence_types",
                     _format_markdown_list(
                         summary.get("supplemental_guard_evidence_types", [])
+                    ),
+                ],
+                [
+                    "lab_expected_report_markers",
+                    _format_markdown_list(
+                        summary.get("lab_expected_report_markers", [])
                     ),
                 ],
                 ["errors", _format_markdown_list(summary.get("errors", []))],

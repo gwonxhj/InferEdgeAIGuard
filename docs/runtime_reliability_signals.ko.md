@@ -362,6 +362,14 @@ deployment decision을 생성하지 않습니다.
 `external_aiguard_required_evidence_types`가 `guard_analysis.evidence`에
 존재하는지 검증합니다. 또한 AIGuard가 external evidence provider이고 Lab이
 final decision owner라는 handoff boundary flag도 함께 확인합니다. EdgeEnv가
+`lab_bundle_alignment.expected_report_markers`를 제공하면 AIGuard는 이를
+`lab_report_contract_context`로 alignment summary에 보존합니다:
+`Runtime Intelligence Risk Summary`, `Orchestrator operation feed context`,
+`AIGuard runtime operation anomalies`, `AIGuard remote dispatch event summary`,
+`AIGuard remote event summary consistency`,
+`AIGuard producer-lineage guard alignment`, `Lab remains the final deployment decision owner.`.
+AIGuard does not validate or own those Lab report markers; Lab's bundle/report
+gate remains responsible for enforcing the final report contract. 또한 EdgeEnv가
 `edgeenv_report_summary.producer_lineage_guard_alignment_run_ids`를 제공하면,
 같은 gate는 이를 AIGuard의 `edgeenv_orchestrator_producer_lineage` raw
 context와 대조해 producer-lineage marker handoff가 조용히 어긋나지 않게
