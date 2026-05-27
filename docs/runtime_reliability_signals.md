@@ -322,7 +322,9 @@ status, error, fallback, and final-status counts match the original
 Lab-facing `runtime_event_count` alias and the
 `operation_boundary: remote dispatch starter evidence only` marker in both the
 top-level raw context and compact summary so the starter boundary remains
-visible downstream. A mismatch becomes
+visible downstream. A non-starter `evidence_role` such as anything other than
+`remote_dispatch_runtime_event_compact_summary` is treated as a compact-summary
+mismatch rather than production remote-operation proof. A mismatch becomes
 `remote_runtime_event_summary_mismatch` warning evidence so downstream Lab
 reports do not accidentally trust stale compact summaries.
 

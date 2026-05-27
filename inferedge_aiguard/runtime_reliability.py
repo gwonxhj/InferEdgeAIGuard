@@ -20,6 +20,9 @@ REMOTE_RUNTIME_EVENT_SUMMARY_SCHEMA_VERSION = (
     "inferedge-remote-runtime-event-summary-v1"
 )
 REMOTE_DISPATCH_STARTER_OPERATION_BOUNDARY = "remote dispatch starter evidence only"
+REMOTE_RUNTIME_EVENT_SUMMARY_EVIDENCE_ROLE = (
+    "remote_dispatch_runtime_event_compact_summary"
+)
 EDGEENV_HANDOFF_GUARD_ALIGNMENT_SCHEMA_VERSION = (
     "inferedge-aiguard-edgeenv-handoff-alignment-v1"
 )
@@ -1221,6 +1224,7 @@ def compute_remote_dispatch_metrics(remote_dispatch_result: dict[str, Any]) -> d
     remote_operation_summary = _mapping(
         remote_dispatch_result.get("remote_operation_summary")
     )
+    dispatch_summary = _mapping(remote_dispatch_result.get("dispatch_summary"))
     remote_runtime_event_summary = _mapping(
         remote_dispatch_result.get("remote_runtime_event_summary")
     )
@@ -1228,14 +1232,25 @@ def compute_remote_dispatch_metrics(remote_dispatch_result: dict[str, Any]) -> d
     fallback_result = _mapping(remote_dispatch_result.get("fallback_execution_result"))
     fallback_attempts = _list(fallback_result.get("attempts"))
     runtime_events = _list(remote_dispatch_result.get("runtime_events"))
-    dispatch_status = _first_string(remote_dispatch_result.get("dispatch_status")) or "unknown"
+    dispatch_status = (
+        _first_string(
+            remote_dispatch_result.get("dispatch_status"),
+            dispatch_summary.get("dispatch_status"),
+            remote_operation_summary.get("dispatch_status"),
+        )
+        or "unknown"
+    )
     execution_status = _first_string(remote_result.get("status")) or "unknown"
     execution_requested = _bool_value(remote_execution.get("execution_requested")) or _bool_value(
         remote_result.get("execution_requested")
     )
     execution_performed = _bool_value(remote_result.get("execution_performed"))
     error_category = _first_string(remote_result.get("error_category"))
-    selected_worker_id = _first_string(remote_dispatch_result.get("selected_worker_id"))
+    selected_worker_id = _first_string(
+        remote_dispatch_result.get("selected_worker_id"),
+        dispatch_summary.get("selected_worker_id"),
+        remote_operation_summary.get("selected_worker_id"),
+    )
     transport = _first_string(remote_result.get("transport"), remote_plan.get("transport"))
     http_status = _optional_non_negative_number(remote_result.get("http_status"))
     exit_code = _optional_non_negative_number(remote_result.get("exit_code"))
@@ -1261,7 +1276,11 @@ def compute_remote_dispatch_metrics(remote_dispatch_result: dict[str, Any]) -> d
         "dispatch_status": dispatch_status,
         "dispatch_failed": dispatch_status != "accepted",
         "selected_worker_id": selected_worker_id,
-        "decision_reason": remote_dispatch_result.get("decision_reason"),
+        "decision_reason": _first_string(
+            remote_dispatch_result.get("decision_reason"),
+            dispatch_summary.get("decision_reason"),
+            remote_operation_summary.get("decision_reason"),
+        ),
         "transport": transport,
         "execution_requested": execution_requested,
         "execution_performed": execution_performed,
@@ -1332,6 +1351,9 @@ def compute_remote_dispatch_metrics(remote_dispatch_result: dict[str, Any]) -> d
         ),
         "remote_runtime_event_summary_latest_event": _first_string(
             remote_runtime_event_summary.get("latest_event")
+        ),
+        "remote_runtime_event_summary_evidence_role": _first_string(
+            remote_runtime_event_summary.get("evidence_role")
         ),
         "remote_runtime_event_summary_production_remote_execution": _bool_value(
             remote_runtime_event_summary.get("production_remote_execution")
@@ -1435,6 +1457,13 @@ def _remote_runtime_event_summary_errors(
         and operation_boundary != REMOTE_DISPATCH_STARTER_OPERATION_BOUNDARY
     ):
         errors.append("remote_runtime_event_summary_boundary_mismatch")
+
+    evidence_role = _first_string(summary.get("evidence_role"))
+    if (
+        evidence_role
+        and evidence_role != REMOTE_RUNTIME_EVENT_SUMMARY_EVIDENCE_ROLE
+    ):
+        errors.append("remote_runtime_event_summary_evidence_role_mismatch")
 
     operation_fallback_recovered = _bool_value(
         remote_operation_summary.get("fallback_recovered")
