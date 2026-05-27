@@ -1061,6 +1061,19 @@ def remote_dispatch_fallback_recovered_result() -> dict:
     return result
 
 
+def remote_dispatch_nested_summary_fallback_recovered_result() -> dict:
+    result = remote_dispatch_fallback_recovered_result()
+    dispatch_status = result.pop("dispatch_status")
+    selected_worker_id = result.pop("selected_worker_id")
+    decision_reason = result.pop("decision_reason")
+    result["dispatch_summary"] = {
+        "dispatch_status": dispatch_status,
+        "selected_worker_id": selected_worker_id,
+        "decision_reason": decision_reason,
+    }
+    return result
+
+
 def attach_remote_runtime_event_summary(
     result: dict,
     *,
@@ -1216,6 +1229,19 @@ def test_compute_remote_dispatch_metrics_from_fallback_recovery():
     assert metrics["fallback_primary_worker_id"] == "jetson-nano-01"
     assert metrics["fallback_reason"] == "connection_error"
     assert metrics["runtime_event_count"] == 3
+
+
+def test_compute_remote_dispatch_metrics_reads_nested_dispatch_summary():
+    metrics = compute_remote_dispatch_metrics(
+        remote_dispatch_nested_summary_fallback_recovered_result()
+    )
+
+    assert metrics["dispatch_status"] == "accepted"
+    assert metrics["dispatch_failed"] is False
+    assert metrics["selected_worker_id"] == "jetson-nano-01"
+    assert metrics["decision_reason"] == (
+        "selected online worker matching backend/device requirements"
+    )
 
 
 def test_multi_workload_sustained_summary_adds_profile_and_thermal_metrics():
@@ -2426,6 +2452,22 @@ def test_analyze_remote_dispatch_result_warns_when_fallback_recovers_primary_fai
     )
 
 
+def test_analyze_remote_dispatch_result_keeps_nested_dispatch_summary_as_accepted():
+    report = analyze_remote_dispatch_result(
+        remote_dispatch_nested_summary_fallback_recovered_result()
+    )
+
+    validate_diagnosis_report(report)
+    evidence_types = {item["type"] for item in report["evidence"]}
+    assert "remote_worker_selection_failed" not in evidence_types
+    assert "remote_execution_failed" in evidence_types
+    assert "remote_execution_recovered_by_fallback" in evidence_types
+    assert report["candidate_summary"]["remote_dispatch"]["dispatch_status"] == (
+        "accepted"
+    )
+    assert report["guard_verdict"] == "review_required"
+
+
 def test_analyze_remote_dispatch_result_preserves_remote_runtime_event_summary():
     result = attach_remote_runtime_event_summary(
         remote_dispatch_fallback_recovered_result(),
@@ -2446,6 +2488,13 @@ def test_analyze_remote_dispatch_result_preserves_remote_runtime_event_summary()
     assert metrics["remote_runtime_event_summary_errors"] == []
     assert metrics["remote_runtime_event_summary_event_count"] == 3
     assert metrics["remote_runtime_event_summary_runtime_event_count"] == 3
+    assert metrics["remote_runtime_event_summary_evidence_role"] == (
+        "remote_dispatch_runtime_event_compact_summary"
+    )
+    assert (
+        metrics["remote_runtime_event_summary_production_remote_execution"]
+        is False
+    )
     assert metrics["operation_boundary"] == "remote dispatch starter evidence only"
     assert metrics["remote_runtime_event_summary_operation_boundary"] == (
         "remote dispatch starter evidence only"
@@ -2475,6 +2524,15 @@ def test_analyze_remote_dispatch_result_preserves_remote_runtime_event_summary()
         "remote_runtime_event_summary_runtime_event_count"
     ] == 3
     assert recovery["raw_context"]["remote_dispatch"][
+        "remote_runtime_event_summary_evidence_role"
+    ] == "remote_dispatch_runtime_event_compact_summary"
+    assert (
+        recovery["raw_context"]["remote_dispatch"][
+            "remote_runtime_event_summary_production_remote_execution"
+        ]
+        is False
+    )
+    assert recovery["raw_context"]["remote_dispatch"][
         "operation_boundary"
     ] == "remote dispatch starter evidence only"
     assert recovery["raw_context"]["remote_dispatch"][
@@ -2492,6 +2550,9 @@ def test_analyze_remote_dispatch_result_warns_on_remote_runtime_event_summary_mi
     result["remote_runtime_event_summary"]["final_status"] = "failed"
     result["remote_runtime_event_summary"]["operation_boundary"] = (
         "production remote execution"
+    )
+    result["remote_runtime_event_summary"]["evidence_role"] = (
+        "production_remote_runtime_summary"
     )
 
     report = analyze_remote_dispatch_result(result)
@@ -2514,6 +2575,9 @@ def test_analyze_remote_dispatch_result_warns_on_remote_runtime_event_summary_mi
         mismatch["suspected_causes"]
     )
     assert "remote_runtime_event_summary_boundary_mismatch" in (
+        mismatch["suspected_causes"]
+    )
+    assert "remote_runtime_event_summary_evidence_role_mismatch" in (
         mismatch["suspected_causes"]
     )
     assert (

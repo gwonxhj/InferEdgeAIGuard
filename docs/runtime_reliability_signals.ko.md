@@ -391,7 +391,9 @@ status count가 원본 `runtime_events` 및 `remote_operation_summary`와 일치
 확인합니다. 또한 Lab-facing `runtime_event_count` alias와
 `operation_boundary: remote dispatch starter evidence only` marker를 top-level
 raw context와 compact summary 안에 그대로 보존해 downstream에서도 starter
-boundary가 보이게 합니다. 불일치하면 downstream
+boundary가 보이게 합니다. `remote_dispatch_runtime_event_compact_summary`가
+아닌 non-starter `evidence_role`은 production remote-operation proof가 아니라
+compact-summary mismatch로 취급합니다. 불일치하면 downstream
 Lab report가 오래된 compact summary를 신뢰하지 않도록
 `remote_runtime_event_summary_mismatch` warning evidence로 남깁니다.
 
