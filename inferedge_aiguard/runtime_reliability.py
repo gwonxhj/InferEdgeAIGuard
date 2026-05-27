@@ -102,6 +102,8 @@ def validate_edgeenv_handoff_guard_evidence_alignment(
     invalid_required_evidence_types = _invalid_string_values(
         raw_required_evidence_types
     )
+    raw_expected_report_markers = lab_bundle_alignment.get("expected_report_markers")
+    expected_report_markers = _unique_string_values(raw_expected_report_markers)
 
     raw_evidence = guard_analysis.get("evidence")
     evidence_items = _list(raw_evidence)
@@ -199,6 +201,11 @@ def validate_edgeenv_handoff_guard_evidence_alignment(
         "guard_analysis_schema_version": guard_analysis.get("schema_version"),
         "required_evidence_type_count": len(required_evidence_types),
         "guard_evidence_type_count": len(guard_evidence_types),
+        "lab_expected_report_marker_count": len(expected_report_markers),
+        "lab_expected_report_markers": expected_report_markers,
+        "lab_report_marker_owner": "lab",
+        "report_marker_context_role": "lab_report_contract_context",
+        "aiguard_validates_expected_report_markers": False,
         "required_evidence_types": required_evidence_types,
         "guard_analysis_evidence_types": guard_evidence_types,
         "missing_required_evidence_types": missing_required_evidence_types,

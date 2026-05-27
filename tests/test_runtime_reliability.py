@@ -20,6 +20,15 @@ from inferedge_aiguard.schema import validate_diagnosis_report
 ROOT = Path(__file__).resolve().parents[1]
 EDGEENV_REGRESSION_FIXTURES = ROOT / "tests" / "fixtures" / "edgeenv_regression"
 RUNTIME_INTELLIGENCE_EXAMPLES = ROOT / "examples" / "runtime_intelligence"
+LAB_EXPECTED_REPORT_MARKERS = [
+    "Runtime Intelligence Risk Summary",
+    "Orchestrator operation feed context",
+    "AIGuard runtime operation anomalies",
+    "AIGuard remote dispatch event summary",
+    "AIGuard remote event summary consistency",
+    "AIGuard producer-lineage guard alignment",
+    "Lab remains the final deployment decision owner.",
+]
 
 
 def orchestration_summary() -> dict:
@@ -657,6 +666,7 @@ def edgeenv_runtime_intelligence_lab_handoff() -> dict:
                 "runtime_queue_overload",
                 "runtime_thermal_instability",
             ],
+            "expected_report_markers": LAB_EXPECTED_REPORT_MARKERS,
             "boundary_flags": {
                 "aiguard_guard_analysis_is_external": True,
                 "edgeenv_does_not_generate_guard_analysis": True,
@@ -3185,6 +3195,13 @@ def test_validate_edgeenv_handoff_guard_evidence_alignment_passes():
     assert alignment["guard_analysis_producer_lineage_guard_alignment_run_ids"] == [
         "edgeenv-smoke-candidate",
     ]
+    assert alignment["lab_expected_report_markers"] == LAB_EXPECTED_REPORT_MARKERS
+    assert alignment["lab_expected_report_marker_count"] == len(
+        LAB_EXPECTED_REPORT_MARKERS
+    )
+    assert alignment["lab_report_marker_owner"] == "lab"
+    assert alignment["report_marker_context_role"] == "lab_report_contract_context"
+    assert alignment["aiguard_validates_expected_report_markers"] is False
     assert alignment["required_evidence_types"] == [
         "runtime_telemetry_context_coverage",
         "edgeenv_orchestrator_producer_lineage",
@@ -3307,3 +3324,24 @@ def test_check_edgeenv_handoff_alignment_cli_exports_gate_summary(tmp_path):
     assert "EdgeEnv handoff alignment summary" in result.stdout
     assert saved["status"] == "passed"
     assert saved["recommendation"] == "alignment_satisfied"
+    assert saved["lab_expected_report_markers"] == LAB_EXPECTED_REPORT_MARKERS
+    assert saved["aiguard_validates_expected_report_markers"] is False
+
+
+def test_runtime_intelligence_docs_describe_lab_report_marker_context():
+    docs = [
+        (ROOT / "README.md").read_text(encoding="utf-8"),
+        (ROOT / "docs" / "runtime_reliability_signals.md").read_text(
+            encoding="utf-8"
+        ),
+        (ROOT / "docs" / "runtime_reliability_signals.ko.md").read_text(
+            encoding="utf-8"
+        ),
+    ]
+
+    for doc in docs:
+        assert "expected_report_markers" in doc
+        assert "lab_report_contract_context" in doc
+        assert "AIGuard does not validate or own those Lab report markers" in doc
+        for marker in LAB_EXPECTED_REPORT_MARKERS:
+            assert marker in doc

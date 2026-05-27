@@ -444,6 +444,14 @@ Lab-owned deployment decision.
 `external_aiguard_required_evidence_types` are present in
 `guard_analysis.evidence`. It also checks the handoff boundary flags that keep
 AIGuard external and Lab as final decision owner. When EdgeEnv exposes
+`lab_bundle_alignment.expected_report_markers`, AIGuard preserves them as
+`lab_report_contract_context`: `Runtime Intelligence Risk Summary`,
+`Orchestrator operation feed context`, `AIGuard runtime operation anomalies`,
+`AIGuard remote dispatch event summary`,
+`AIGuard remote event summary consistency`,
+`AIGuard producer-lineage guard alignment`, and `Lab remains the final deployment decision owner.`.
+AIGuard does not validate or own those Lab report markers; Lab's bundle/report
+gate remains responsible for enforcing the final report contract. If EdgeEnv exposes
 `edgeenv_report_summary.producer_lineage_guard_alignment_run_ids`, the same
 gate compares that summary with AIGuard's
 `edgeenv_orchestrator_producer_lineage` raw context so producer-lineage marker
