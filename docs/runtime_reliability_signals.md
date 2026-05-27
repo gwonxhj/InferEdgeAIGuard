@@ -62,6 +62,23 @@ only turns same-condition EdgeEnv regression, telemetry coverage, and preserved
 Orchestrator operation context signals into deterministic diagnosis evidence for
 Lab review.
 
+Remote dispatch starter results are also supported when the JSON includes:
+
+- `schema_version: inferedge-remote-dispatch-result-v1`
+- optional `worker_selection_evidence`
+- optional `remote_execution_plan`
+- optional `remote_execution_result`
+- optional `fallback_execution_result`
+- optional `remote_operation_summary`
+- optional `remote_runtime_event_summary`
+
+AIGuard treats this as Orchestrator-produced starter evidence. It can explain
+worker-selection, explicit HTTP/SSH starter status, bounded fallback recovery,
+and compact event-summary consistency, but it does not confirm production
+remote execution, long-lived worker readiness, secure tunnel operation,
+production retry/failover, or cloud orchestration. Lab remains the final
+deployment decision owner.
+
 ## Evidence Mapping
 
 | Evidence type | Metric | Review threshold | Block threshold | Meaning |
@@ -93,6 +110,11 @@ Lab review.
 | `runtime_thermal_instability` | `candidate_max_temperature_c` / `candidate_throttling_detected` | temperature `>= 70.0` or throttling `true` | temperature `>= 85.0` | EdgeEnv telemetry or attached Orchestrator feed indicates thermal/throttling pressure |
 | `runtime_queue_overload` | `candidate_queue_depth` | `>= 3.0` | `>= 8.0` | EdgeEnv telemetry or attached Orchestrator feed indicates queue backlog pressure |
 | `edgeenv_comparability_guardrail` | `edgeenv_comparable` | skipped when not comparable or not same-condition | n/a | AIGuard refuses to reinterpret non-comparable EdgeEnv reports as same-condition regression |
+| `remote_execution_plan_only` | `execution_requested` | `false` | n/a | Remote dispatch selected a worker but stayed within the plan-only starter boundary |
+| `remote_execution_starter_success` | `remote_execution_status` | pass evidence only | n/a | Explicit HTTP/SSH starter returned a structured success response |
+| `remote_execution_failed` | `remote_execution_status` / `error_category` | any failed starter execution | n/a | Explicit starter execution failed and should be reviewed as remote operation evidence |
+| `remote_execution_recovered_by_fallback` | `fallback_recovered` | `true` after primary failure | n/a | Bounded fallback recovered the starter path, but the primary worker path remains review evidence |
+| `remote_runtime_event_summary_mismatch` | `remote_runtime_event_summary_consistent` | `false` | n/a | Compact remote event summary does not match producer events or operation summary |
 
 These thresholds are intentionally deterministic and local-first. They are
 review signals, not production SLOs.
@@ -303,6 +325,20 @@ top-level raw context and compact summary so the starter boundary remains
 visible downstream. A mismatch becomes
 `remote_runtime_event_summary_mismatch` warning evidence so downstream Lab
 reports do not accidentally trust stale compact summaries.
+
+### Remote Dispatch Diagnosis Boundary
+
+Remote dispatch evidence is deliberately narrower than production remote
+operation:
+
+- Implemented signal: worker-selection evidence, plan-only mode, explicit
+  starter status, bounded fallback recovery, compact event summary, and
+  `operation_boundary=remote dispatch starter evidence only`.
+- Not implemented signal: production remote execution, long-lived worker
+  lifecycle, Cloudflare/Zero Trust operation, production retry/failover, or
+  cloud control plane behavior.
+- Ownership: Orchestrator produces operation evidence, AIGuard emits optional
+  deterministic warning context, and Lab owns the final deployment decision.
 
 EdgeEnv runtime regression reports can be analyzed directly:
 
