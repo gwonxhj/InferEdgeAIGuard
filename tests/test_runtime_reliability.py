@@ -838,6 +838,13 @@ def edgeenv_regression_report_with_orchestrator_feed_context() -> dict:
             "orchestrator_is_final_decision_owner": False,
             "lab_is_final_decision_owner": True,
         },
+        "remote_runtime_event_summary": {
+            "event_count": 4,
+            "runtime_event_count": 4,
+            "production_remote_execution": False,
+            "evidence_role": "remote_dispatch_runtime_event_compact_summary",
+            "operation_boundary": "remote dispatch starter evidence only",
+        },
     }
     return report
 
@@ -1541,6 +1548,17 @@ def test_compute_edgeenv_regression_metrics_extracts_orchestrator_feed_context()
     assert metrics["orchestrator_candidate_device_local_event_count"] == 2.0
     assert metrics["orchestrator_candidate_device_local_task_count"] == 1.0
     assert metrics["orchestrator_candidate_operation_context_role"] == "supplemental"
+    assert metrics["orchestrator_remote_runtime_event_summary_present"] is True
+    assert metrics["orchestrator_remote_runtime_event_summary_evidence_role"] == (
+        "remote_dispatch_runtime_event_compact_summary"
+    )
+    assert metrics["orchestrator_remote_runtime_event_summary_operation_boundary"] == (
+        "remote dispatch starter evidence only"
+    )
+    assert (
+        metrics["orchestrator_remote_runtime_event_summary_production_remote_execution"]
+        is False
+    )
     assert metrics["candidate_max_temperature_c"] == 78.5
     assert metrics["candidate_throttling_detected"] is True
     assert metrics["candidate_queue_depth"] == 7.0
@@ -1600,6 +1618,24 @@ def test_compute_edgeenv_regression_metrics_preserves_missing_orchestrator_conte
     assert (
         metrics["history_missing_orchestrator_candidate_operation_context_role"]
         == "supplemental"
+    )
+    assert (
+        metrics["history_missing_orchestrator_remote_runtime_event_summary_present"]
+        is True
+    )
+    assert (
+        metrics["history_missing_orchestrator_remote_runtime_event_summary_evidence_role"]
+        == "remote_dispatch_runtime_event_compact_summary"
+    )
+    assert (
+        metrics["history_missing_orchestrator_remote_runtime_event_summary_operation_boundary"]
+        == "remote dispatch starter evidence only"
+    )
+    assert (
+        metrics[
+            "history_missing_orchestrator_remote_runtime_event_summary_production_remote_execution"
+        ]
+        is False
     )
     assert metrics["history_missing_orchestrator_edgeenv_mapping_hint"][
         "coverage_summary_owner"
@@ -1895,6 +1931,12 @@ def test_analyze_edgeenv_regression_report_warns_on_orchestrator_feed_context():
         "runtime_queue_overload",
         "runtime_thermal_instability",
     }
+    assert producer_lineage["raw_context"]["producer_lineage"][
+        "candidate_remote_runtime_event_summary_evidence_role"
+    ] == "remote_dispatch_runtime_event_compact_summary"
+    assert producer_lineage["raw_context"]["producer_lineage"][
+        "candidate_remote_runtime_event_summary_operation_boundary"
+    ] == "remote dispatch starter evidence only"
 
 
 def test_analyze_edgeenv_regression_report_warns_on_missing_producer_lineage():
