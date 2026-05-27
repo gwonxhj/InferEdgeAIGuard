@@ -327,6 +327,13 @@ visible downstream. A non-starter `evidence_role` such as anything other than
 mismatch rather than production remote-operation proof. A mismatch becomes
 `remote_runtime_event_summary_mismatch` warning evidence so downstream Lab
 reports do not accidentally trust stale compact summaries.
+When the same summary arrives through EdgeEnv-preserved
+`orchestrator_operation_context`, AIGuard keeps
+`evidence_role=remote_dispatch_runtime_event_compact_summary`,
+`operation_boundary=remote dispatch starter evidence only`, and
+`production_remote_execution=false` as traceability/raw-context markers only.
+They support deterministic warning context; they do not prove production remote
+execution and they do not change Lab's final deployment-decision ownership.
 
 ### Remote Dispatch Diagnosis Boundary
 

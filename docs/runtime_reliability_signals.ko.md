@@ -396,6 +396,14 @@ boundary가 보이게 합니다. `remote_dispatch_runtime_event_compact_summary`
 compact-summary mismatch로 취급합니다. 불일치하면 downstream
 Lab report가 오래된 compact summary를 신뢰하지 않도록
 `remote_runtime_event_summary_mismatch` warning evidence로 남깁니다.
+같은 summary가 EdgeEnv가 보존한 `orchestrator_operation_context`를 통해
+전달되는 경우에도 AIGuard는
+`evidence_role=remote_dispatch_runtime_event_compact_summary`,
+`operation_boundary=remote dispatch starter evidence only`,
+`production_remote_execution=false`를 traceability/raw-context marker로만
+유지합니다. 이는 deterministic warning context를 위한 것이며 production
+remote execution proof도 아니고 Lab의 final deployment-decision ownership을
+바꾸지도 않습니다.
 
 ### Remote Dispatch Diagnosis Boundary
 

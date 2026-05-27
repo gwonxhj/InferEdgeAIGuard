@@ -296,6 +296,13 @@ summary를 raw context에 보존합니다. Lab-facing `runtime_event_count` alia
 `operation_boundary: remote dispatch starter evidence only` marker를 top-level
 raw context와 compact summary 안에 그대로 드러내며, 원본 event list와 맞지 않을 때
 `remote_runtime_event_summary_mismatch` warning evidence를 생성합니다.
+EdgeEnv가 같은 Orchestrator summary를 local registry/replay context로 보존한
+경우에도 AIGuard는
+`evidence_role=remote_dispatch_runtime_event_compact_summary`,
+`operation_boundary=remote dispatch starter evidence only`,
+`production_remote_execution=false`를 traceability/raw context로만 유지합니다.
+이는 deterministic warning context이며 remote execution proof나 Lab
+deployment decision이 아닙니다.
 
 Remote dispatch diagnosis boundary:
 
