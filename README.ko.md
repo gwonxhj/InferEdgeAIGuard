@@ -79,13 +79,14 @@ python3 -m pytest -q
 - **InferEdge-Runtime:** 실행/profiling result JSON과 runtime provenance를 제공합니다.
 - **InferEdgeLab:** AIGuard `guard_analysis`를 optional evidence로 보존하고 최종 deployment decision을 생성합니다.
 - **InferEdgeEnv:** `v0.1.5` v1-complete 상태의 experiment hygiene / comparability layer로, benchmark run evidence를 local artifact와 SQLite registry로 고정하고 비교 가능성을 판정합니다.
+- **InferEdgeOrchestrator:** queue/deadline/fallback/remote dispatch starter context를 supplemental operation evidence로 제공합니다.
 
 포트폴리오 경계: InferEdgeLab은 validation / decision layer이고, InferEdgeEnv는 `v0.1.5` v1-complete experiment hygiene / comparability layer입니다. AIGuard는 optional diagnosis evidence를 제공하고, Env는 benchmark evidence가 신뢰 가능하고 비교 가능한 형태인지 관리합니다.
 
 ## 현재 범위와 future work
 
 현재는 fixture와 real-device evidence 기반의 deterministic diagnosis layer입니다.
-Lab optional contract, provenance mismatch detector, bbox/score evidence detectors, baseline comparison, initial temporal consistency evidence, Orchestrator runtime reliability signal, sustained workload profile pressure, optional tegrastats thermal/resource signal, JSON/Markdown report 저장, portfolio diagnosis demo bundle이 구현되어 있습니다.
+Lab optional contract, provenance mismatch detector, bbox/score evidence detectors, baseline comparison, initial temporal consistency evidence, Orchestrator runtime reliability signal, remote dispatch starter evidence, sustained workload profile pressure, optional tegrastats thermal/resource signal, JSON/Markdown report 저장, portfolio diagnosis demo bundle이 구현되어 있습니다.
 Local Studio는 Lab에서 demo evidence를 불러와 normal/pass, bbox collapse/blocked, score saturation/blocked, temporal instability/review_required, provenance mismatch 계열 사례를 표시할 수 있습니다.
 
 ## Runtime Reliability Signal
@@ -167,6 +168,26 @@ final deployment decision을 대신한다는 의미가 아닙니다.
 이 기능은 AIGuard를 final deployment decision owner로 바꾸지 않습니다. AIGuard는
 runtime reliability risk를 설명하는 optional evidence provider이고, 최종 판단은
 InferEdgeLab이 담당합니다.
+
+## Remote Dispatch Starter Diagnosis Boundary
+
+Orchestrator `inferedge-remote-dispatch-result-v1` 결과는 AIGuard에서
+deterministic warning/review evidence로 해석할 수 있습니다.
+
+- 해석 대상: worker selection, explicit HTTP/SSH starter status, bounded
+  fallback recovery, compact runtime event summary,
+  `operation_boundary=remote dispatch starter evidence only`
+- 생성 가능한 evidence: `remote_execution_plan_only`,
+  `remote_execution_starter_success`, `remote_execution_failed`,
+  `remote_execution_recovered_by_fallback`,
+  `remote_runtime_event_summary_mismatch`
+- 해석하지 않는 것: production remote execution 완료, long-lived worker
+  readiness, secure tunnel operation, production retry/failover, cloud
+  orchestration
+
+Orchestrator는 operation evidence producer이고, AIGuard는 optional
+deterministic diagnosis provider이며, 최종 deployment decision owner는
+InferEdgeLab입니다.
 
 ## Detector Validation Matrix
 

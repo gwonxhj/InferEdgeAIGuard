@@ -17,6 +17,7 @@ the current portfolio demo cases and local-first validation workflow.
 | `temporal_instability_review` | frame-level detection count or bbox movement is unstable | `review_required` | `medium` / `high` | Runtime output stability should be reviewed |
 | `provenance_mismatch` | Forge/Runtime source or artifact identity does not match | `blocked` or Lab `error` mapping | `high` / `critical` | Candidate evidence may not describe the artifact under review |
 | `edgeenv_runtime_regression` | EdgeEnv same-condition runtime regression and telemetry context | `blocked` / `suspicious` depending on evidence | `high` / `medium` | Runtime regression should be reviewed as deployment risk evidence |
+| `remote_dispatch_starter` | Orchestrator remote worker selection, starter execution, fallback, and compact event-summary evidence | `review_required` / `pass` depending on starter status | `medium` / `low` | Remote dispatch remains starter evidence; it is not production remote execution or a Lab deployment decision |
 
 ## Detector Matrix
 
@@ -35,6 +36,7 @@ not the final Lab deployment policy.
 | temporal consistency | count CV, bbox center jump, class flip | stable sequence | count CV `> 1.0`, class flip `> 0.30`, or center jump p95 `> 0.50` image diagonal | zero-frame ratio `> 0.30` | `candidate_summary.temporal` |
 | provenance consistency | source/artifact/backend/target/precision identity | exact handoff match | warning mismatch | error mismatch | `guard_analysis.anomalies`, `guard_analysis.status` |
 | EdgeEnv runtime regression | p99/mean/FPS/memory deltas and telemetry coverage | comparable report without threshold breach | same-condition regression or telemetry gap | high tail-latency regression | `candidate_summary.edgeenv_regression` |
+| remote dispatch starter | worker-selection, plan-only/execution status, fallback recovery, compact event-summary consistency | starter success or consistent plan-only evidence | plan-only context, failed starter, fallback recovery, or summary mismatch | n/a | `candidate_summary.remote_dispatch` |
 
 ## Implemented Detector Details
 
@@ -59,6 +61,10 @@ not the final Lab deployment policy.
 | EdgeEnv telemetry context | `runtime_telemetry_evidence_gap_count` | warning `>= 1` | `pass` | `suspicious` | `evidence[].type=runtime_telemetry_context_coverage` |
 | EdgeEnv telemetry replay | `runtime_telemetry_history_missing_run_count` | warning `>= 1` or sequence order mismatch | `pass` | `suspicious` | `evidence[].type=runtime_telemetry_replay_context` |
 | EdgeEnv Orchestrator producer lineage | `device_local_producer_context_count` | warning when preserved Orchestrator context lacks device-local producer metadata or `downstream_guard_alignment.producer_lineage_evidence_type=edgeenv_orchestrator_producer_lineage` | `pass` | `suspicious` | `evidence[].type=edgeenv_orchestrator_producer_lineage` |
+| Remote dispatch plan-only | `execution_requested` | warning when `false` | `suspicious` | `evidence[].type=remote_execution_plan_only` |
+| Remote dispatch starter failure | `remote_execution_status` / `error_category` | warning when explicit starter fails | `suspicious` | `evidence[].type=remote_execution_failed` |
+| Remote dispatch fallback recovery | `fallback_recovered` | warning when fallback recovered after primary failure | `suspicious` | `evidence[].type=remote_execution_recovered_by_fallback` |
+| Remote dispatch event summary | `remote_runtime_event_summary_consistent` | warning when compact summary does not match producer events | `suspicious` | `evidence[].type=remote_runtime_event_summary_mismatch` |
 
 ## Next Candidate Detectors
 

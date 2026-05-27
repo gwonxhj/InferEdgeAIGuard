@@ -53,6 +53,7 @@ Implemented today:
 - baseline-vs-candidate comparison for output quality drift and suspicious speed/quality trade-offs
 - initial temporal consistency evidence for detection count variance, bbox center movement, class flip rate, and track-free temporal instability signals
 - runtime reliability evidence from Orchestrator `orchestration_summary` files: deadline miss, drop/fallback, queue backlog, queue pressure reasons, worker operation risk summaries, device-local producer/event coverage, sustained workload profile pressure, local profile adapter signals, and optional tegrastats thermal/resource signals
+- remote dispatch starter evidence from Orchestrator `inferedge-remote-dispatch-result-v1` files: worker selection, explicit HTTP/SSH starter status, bounded fallback recovery, compact runtime event summaries, and `operation_boundary=remote dispatch starter evidence only`
 - portfolio demo diagnosis bundle covering normal/pass, bbox collapse/blocked, score saturation/blocked, temporal instability/review_required, and provenance mismatch cases
 - artifact and source model provenance mismatch detection
 - Forge summary vs Runtime worker_response provenance mismatch coverage
@@ -145,6 +146,7 @@ Forge metadata/manifest와 Runtime result JSON의 provenance를 비교하는 rul
 | `reason-result` | Lab structured result JSON | Single result reasoning |
 | `reason-history` | Lab structured result list JSON | Multi-run stability reasoning |
 | `reason-orchestration` | Orchestrator summary JSON | Runtime reliability reasoning |
+| `reason-remote-dispatch` | Orchestrator remote dispatch result JSON | Remote dispatch starter evidence reasoning |
 | `reason` | Compare/result/history/orchestration JSON | Unified auto-routing reasoning |
 
 ## Quick Smoke Commands
@@ -294,6 +296,16 @@ summary를 raw context에 보존합니다. Lab-facing `runtime_event_count` alia
 `operation_boundary: remote dispatch starter evidence only` marker를 top-level
 raw context와 compact summary 안에 그대로 드러내며, 원본 event list와 맞지 않을 때
 `remote_runtime_event_summary_mismatch` warning evidence를 생성합니다.
+
+Remote dispatch diagnosis boundary:
+
+- AIGuard interprets worker-selection, fallback, and compact event-summary
+  fields as deterministic warning/review evidence.
+- AIGuard does not confirm production remote execution, long-lived worker
+  readiness, secure tunnel operation, production retry/failover, or cloud
+  orchestration.
+- Orchestrator remains the operation evidence producer and Lab remains the
+  final deployment decision owner.
 
 ## Quick Examples
 

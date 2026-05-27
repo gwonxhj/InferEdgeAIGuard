@@ -33,6 +33,15 @@ Edge AI inference에서는 다음과 같은 문제가 발생할 수 있다:
 
 InferEdgeAIGuard는 이 빈칸을 채웁니다. 모델 내부 weight나 graph를 분석하는 도구가 아니라, 실제 inference validation pipeline이 남긴 result-level evidence를 기반으로 failure/diagnosis signal을 정의하고 설명합니다.
 
+Runtime Operation Platform v2 범위에서는 AIGuard가 Orchestrator의
+`inferedge-remote-dispatch-result-v1`도 해석할 수 있습니다. 이때 AIGuard가
+보는 것은 worker selection, explicit HTTP/SSH starter status, bounded fallback
+recovery, compact runtime event summary 같은 deterministic evidence입니다.
+`remote_execution_recovered_by_fallback`은 fallback starter path가 회복되었다는
+review evidence이지, production remote execution 완료나 cloud orchestration
+준비 상태를 뜻하지 않습니다. Orchestrator는 operation evidence producer이고,
+Lab은 최종 deployment decision owner로 남습니다.
+
 ## 3. 시스템이 분석하는 입력
 
 | Layer | Input | Purpose |
@@ -41,6 +50,7 @@ InferEdgeAIGuard는 이 빈칸을 채웁니다. 모델 내부 weight나 graph를
 | Compare reasoning | Lab compare result JSON | FP32 대비 candidate 결과가 신뢰 가능한 비교인지 판단 |
 | Structured result reasoning | Lab structured result JSON | 단일 측정 결과의 provenance, latency, accuracy metadata 신뢰성 판단 |
 | Run history reasoning | Lab structured result list JSON | repeated-run stability와 logging consistency 판단 |
+| Runtime operation reasoning | Orchestrator / Runtime / EdgeEnv operation evidence JSON | queue, deadline, fallback, runtime regression, remote dispatch starter evidence를 optional diagnosis context로 설명 |
 | Unified reason CLI | compare/result/history JSON | 입력 타입 자동 판별 후 적절한 reasoning 경로로 라우팅 |
 
 대표 명령은 하나로 정리할 수 있습니다.
