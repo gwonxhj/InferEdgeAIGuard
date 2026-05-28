@@ -855,6 +855,19 @@ def edgeenv_regression_report_with_orchestrator_feed_context() -> dict:
             "evidence_role": "remote_dispatch_runtime_event_compact_summary",
             "operation_boundary": "remote dispatch starter evidence only",
         },
+        "operation_risk_summary": {
+            "schema_version": "inferedge-entrypoint-operation-risk-summary-v1",
+            "evidence_role": "derived_navigation_context",
+            "decision_owner": "lab",
+            "scheduler_owner": "orchestrator",
+            "not_a_deployment_decision": True,
+            "queue_pressure_reason": "queue_backlog_threshold_exceeded",
+            "max_pressure_task": "vision_agent",
+            "primary_health_reason": "worker_queue_pressure",
+            "degraded_worker_ids": ["worker-jetson-01"],
+            "device_local_event_count": 2,
+            "producer_event_count": 4,
+        },
     }
     return report
 
@@ -1569,6 +1582,38 @@ def test_compute_edgeenv_regression_metrics_extracts_orchestrator_feed_context()
         metrics["orchestrator_remote_runtime_event_summary_production_remote_execution"]
         is False
     )
+    assert metrics["orchestrator_operation_risk_summary_present"] is True
+    assert metrics["orchestrator_operation_risk_summary_schema_version"] == (
+        "inferedge-entrypoint-operation-risk-summary-v1"
+    )
+    assert metrics["orchestrator_operation_risk_summary_evidence_role"] == (
+        "derived_navigation_context"
+    )
+    assert metrics["orchestrator_operation_risk_summary_decision_owner"] == "lab"
+    assert (
+        metrics["orchestrator_operation_risk_summary_scheduler_owner"]
+        == "orchestrator"
+    )
+    assert (
+        metrics["orchestrator_operation_risk_summary_not_a_deployment_decision"]
+        is True
+    )
+    assert metrics["orchestrator_operation_risk_summary_queue_pressure_reason"] == (
+        "queue_backlog_threshold_exceeded"
+    )
+    assert metrics["orchestrator_operation_risk_summary_max_pressure_task"] == (
+        "vision_agent"
+    )
+    assert metrics["orchestrator_operation_risk_summary_primary_health_reason"] == (
+        "worker_queue_pressure"
+    )
+    assert metrics["orchestrator_operation_risk_summary_degraded_worker_ids"] == [
+        "worker-jetson-01"
+    ]
+    assert metrics["orchestrator_operation_risk_summary_device_local_event_count"] == (
+        2.0
+    )
+    assert metrics["orchestrator_operation_risk_summary_producer_event_count"] == 4.0
     assert metrics["candidate_max_temperature_c"] == 78.5
     assert metrics["candidate_throttling_detected"] is True
     assert metrics["candidate_queue_depth"] == 7.0
@@ -1853,6 +1898,7 @@ def test_analyze_edgeenv_regression_report_warns_on_orchestrator_feed_context():
     assert report["severity"] == "medium"
     evidence_types = {item["type"] for item in report["evidence"]}
     assert "edgeenv_orchestrator_producer_lineage" in evidence_types
+    assert "edgeenv_orchestrator_operation_risk_summary" in evidence_types
     assert "runtime_thermal_instability" in evidence_types
     assert "runtime_queue_overload" in evidence_types
     queue_evidence = next(
@@ -1944,6 +1990,29 @@ def test_analyze_edgeenv_regression_report_warns_on_orchestrator_feed_context():
     assert producer_lineage["raw_context"]["producer_lineage"][
         "candidate_remote_runtime_event_summary_evidence_role"
     ] == "remote_dispatch_runtime_event_compact_summary"
+    operation_risk = next(
+        item
+        for item in report["evidence"]
+        if item["type"] == "edgeenv_orchestrator_operation_risk_summary"
+    )
+    assert operation_risk["status"] == "warning"
+    assert operation_risk["observed_value"] == 4
+    assert operation_risk["threshold"] == 1
+    assert "queue_pressure_context" in operation_risk["suspected_causes"]
+    assert "worker_health_degradation_context" in operation_risk["suspected_causes"]
+    assert "task_specific_queue_pressure_context" in operation_risk["suspected_causes"]
+    assert operation_risk["raw_context"]["operation_risk_summary"][
+        "boundary_markers_valid"
+    ] is True
+    assert operation_risk["raw_context"]["operation_risk_summary"][
+        "degraded_worker_ids"
+    ] == ["worker-jetson-01"]
+    assert operation_risk["raw_context"]["operation_risk_summary"][
+        "queue_pressure_reason"
+    ] == "queue_backlog_threshold_exceeded"
+    assert operation_risk["raw_context"]["operation_risk_summary"][
+        "device_local_event_count"
+    ] == 2.0
     assert producer_lineage["raw_context"]["producer_lineage"][
         "candidate_remote_runtime_event_summary_operation_boundary"
     ] == "remote dispatch starter evidence only"
@@ -3089,6 +3158,7 @@ def test_runtime_intelligence_example_exports_lab_ready_guard_analysis(tmp_path)
     assert expected_evidence_types == {
         "runtime_telemetry_context_coverage",
         "edgeenv_orchestrator_producer_lineage",
+        "edgeenv_orchestrator_operation_risk_summary",
         "runtime_history_seed_run_config_traceability",
         "runtime_thermal_instability",
         "runtime_queue_overload",
@@ -3169,6 +3239,19 @@ def test_runtime_intelligence_example_exports_lab_ready_guard_analysis(tmp_path)
     assert producer_lineage["raw_context"]["producer_lineage"][
         "candidate_device_local_sources"
     ] == ["device_local_cli_override"]
+    operation_risk = next(
+        item
+        for item in saved["evidence"]
+        if item["type"] == "edgeenv_orchestrator_operation_risk_summary"
+    )
+    assert operation_risk["status"] == "warning"
+    assert operation_risk["observed_value"] == 4
+    assert operation_risk["raw_context"]["operation_risk_summary"][
+        "boundary_markers_valid"
+    ] is True
+    assert operation_risk["raw_context"]["operation_risk_summary"][
+        "queue_pressure_reason"
+    ] == "queue_backlog_threshold_exceeded"
     assert forbidden_decision_keys.isdisjoint(saved)
     assert forbidden_decision_keys.isdisjoint(expected)
 

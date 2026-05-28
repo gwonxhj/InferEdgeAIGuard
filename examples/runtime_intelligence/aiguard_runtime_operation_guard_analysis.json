@@ -132,6 +132,17 @@
           "history_missing_orchestrator_candidate_device_local_event_count": null,
           "history_missing_orchestrator_candidate_device_local_task_count": null,
           "history_missing_orchestrator_candidate_operation_context_role": null,
+          "history_missing_orchestrator_remote_runtime_event_summary": {},
+          "history_missing_orchestrator_remote_runtime_event_summary_present": false,
+          "history_missing_orchestrator_remote_runtime_event_summary_evidence_role": null,
+          "history_missing_orchestrator_remote_runtime_event_summary_operation_boundary": null,
+          "history_missing_orchestrator_remote_runtime_event_summary_production_remote_execution": null,
+          "history_missing_orchestrator_operation_risk_summary": {},
+          "history_missing_orchestrator_operation_risk_summary_present": false,
+          "history_missing_orchestrator_operation_risk_summary_evidence_role": null,
+          "history_missing_orchestrator_operation_risk_summary_decision_owner": null,
+          "history_missing_orchestrator_operation_risk_summary_scheduler_owner": null,
+          "history_missing_orchestrator_operation_risk_summary_not_a_deployment_decision": null,
           "history_missing_orchestrator_edgeenv_mapping_hint": {},
           "history_missing_orchestrator_mapping_hint_aiguard_evidence_candidates": [],
           "history_missing_orchestrator_downstream_guard_alignment": {},
@@ -215,6 +226,46 @@
           "orchestrator_candidate_device_local_event_count": 2.0,
           "orchestrator_candidate_device_local_task_count": 1.0,
           "orchestrator_candidate_operation_context_role": "supplemental",
+          "orchestrator_remote_runtime_event_summary": {
+            "event_count": 4,
+            "runtime_event_count": 4,
+            "production_remote_execution": false,
+            "evidence_role": "remote_dispatch_runtime_event_compact_summary",
+            "operation_boundary": "remote dispatch starter evidence only"
+          },
+          "orchestrator_remote_runtime_event_summary_present": true,
+          "orchestrator_remote_runtime_event_summary_evidence_role": "remote_dispatch_runtime_event_compact_summary",
+          "orchestrator_remote_runtime_event_summary_operation_boundary": "remote dispatch starter evidence only",
+          "orchestrator_remote_runtime_event_summary_production_remote_execution": false,
+          "orchestrator_operation_risk_summary": {
+            "schema_version": "inferedge-entrypoint-operation-risk-summary-v1",
+            "evidence_role": "derived_navigation_context",
+            "decision_owner": "lab",
+            "scheduler_owner": "orchestrator",
+            "not_a_deployment_decision": true,
+            "queue_pressure_reason": "queue_backlog_threshold_exceeded",
+            "max_pressure_task": "vision_agent",
+            "primary_health_reason": "worker_queue_pressure",
+            "degraded_worker_ids": [
+              "worker-jetson-01"
+            ],
+            "device_local_event_count": 2,
+            "producer_event_count": 4
+          },
+          "orchestrator_operation_risk_summary_present": true,
+          "orchestrator_operation_risk_summary_schema_version": "inferedge-entrypoint-operation-risk-summary-v1",
+          "orchestrator_operation_risk_summary_evidence_role": "derived_navigation_context",
+          "orchestrator_operation_risk_summary_decision_owner": "lab",
+          "orchestrator_operation_risk_summary_scheduler_owner": "orchestrator",
+          "orchestrator_operation_risk_summary_not_a_deployment_decision": true,
+          "orchestrator_operation_risk_summary_queue_pressure_reason": "queue_backlog_threshold_exceeded",
+          "orchestrator_operation_risk_summary_max_pressure_task": "vision_agent",
+          "orchestrator_operation_risk_summary_primary_health_reason": "worker_queue_pressure",
+          "orchestrator_operation_risk_summary_degraded_worker_ids": [
+            "worker-jetson-01"
+          ],
+          "orchestrator_operation_risk_summary_device_local_event_count": 2.0,
+          "orchestrator_operation_risk_summary_producer_event_count": 4.0,
           "orchestrator_edgeenv_mapping_hint": {
             "copy_candidate_context_to": "runtime_telemetry_context.candidate",
             "operation_context_role": "supplemental",
@@ -398,6 +449,17 @@
           "history_missing_orchestrator_candidate_device_local_event_count": null,
           "history_missing_orchestrator_candidate_device_local_task_count": null,
           "history_missing_orchestrator_candidate_operation_context_role": null,
+          "history_missing_orchestrator_remote_runtime_event_summary": {},
+          "history_missing_orchestrator_remote_runtime_event_summary_present": false,
+          "history_missing_orchestrator_remote_runtime_event_summary_evidence_role": null,
+          "history_missing_orchestrator_remote_runtime_event_summary_operation_boundary": null,
+          "history_missing_orchestrator_remote_runtime_event_summary_production_remote_execution": null,
+          "history_missing_orchestrator_operation_risk_summary": {},
+          "history_missing_orchestrator_operation_risk_summary_present": false,
+          "history_missing_orchestrator_operation_risk_summary_evidence_role": null,
+          "history_missing_orchestrator_operation_risk_summary_decision_owner": null,
+          "history_missing_orchestrator_operation_risk_summary_scheduler_owner": null,
+          "history_missing_orchestrator_operation_risk_summary_not_a_deployment_decision": null,
           "history_missing_orchestrator_edgeenv_mapping_hint": {},
           "history_missing_orchestrator_mapping_hint_aiguard_evidence_candidates": [],
           "history_missing_orchestrator_downstream_guard_alignment": {},
@@ -481,6 +543,46 @@
           "orchestrator_candidate_device_local_event_count": 2.0,
           "orchestrator_candidate_device_local_task_count": 1.0,
           "orchestrator_candidate_operation_context_role": "supplemental",
+          "orchestrator_remote_runtime_event_summary": {
+            "event_count": 4,
+            "runtime_event_count": 4,
+            "production_remote_execution": false,
+            "evidence_role": "remote_dispatch_runtime_event_compact_summary",
+            "operation_boundary": "remote dispatch starter evidence only"
+          },
+          "orchestrator_remote_runtime_event_summary_present": true,
+          "orchestrator_remote_runtime_event_summary_evidence_role": "remote_dispatch_runtime_event_compact_summary",
+          "orchestrator_remote_runtime_event_summary_operation_boundary": "remote dispatch starter evidence only",
+          "orchestrator_remote_runtime_event_summary_production_remote_execution": false,
+          "orchestrator_operation_risk_summary": {
+            "schema_version": "inferedge-entrypoint-operation-risk-summary-v1",
+            "evidence_role": "derived_navigation_context",
+            "decision_owner": "lab",
+            "scheduler_owner": "orchestrator",
+            "not_a_deployment_decision": true,
+            "queue_pressure_reason": "queue_backlog_threshold_exceeded",
+            "max_pressure_task": "vision_agent",
+            "primary_health_reason": "worker_queue_pressure",
+            "degraded_worker_ids": [
+              "worker-jetson-01"
+            ],
+            "device_local_event_count": 2,
+            "producer_event_count": 4
+          },
+          "orchestrator_operation_risk_summary_present": true,
+          "orchestrator_operation_risk_summary_schema_version": "inferedge-entrypoint-operation-risk-summary-v1",
+          "orchestrator_operation_risk_summary_evidence_role": "derived_navigation_context",
+          "orchestrator_operation_risk_summary_decision_owner": "lab",
+          "orchestrator_operation_risk_summary_scheduler_owner": "orchestrator",
+          "orchestrator_operation_risk_summary_not_a_deployment_decision": true,
+          "orchestrator_operation_risk_summary_queue_pressure_reason": "queue_backlog_threshold_exceeded",
+          "orchestrator_operation_risk_summary_max_pressure_task": "vision_agent",
+          "orchestrator_operation_risk_summary_primary_health_reason": "worker_queue_pressure",
+          "orchestrator_operation_risk_summary_degraded_worker_ids": [
+            "worker-jetson-01"
+          ],
+          "orchestrator_operation_risk_summary_device_local_event_count": 2.0,
+          "orchestrator_operation_risk_summary_producer_event_count": 4.0,
           "orchestrator_edgeenv_mapping_hint": {
             "copy_candidate_context_to": "runtime_telemetry_context.candidate",
             "operation_context_role": "supplemental",
@@ -585,6 +687,16 @@
             "runtime_queue_overload",
             "runtime_thermal_instability"
           ],
+          "candidate_remote_runtime_event_summary": {
+            "event_count": 4,
+            "runtime_event_count": 4,
+            "production_remote_execution": false,
+            "evidence_role": "remote_dispatch_runtime_event_compact_summary",
+            "operation_boundary": "remote dispatch starter evidence only"
+          },
+          "candidate_remote_runtime_event_summary_evidence_role": "remote_dispatch_runtime_event_compact_summary",
+          "candidate_remote_runtime_event_summary_operation_boundary": "remote dispatch starter evidence only",
+          "candidate_remote_runtime_event_summary_production_remote_execution": false,
           "missing_expected": false,
           "missing_device_local_sources": [],
           "missing_producer_sources": [],
@@ -598,9 +710,366 @@
           "missing_guard_alignment_valid": false,
           "missing_guard_alignment_producer_lineage_evidence_type": null,
           "missing_guard_alignment_operation_evidence_candidates": [],
+          "missing_remote_runtime_event_summary": {},
+          "missing_remote_runtime_event_summary_evidence_role": null,
+          "missing_remote_runtime_event_summary_operation_boundary": null,
+          "missing_remote_runtime_event_summary_production_remote_execution": null,
           "missing_context_run_ids": [],
           "operation_context_role": "supplemental",
           "missing_operation_context_role": null
+        }
+      }
+    },
+    {
+      "type": "edgeenv_orchestrator_operation_risk_summary",
+      "metric_name": "orchestrator_operation_risk_marker_count",
+      "observed_value": 4,
+      "baseline_value": 0,
+      "threshold": 1,
+      "delta": null,
+      "delta_pct": null,
+      "increase_factor": null,
+      "severity": "medium",
+      "status": "warning",
+      "explanation": "EdgeEnv preserved Orchestrator operation risk summary with 4 deterministic review marker(s).",
+      "why_it_matters": "Operation risk summary links queue pressure, worker health, and device-local producer event context to the Lab report without making AIGuard or Orchestrator the deployment decision owner.",
+      "suspected_causes": [
+        "queue_pressure_context",
+        "worker_health_degradation_context",
+        "task_specific_queue_pressure_context"
+      ],
+      "recommendation": "Review the Orchestrator operation risk summary in Lab alongside queue, worker health, and device-local producer evidence; Lab remains the final deployment decision owner.",
+      "raw_context": {
+        "edgeenv_regression": {
+          "baseline_run_id": "edgeenv-smoke-baseline",
+          "candidate_run_id": "edgeenv-smoke-candidate",
+          "comparable": true,
+          "mode": "same-condition",
+          "regression_detected": false,
+          "regression_type": "operation-context",
+          "severity": "medium",
+          "recommendation": "review_required",
+          "mean_delta_pct": null,
+          "p95_delta_pct": null,
+          "p99_delta_pct": null,
+          "fps_delta_pct": null,
+          "memory_peak_delta_pct": null,
+          "triggered_thresholds": [],
+          "runtime_telemetry_context_present": true,
+          "runtime_telemetry_source": "result_artifacts+runtime_telemetry_history",
+          "runtime_telemetry_history_schema_version": "edgeenv.runtime-telemetry-history.v1",
+          "history_orchestrator_feed_runs": 1.0,
+          "history_registered_runs": 2.0,
+          "history_telemetry_runs": 2.0,
+          "history_telemetry_seed_runs": 2.0,
+          "history_telemetry_seed_run_config_runs": 2.0,
+          "baseline_runtime_telemetry_history_seed_schema_version": "inferedge-runtime-telemetry-history-seed-v1",
+          "candidate_runtime_telemetry_history_seed_schema_version": "inferedge-runtime-telemetry-history-seed-v1",
+          "baseline_runtime_telemetry_history_seed_registry_owner": "edgeenv",
+          "candidate_runtime_telemetry_history_seed_registry_owner": "edgeenv",
+          "baseline_runtime_telemetry_history_seed_decision_owner": "lab",
+          "candidate_runtime_telemetry_history_seed_decision_owner": "lab",
+          "candidate_runtime_telemetry_history_seed_production_monitoring": false,
+          "candidate_runtime_telemetry_history_seed_missing_telemetry_is_failure": false,
+          "candidate_runtime_telemetry_history_seed_point_count": 1.0,
+          "runtime_telemetry_history_seed_run_config_marker_fields": [
+            "input_mode",
+            "input_preprocess",
+            "power_mode",
+            "jetson_clocks",
+            "warmup",
+            "runs"
+          ],
+          "runtime_telemetry_history_seed_run_config_marker_labels": [
+            "baseline/candidate=shape=1x640x640, input_mode=dummy, input_preprocess=none, power_mode=unknown, jetson_clocks=unknown, warmup=1, runs=10"
+          ],
+          "baseline_runtime_telemetry_history_seed_run_config": {
+            "batch": 1,
+            "height": 640,
+            "width": 640,
+            "warmup": 1,
+            "runs": 10,
+            "timeout_ms": null,
+            "input_mode": "dummy",
+            "input_preprocess": "none",
+            "power_mode": "unknown",
+            "jetson_clocks": "unknown"
+          },
+          "baseline_runtime_telemetry_history_seed_run_config_markers": {
+            "shape": "1x640x640",
+            "input_mode": "dummy",
+            "input_preprocess": "none",
+            "power_mode": "unknown",
+            "jetson_clocks": "unknown",
+            "warmup": 1,
+            "runs": 10
+          },
+          "candidate_runtime_telemetry_history_seed_run_config": {
+            "batch": 1,
+            "height": 640,
+            "width": 640,
+            "warmup": 1,
+            "runs": 10,
+            "timeout_ms": null,
+            "input_mode": "dummy",
+            "input_preprocess": "none",
+            "power_mode": "unknown",
+            "jetson_clocks": "unknown"
+          },
+          "candidate_runtime_telemetry_history_seed_run_config_markers": {
+            "shape": "1x640x640",
+            "input_mode": "dummy",
+            "input_preprocess": "none",
+            "power_mode": "unknown",
+            "jetson_clocks": "unknown",
+            "warmup": 1,
+            "runs": 10
+          },
+          "candidate_runtime_telemetry_history_seed_run_config_present": true,
+          "history_missing_telemetry_runs": 0.0,
+          "history_missing_orchestrator_context_count": 0.0,
+          "history_missing_orchestrator_context_run_ids": [],
+          "history_missing_orchestrator_contexts": [],
+          "history_missing_orchestrator_source_repository": null,
+          "history_missing_orchestrator_artifact_role": null,
+          "history_missing_orchestrator_producer_contract": null,
+          "history_missing_orchestrator_candidate_context_telemetry_source": null,
+          "history_missing_orchestrator_candidate_context_producer": {},
+          "history_missing_orchestrator_candidate_producer_sources": [],
+          "history_missing_orchestrator_candidate_device_local_producer_sources": [],
+          "history_missing_orchestrator_candidate_producer_sources_by_task": {},
+          "history_missing_orchestrator_candidate_producer_stage_by_task": {},
+          "history_missing_orchestrator_candidate_producer_event_count": null,
+          "history_missing_orchestrator_candidate_device_local_event_count": null,
+          "history_missing_orchestrator_candidate_device_local_task_count": null,
+          "history_missing_orchestrator_candidate_operation_context_role": null,
+          "history_missing_orchestrator_remote_runtime_event_summary": {},
+          "history_missing_orchestrator_remote_runtime_event_summary_present": false,
+          "history_missing_orchestrator_remote_runtime_event_summary_evidence_role": null,
+          "history_missing_orchestrator_remote_runtime_event_summary_operation_boundary": null,
+          "history_missing_orchestrator_remote_runtime_event_summary_production_remote_execution": null,
+          "history_missing_orchestrator_operation_risk_summary": {},
+          "history_missing_orchestrator_operation_risk_summary_present": false,
+          "history_missing_orchestrator_operation_risk_summary_evidence_role": null,
+          "history_missing_orchestrator_operation_risk_summary_decision_owner": null,
+          "history_missing_orchestrator_operation_risk_summary_scheduler_owner": null,
+          "history_missing_orchestrator_operation_risk_summary_not_a_deployment_decision": null,
+          "history_missing_orchestrator_edgeenv_mapping_hint": {},
+          "history_missing_orchestrator_mapping_hint_aiguard_evidence_candidates": [],
+          "history_missing_orchestrator_downstream_guard_alignment": {},
+          "history_missing_orchestrator_guard_alignment_declared_by": null,
+          "history_missing_orchestrator_guard_alignment_producer_lineage_evidence_type": null,
+          "history_missing_orchestrator_guard_alignment_operation_evidence_candidates": [],
+          "history_missing_orchestrator_guard_alignment_orchestrator_is_final_decision_owner": null,
+          "history_missing_orchestrator_guard_alignment_lab_is_final_decision_owner": null,
+          "telemetry_coverage_source": "history_telemetry_coverage",
+          "history_telemetry_coverage_missing_field_run_count": 1.0,
+          "history_telemetry_coverage_missing_field_runs": [
+            {
+              "run_id": "edgeenv-smoke-candidate",
+              "missing_fields": [
+                "queue_depth"
+              ],
+              "missing_field_count": 1,
+              "missing_telemetry_is_failure": false
+            }
+          ],
+          "history_telemetry_coverage_run_summaries_present": true,
+          "baseline_telemetry_present": true,
+          "candidate_telemetry_present": true,
+          "baseline_history_entry_present": true,
+          "candidate_history_entry_present": true,
+          "baseline_telemetry_coverage_ratio": 1.0,
+          "candidate_telemetry_coverage_ratio": 0.666667,
+          "baseline_telemetry_coverage_missing_fields": [],
+          "candidate_telemetry_coverage_missing_fields": [
+            "queue_depth"
+          ],
+          "telemetry_coverage_missing_field_count": 1.0,
+          "baseline_missing_telemetry_is_failure": false,
+          "candidate_missing_telemetry_is_failure": false,
+          "baseline_execution_sequence_id": 1.0,
+          "candidate_execution_sequence_id": 2.0,
+          "execution_sequence_order_valid": true,
+          "baseline_orchestrator_context_present": false,
+          "candidate_orchestrator_context_present": true,
+          "orchestrator_source_repository": "InferEdgeOrchestrator",
+          "orchestrator_artifact_role": "orchestrator-supplemental-operation-context",
+          "orchestrator_producer_contract": "inferedge-orchestrator-edgeenv-runtime-telemetry-feed-v1",
+          "orchestrator_candidate_context_telemetry_source": "inferedge_orchestrator_operation_summary",
+          "orchestrator_candidate_context_producer": {
+            "operation_context_role": "supplemental",
+            "producer_sources": [
+              "device_local_cli_override",
+              "orchestration_summary"
+            ],
+            "device_local_producer_sources": [
+              "device_local_cli_override"
+            ],
+            "producer_sources_by_task": {
+              "vision_agent": [
+                "device_local_cli_override"
+              ]
+            },
+            "producer_stage_by_task": {
+              "vision_agent": "device_local_starter"
+            },
+            "producer_event_count": 4,
+            "device_local_event_count": 2,
+            "device_local_task_count": 1
+          },
+          "orchestrator_candidate_producer_sources": [
+            "device_local_cli_override",
+            "orchestration_summary"
+          ],
+          "orchestrator_candidate_device_local_producer_sources": [
+            "device_local_cli_override"
+          ],
+          "orchestrator_candidate_producer_sources_by_task": {
+            "vision_agent": [
+              "device_local_cli_override"
+            ]
+          },
+          "orchestrator_candidate_producer_stage_by_task": {
+            "vision_agent": "device_local_starter"
+          },
+          "orchestrator_candidate_producer_event_count": 4.0,
+          "orchestrator_candidate_device_local_event_count": 2.0,
+          "orchestrator_candidate_device_local_task_count": 1.0,
+          "orchestrator_candidate_operation_context_role": "supplemental",
+          "orchestrator_remote_runtime_event_summary": {
+            "event_count": 4,
+            "runtime_event_count": 4,
+            "production_remote_execution": false,
+            "evidence_role": "remote_dispatch_runtime_event_compact_summary",
+            "operation_boundary": "remote dispatch starter evidence only"
+          },
+          "orchestrator_remote_runtime_event_summary_present": true,
+          "orchestrator_remote_runtime_event_summary_evidence_role": "remote_dispatch_runtime_event_compact_summary",
+          "orchestrator_remote_runtime_event_summary_operation_boundary": "remote dispatch starter evidence only",
+          "orchestrator_remote_runtime_event_summary_production_remote_execution": false,
+          "orchestrator_operation_risk_summary": {
+            "schema_version": "inferedge-entrypoint-operation-risk-summary-v1",
+            "evidence_role": "derived_navigation_context",
+            "decision_owner": "lab",
+            "scheduler_owner": "orchestrator",
+            "not_a_deployment_decision": true,
+            "queue_pressure_reason": "queue_backlog_threshold_exceeded",
+            "max_pressure_task": "vision_agent",
+            "primary_health_reason": "worker_queue_pressure",
+            "degraded_worker_ids": [
+              "worker-jetson-01"
+            ],
+            "device_local_event_count": 2,
+            "producer_event_count": 4
+          },
+          "orchestrator_operation_risk_summary_present": true,
+          "orchestrator_operation_risk_summary_schema_version": "inferedge-entrypoint-operation-risk-summary-v1",
+          "orchestrator_operation_risk_summary_evidence_role": "derived_navigation_context",
+          "orchestrator_operation_risk_summary_decision_owner": "lab",
+          "orchestrator_operation_risk_summary_scheduler_owner": "orchestrator",
+          "orchestrator_operation_risk_summary_not_a_deployment_decision": true,
+          "orchestrator_operation_risk_summary_queue_pressure_reason": "queue_backlog_threshold_exceeded",
+          "orchestrator_operation_risk_summary_max_pressure_task": "vision_agent",
+          "orchestrator_operation_risk_summary_primary_health_reason": "worker_queue_pressure",
+          "orchestrator_operation_risk_summary_degraded_worker_ids": [
+            "worker-jetson-01"
+          ],
+          "orchestrator_operation_risk_summary_device_local_event_count": 2.0,
+          "orchestrator_operation_risk_summary_producer_event_count": 4.0,
+          "orchestrator_edgeenv_mapping_hint": {
+            "copy_candidate_context_to": "runtime_telemetry_context.candidate",
+            "operation_context_role": "supplemental",
+            "coverage_summary_owner": "edgeenv",
+            "coverage_summary_path": "runtime_telemetry_context.history.telemetry_coverage",
+            "candidate_context_required_fields": [
+              "run_id",
+              "telemetry_source",
+              "operation",
+              "resource"
+            ],
+            "aiguard_evidence_candidates": [
+              "runtime_queue_overload",
+              "runtime_thermal_instability"
+            ]
+          },
+          "orchestrator_mapping_hint_copy_candidate_context_to": "runtime_telemetry_context.candidate",
+          "orchestrator_mapping_hint_operation_context_role": "supplemental",
+          "orchestrator_mapping_hint_coverage_summary_owner": "edgeenv",
+          "orchestrator_mapping_hint_coverage_summary_path": "runtime_telemetry_context.history.telemetry_coverage",
+          "orchestrator_mapping_hint_candidate_context_required_fields": [
+            "run_id",
+            "telemetry_source",
+            "operation",
+            "resource"
+          ],
+          "orchestrator_mapping_hint_aiguard_evidence_candidates": [
+            "runtime_queue_overload",
+            "runtime_thermal_instability"
+          ],
+          "orchestrator_downstream_guard_alignment": {
+            "declared_by": "orchestrator",
+            "producer_lineage_evidence_type": "edgeenv_orchestrator_producer_lineage",
+            "operation_evidence_candidates": [
+              "runtime_queue_overload",
+              "runtime_thermal_instability"
+            ],
+            "validated_by": [
+              "edgeenv runs telemetry inspect-history",
+              "inferedge-aiguard reason-edgeenv-regression",
+              "inferedgelab runtime-intelligence bundle manifest gate"
+            ],
+            "orchestrator_is_final_decision_owner": false,
+            "lab_is_final_decision_owner": true
+          },
+          "orchestrator_guard_alignment_declared_by": "orchestrator",
+          "orchestrator_guard_alignment_producer_lineage_evidence_type": "edgeenv_orchestrator_producer_lineage",
+          "orchestrator_guard_alignment_operation_evidence_candidates": [
+            "runtime_queue_overload",
+            "runtime_thermal_instability"
+          ],
+          "orchestrator_guard_alignment_orchestrator_is_final_decision_owner": false,
+          "orchestrator_guard_alignment_lab_is_final_decision_owner": true,
+          "baseline_max_temperature_c": null,
+          "candidate_max_temperature_c": 78.5,
+          "baseline_throttling_detected": null,
+          "candidate_throttling_detected": true,
+          "baseline_queue_depth": null,
+          "candidate_queue_depth": 7.0,
+          "evidence_gap_count": 1.0,
+          "evidence_gaps": []
+        },
+        "operation_risk_summary": {
+          "summary": {
+            "schema_version": "inferedge-entrypoint-operation-risk-summary-v1",
+            "evidence_role": "derived_navigation_context",
+            "decision_owner": "lab",
+            "scheduler_owner": "orchestrator",
+            "not_a_deployment_decision": true,
+            "queue_pressure_reason": "queue_backlog_threshold_exceeded",
+            "max_pressure_task": "vision_agent",
+            "primary_health_reason": "worker_queue_pressure",
+            "degraded_worker_ids": [
+              "worker-jetson-01"
+            ],
+            "device_local_event_count": 2,
+            "producer_event_count": 4
+          },
+          "boundary_markers_valid": true,
+          "risk_markers": [
+            "queue_pressure",
+            "worker_health",
+            "degraded_worker",
+            "max_pressure_task"
+          ],
+          "degraded_worker_ids": [
+            "worker-jetson-01"
+          ],
+          "queue_pressure_reason": "queue_backlog_threshold_exceeded",
+          "primary_health_reason": "worker_queue_pressure",
+          "max_pressure_task": "vision_agent",
+          "device_local_event_count": 2.0,
+          "producer_event_count": 4.0
         }
       }
     },
@@ -723,6 +1192,17 @@
           "history_missing_orchestrator_candidate_device_local_event_count": null,
           "history_missing_orchestrator_candidate_device_local_task_count": null,
           "history_missing_orchestrator_candidate_operation_context_role": null,
+          "history_missing_orchestrator_remote_runtime_event_summary": {},
+          "history_missing_orchestrator_remote_runtime_event_summary_present": false,
+          "history_missing_orchestrator_remote_runtime_event_summary_evidence_role": null,
+          "history_missing_orchestrator_remote_runtime_event_summary_operation_boundary": null,
+          "history_missing_orchestrator_remote_runtime_event_summary_production_remote_execution": null,
+          "history_missing_orchestrator_operation_risk_summary": {},
+          "history_missing_orchestrator_operation_risk_summary_present": false,
+          "history_missing_orchestrator_operation_risk_summary_evidence_role": null,
+          "history_missing_orchestrator_operation_risk_summary_decision_owner": null,
+          "history_missing_orchestrator_operation_risk_summary_scheduler_owner": null,
+          "history_missing_orchestrator_operation_risk_summary_not_a_deployment_decision": null,
           "history_missing_orchestrator_edgeenv_mapping_hint": {},
           "history_missing_orchestrator_mapping_hint_aiguard_evidence_candidates": [],
           "history_missing_orchestrator_downstream_guard_alignment": {},
@@ -806,6 +1286,46 @@
           "orchestrator_candidate_device_local_event_count": 2.0,
           "orchestrator_candidate_device_local_task_count": 1.0,
           "orchestrator_candidate_operation_context_role": "supplemental",
+          "orchestrator_remote_runtime_event_summary": {
+            "event_count": 4,
+            "runtime_event_count": 4,
+            "production_remote_execution": false,
+            "evidence_role": "remote_dispatch_runtime_event_compact_summary",
+            "operation_boundary": "remote dispatch starter evidence only"
+          },
+          "orchestrator_remote_runtime_event_summary_present": true,
+          "orchestrator_remote_runtime_event_summary_evidence_role": "remote_dispatch_runtime_event_compact_summary",
+          "orchestrator_remote_runtime_event_summary_operation_boundary": "remote dispatch starter evidence only",
+          "orchestrator_remote_runtime_event_summary_production_remote_execution": false,
+          "orchestrator_operation_risk_summary": {
+            "schema_version": "inferedge-entrypoint-operation-risk-summary-v1",
+            "evidence_role": "derived_navigation_context",
+            "decision_owner": "lab",
+            "scheduler_owner": "orchestrator",
+            "not_a_deployment_decision": true,
+            "queue_pressure_reason": "queue_backlog_threshold_exceeded",
+            "max_pressure_task": "vision_agent",
+            "primary_health_reason": "worker_queue_pressure",
+            "degraded_worker_ids": [
+              "worker-jetson-01"
+            ],
+            "device_local_event_count": 2,
+            "producer_event_count": 4
+          },
+          "orchestrator_operation_risk_summary_present": true,
+          "orchestrator_operation_risk_summary_schema_version": "inferedge-entrypoint-operation-risk-summary-v1",
+          "orchestrator_operation_risk_summary_evidence_role": "derived_navigation_context",
+          "orchestrator_operation_risk_summary_decision_owner": "lab",
+          "orchestrator_operation_risk_summary_scheduler_owner": "orchestrator",
+          "orchestrator_operation_risk_summary_not_a_deployment_decision": true,
+          "orchestrator_operation_risk_summary_queue_pressure_reason": "queue_backlog_threshold_exceeded",
+          "orchestrator_operation_risk_summary_max_pressure_task": "vision_agent",
+          "orchestrator_operation_risk_summary_primary_health_reason": "worker_queue_pressure",
+          "orchestrator_operation_risk_summary_degraded_worker_ids": [
+            "worker-jetson-01"
+          ],
+          "orchestrator_operation_risk_summary_device_local_event_count": 2.0,
+          "orchestrator_operation_risk_summary_producer_event_count": 4.0,
           "orchestrator_edgeenv_mapping_hint": {
             "copy_candidate_context_to": "runtime_telemetry_context.candidate",
             "operation_context_role": "supplemental",
@@ -1008,6 +1528,17 @@
           "history_missing_orchestrator_candidate_device_local_event_count": null,
           "history_missing_orchestrator_candidate_device_local_task_count": null,
           "history_missing_orchestrator_candidate_operation_context_role": null,
+          "history_missing_orchestrator_remote_runtime_event_summary": {},
+          "history_missing_orchestrator_remote_runtime_event_summary_present": false,
+          "history_missing_orchestrator_remote_runtime_event_summary_evidence_role": null,
+          "history_missing_orchestrator_remote_runtime_event_summary_operation_boundary": null,
+          "history_missing_orchestrator_remote_runtime_event_summary_production_remote_execution": null,
+          "history_missing_orchestrator_operation_risk_summary": {},
+          "history_missing_orchestrator_operation_risk_summary_present": false,
+          "history_missing_orchestrator_operation_risk_summary_evidence_role": null,
+          "history_missing_orchestrator_operation_risk_summary_decision_owner": null,
+          "history_missing_orchestrator_operation_risk_summary_scheduler_owner": null,
+          "history_missing_orchestrator_operation_risk_summary_not_a_deployment_decision": null,
           "history_missing_orchestrator_edgeenv_mapping_hint": {},
           "history_missing_orchestrator_mapping_hint_aiguard_evidence_candidates": [],
           "history_missing_orchestrator_downstream_guard_alignment": {},
@@ -1091,6 +1622,46 @@
           "orchestrator_candidate_device_local_event_count": 2.0,
           "orchestrator_candidate_device_local_task_count": 1.0,
           "orchestrator_candidate_operation_context_role": "supplemental",
+          "orchestrator_remote_runtime_event_summary": {
+            "event_count": 4,
+            "runtime_event_count": 4,
+            "production_remote_execution": false,
+            "evidence_role": "remote_dispatch_runtime_event_compact_summary",
+            "operation_boundary": "remote dispatch starter evidence only"
+          },
+          "orchestrator_remote_runtime_event_summary_present": true,
+          "orchestrator_remote_runtime_event_summary_evidence_role": "remote_dispatch_runtime_event_compact_summary",
+          "orchestrator_remote_runtime_event_summary_operation_boundary": "remote dispatch starter evidence only",
+          "orchestrator_remote_runtime_event_summary_production_remote_execution": false,
+          "orchestrator_operation_risk_summary": {
+            "schema_version": "inferedge-entrypoint-operation-risk-summary-v1",
+            "evidence_role": "derived_navigation_context",
+            "decision_owner": "lab",
+            "scheduler_owner": "orchestrator",
+            "not_a_deployment_decision": true,
+            "queue_pressure_reason": "queue_backlog_threshold_exceeded",
+            "max_pressure_task": "vision_agent",
+            "primary_health_reason": "worker_queue_pressure",
+            "degraded_worker_ids": [
+              "worker-jetson-01"
+            ],
+            "device_local_event_count": 2,
+            "producer_event_count": 4
+          },
+          "orchestrator_operation_risk_summary_present": true,
+          "orchestrator_operation_risk_summary_schema_version": "inferedge-entrypoint-operation-risk-summary-v1",
+          "orchestrator_operation_risk_summary_evidence_role": "derived_navigation_context",
+          "orchestrator_operation_risk_summary_decision_owner": "lab",
+          "orchestrator_operation_risk_summary_scheduler_owner": "orchestrator",
+          "orchestrator_operation_risk_summary_not_a_deployment_decision": true,
+          "orchestrator_operation_risk_summary_queue_pressure_reason": "queue_backlog_threshold_exceeded",
+          "orchestrator_operation_risk_summary_max_pressure_task": "vision_agent",
+          "orchestrator_operation_risk_summary_primary_health_reason": "worker_queue_pressure",
+          "orchestrator_operation_risk_summary_degraded_worker_ids": [
+            "worker-jetson-01"
+          ],
+          "orchestrator_operation_risk_summary_device_local_event_count": 2.0,
+          "orchestrator_operation_risk_summary_producer_event_count": 4.0,
           "orchestrator_edgeenv_mapping_hint": {
             "copy_candidate_context_to": "runtime_telemetry_context.candidate",
             "operation_context_role": "supplemental",
@@ -1278,6 +1849,17 @@
           "history_missing_orchestrator_candidate_device_local_event_count": null,
           "history_missing_orchestrator_candidate_device_local_task_count": null,
           "history_missing_orchestrator_candidate_operation_context_role": null,
+          "history_missing_orchestrator_remote_runtime_event_summary": {},
+          "history_missing_orchestrator_remote_runtime_event_summary_present": false,
+          "history_missing_orchestrator_remote_runtime_event_summary_evidence_role": null,
+          "history_missing_orchestrator_remote_runtime_event_summary_operation_boundary": null,
+          "history_missing_orchestrator_remote_runtime_event_summary_production_remote_execution": null,
+          "history_missing_orchestrator_operation_risk_summary": {},
+          "history_missing_orchestrator_operation_risk_summary_present": false,
+          "history_missing_orchestrator_operation_risk_summary_evidence_role": null,
+          "history_missing_orchestrator_operation_risk_summary_decision_owner": null,
+          "history_missing_orchestrator_operation_risk_summary_scheduler_owner": null,
+          "history_missing_orchestrator_operation_risk_summary_not_a_deployment_decision": null,
           "history_missing_orchestrator_edgeenv_mapping_hint": {},
           "history_missing_orchestrator_mapping_hint_aiguard_evidence_candidates": [],
           "history_missing_orchestrator_downstream_guard_alignment": {},
@@ -1361,6 +1943,46 @@
           "orchestrator_candidate_device_local_event_count": 2.0,
           "orchestrator_candidate_device_local_task_count": 1.0,
           "orchestrator_candidate_operation_context_role": "supplemental",
+          "orchestrator_remote_runtime_event_summary": {
+            "event_count": 4,
+            "runtime_event_count": 4,
+            "production_remote_execution": false,
+            "evidence_role": "remote_dispatch_runtime_event_compact_summary",
+            "operation_boundary": "remote dispatch starter evidence only"
+          },
+          "orchestrator_remote_runtime_event_summary_present": true,
+          "orchestrator_remote_runtime_event_summary_evidence_role": "remote_dispatch_runtime_event_compact_summary",
+          "orchestrator_remote_runtime_event_summary_operation_boundary": "remote dispatch starter evidence only",
+          "orchestrator_remote_runtime_event_summary_production_remote_execution": false,
+          "orchestrator_operation_risk_summary": {
+            "schema_version": "inferedge-entrypoint-operation-risk-summary-v1",
+            "evidence_role": "derived_navigation_context",
+            "decision_owner": "lab",
+            "scheduler_owner": "orchestrator",
+            "not_a_deployment_decision": true,
+            "queue_pressure_reason": "queue_backlog_threshold_exceeded",
+            "max_pressure_task": "vision_agent",
+            "primary_health_reason": "worker_queue_pressure",
+            "degraded_worker_ids": [
+              "worker-jetson-01"
+            ],
+            "device_local_event_count": 2,
+            "producer_event_count": 4
+          },
+          "orchestrator_operation_risk_summary_present": true,
+          "orchestrator_operation_risk_summary_schema_version": "inferedge-entrypoint-operation-risk-summary-v1",
+          "orchestrator_operation_risk_summary_evidence_role": "derived_navigation_context",
+          "orchestrator_operation_risk_summary_decision_owner": "lab",
+          "orchestrator_operation_risk_summary_scheduler_owner": "orchestrator",
+          "orchestrator_operation_risk_summary_not_a_deployment_decision": true,
+          "orchestrator_operation_risk_summary_queue_pressure_reason": "queue_backlog_threshold_exceeded",
+          "orchestrator_operation_risk_summary_max_pressure_task": "vision_agent",
+          "orchestrator_operation_risk_summary_primary_health_reason": "worker_queue_pressure",
+          "orchestrator_operation_risk_summary_degraded_worker_ids": [
+            "worker-jetson-01"
+          ],
+          "orchestrator_operation_risk_summary_device_local_event_count": 2.0,
+          "orchestrator_operation_risk_summary_producer_event_count": 4.0,
           "orchestrator_edgeenv_mapping_hint": {
             "copy_candidate_context_to": "runtime_telemetry_context.candidate",
             "operation_context_role": "supplemental",
@@ -1429,6 +2051,9 @@
   "suspected_causes": [
     "runtime_telemetry_gap",
     "runtime_telemetry_field_gap",
+    "queue_pressure_context",
+    "worker_health_degradation_context",
+    "task_specific_queue_pressure_context",
     "thermal_pressure",
     "thermal_throttling",
     "power_mode_or_cooling_constraint",
@@ -1439,6 +2064,7 @@
   "recommendations": [
     "Inspect telemetry coverage missing fields, rerun telemetry history export if needed, and preserve runtime_telemetry artifacts for both baseline and candidate before relying on trend diagnosis.",
     "Device-local Orchestrator producer lineage is preserved in the EdgeEnv runtime telemetry context.",
+    "Review the Orchestrator operation risk summary in Lab alongside queue, worker health, and device-local producer evidence; Lab remains the final deployment decision owner.",
     "Runtime history seed run_config markers are preserved as traceability context for Lab review.",
     "Review EdgeEnv telemetry history, power mode, cooling, and sustained run conditions before treating runtime regression as stable.",
     "Inspect Orchestrator queue policy, target FPS, drop/fallback behavior, and runtime telemetry before deployment."
@@ -1587,6 +2213,17 @@
       "history_missing_orchestrator_candidate_device_local_event_count": null,
       "history_missing_orchestrator_candidate_device_local_task_count": null,
       "history_missing_orchestrator_candidate_operation_context_role": null,
+      "history_missing_orchestrator_remote_runtime_event_summary": {},
+      "history_missing_orchestrator_remote_runtime_event_summary_present": false,
+      "history_missing_orchestrator_remote_runtime_event_summary_evidence_role": null,
+      "history_missing_orchestrator_remote_runtime_event_summary_operation_boundary": null,
+      "history_missing_orchestrator_remote_runtime_event_summary_production_remote_execution": null,
+      "history_missing_orchestrator_operation_risk_summary": {},
+      "history_missing_orchestrator_operation_risk_summary_present": false,
+      "history_missing_orchestrator_operation_risk_summary_evidence_role": null,
+      "history_missing_orchestrator_operation_risk_summary_decision_owner": null,
+      "history_missing_orchestrator_operation_risk_summary_scheduler_owner": null,
+      "history_missing_orchestrator_operation_risk_summary_not_a_deployment_decision": null,
       "history_missing_orchestrator_edgeenv_mapping_hint": {},
       "history_missing_orchestrator_mapping_hint_aiguard_evidence_candidates": [],
       "history_missing_orchestrator_downstream_guard_alignment": {},
@@ -1670,6 +2307,46 @@
       "orchestrator_candidate_device_local_event_count": 2.0,
       "orchestrator_candidate_device_local_task_count": 1.0,
       "orchestrator_candidate_operation_context_role": "supplemental",
+      "orchestrator_remote_runtime_event_summary": {
+        "event_count": 4,
+        "runtime_event_count": 4,
+        "production_remote_execution": false,
+        "evidence_role": "remote_dispatch_runtime_event_compact_summary",
+        "operation_boundary": "remote dispatch starter evidence only"
+      },
+      "orchestrator_remote_runtime_event_summary_present": true,
+      "orchestrator_remote_runtime_event_summary_evidence_role": "remote_dispatch_runtime_event_compact_summary",
+      "orchestrator_remote_runtime_event_summary_operation_boundary": "remote dispatch starter evidence only",
+      "orchestrator_remote_runtime_event_summary_production_remote_execution": false,
+      "orchestrator_operation_risk_summary": {
+        "schema_version": "inferedge-entrypoint-operation-risk-summary-v1",
+        "evidence_role": "derived_navigation_context",
+        "decision_owner": "lab",
+        "scheduler_owner": "orchestrator",
+        "not_a_deployment_decision": true,
+        "queue_pressure_reason": "queue_backlog_threshold_exceeded",
+        "max_pressure_task": "vision_agent",
+        "primary_health_reason": "worker_queue_pressure",
+        "degraded_worker_ids": [
+          "worker-jetson-01"
+        ],
+        "device_local_event_count": 2,
+        "producer_event_count": 4
+      },
+      "orchestrator_operation_risk_summary_present": true,
+      "orchestrator_operation_risk_summary_schema_version": "inferedge-entrypoint-operation-risk-summary-v1",
+      "orchestrator_operation_risk_summary_evidence_role": "derived_navigation_context",
+      "orchestrator_operation_risk_summary_decision_owner": "lab",
+      "orchestrator_operation_risk_summary_scheduler_owner": "orchestrator",
+      "orchestrator_operation_risk_summary_not_a_deployment_decision": true,
+      "orchestrator_operation_risk_summary_queue_pressure_reason": "queue_backlog_threshold_exceeded",
+      "orchestrator_operation_risk_summary_max_pressure_task": "vision_agent",
+      "orchestrator_operation_risk_summary_primary_health_reason": "worker_queue_pressure",
+      "orchestrator_operation_risk_summary_degraded_worker_ids": [
+        "worker-jetson-01"
+      ],
+      "orchestrator_operation_risk_summary_device_local_event_count": 2.0,
+      "orchestrator_operation_risk_summary_producer_event_count": 4.0,
       "orchestrator_edgeenv_mapping_hint": {
         "copy_candidate_context_to": "runtime_telemetry_context.candidate",
         "operation_context_role": "supplemental",
@@ -1879,6 +2556,28 @@
             ],
             "orchestrator_is_final_decision_owner": false,
             "lab_is_final_decision_owner": true
+          },
+          "remote_runtime_event_summary": {
+            "event_count": 4,
+            "runtime_event_count": 4,
+            "production_remote_execution": false,
+            "evidence_role": "remote_dispatch_runtime_event_compact_summary",
+            "operation_boundary": "remote dispatch starter evidence only"
+          },
+          "operation_risk_summary": {
+            "schema_version": "inferedge-entrypoint-operation-risk-summary-v1",
+            "evidence_role": "derived_navigation_context",
+            "decision_owner": "lab",
+            "scheduler_owner": "orchestrator",
+            "not_a_deployment_decision": true,
+            "queue_pressure_reason": "queue_backlog_threshold_exceeded",
+            "max_pressure_task": "vision_agent",
+            "primary_health_reason": "worker_queue_pressure",
+            "degraded_worker_ids": [
+              "worker-jetson-01"
+            ],
+            "device_local_event_count": 2,
+            "producer_event_count": 4
           }
         }
       },
@@ -2065,5 +2764,5 @@
       "evidence_gaps": []
     }
   },
-  "created_at": "2026-05-26T10:21:55Z"
+  "created_at": "2026-05-28T15:10:37Z"
 }
