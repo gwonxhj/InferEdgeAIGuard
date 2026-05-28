@@ -35,7 +35,7 @@ not the final Lab deployment policy.
 | baseline deviation | invalid/collapse/saturation factor | near baseline | factor `> 5x` | factor `> 10x` | `evidence[].increase_factor` |
 | temporal consistency | count CV, bbox center jump, class flip | stable sequence | count CV `> 1.0`, class flip `> 0.30`, or center jump p95 `> 0.50` image diagonal | zero-frame ratio `> 0.30` | `candidate_summary.temporal` |
 | provenance consistency | source/artifact/backend/target/precision identity | exact handoff match | warning mismatch | error mismatch | `guard_analysis.anomalies`, `guard_analysis.status` |
-| EdgeEnv runtime regression | p99/mean/FPS/memory deltas and telemetry coverage | comparable report without threshold breach | same-condition regression or telemetry gap | high tail-latency regression | `candidate_summary.edgeenv_regression` |
+| EdgeEnv runtime regression | p99/mean/FPS/memory deltas, telemetry coverage, preserved Orchestrator operation context | comparable report without threshold breach | same-condition regression, telemetry gap, or operation risk summary marker | high tail-latency regression | `candidate_summary.edgeenv_regression` |
 | remote dispatch starter | worker-selection, plan-only/execution status, fallback recovery, compact event-summary consistency | starter success or consistent plan-only evidence | plan-only context, failed starter, fallback recovery, or summary mismatch | n/a | `candidate_summary.remote_dispatch` |
 
 ## Implemented Detector Details

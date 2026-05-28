@@ -786,6 +786,9 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
     candidate_remote_runtime_event_summary = _mapping(
         candidate_orchestrator_context.get("remote_runtime_event_summary")
     )
+    candidate_operation_risk_summary = _mapping(
+        candidate_orchestrator_context.get("operation_risk_summary")
+    )
     candidate_orchestrator_context_present = isinstance(
         candidate_context.get("orchestrator_operation_context"),
         dict,
@@ -808,6 +811,9 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
     )
     first_missing_remote_runtime_event_summary = _mapping(
         first_missing_orchestrator_context.get("remote_runtime_event_summary")
+    )
+    first_missing_operation_risk_summary = _mapping(
+        first_missing_orchestrator_context.get("operation_risk_summary")
     )
     baseline_max_temperature_c = _max_optional_number(
         _telemetry_number(
@@ -1034,6 +1040,28 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
                 )
             )
         ),
+        "history_missing_orchestrator_operation_risk_summary": dict(
+            first_missing_operation_risk_summary
+        ),
+        "history_missing_orchestrator_operation_risk_summary_present": bool(
+            first_missing_operation_risk_summary
+        ),
+        "history_missing_orchestrator_operation_risk_summary_evidence_role": (
+            first_missing_operation_risk_summary.get("evidence_role")
+        ),
+        "history_missing_orchestrator_operation_risk_summary_decision_owner": (
+            first_missing_operation_risk_summary.get("decision_owner")
+        ),
+        "history_missing_orchestrator_operation_risk_summary_scheduler_owner": (
+            first_missing_operation_risk_summary.get("scheduler_owner")
+        ),
+        "history_missing_orchestrator_operation_risk_summary_not_a_deployment_decision": (
+            _optional_bool(
+                first_missing_operation_risk_summary.get(
+                    "not_a_deployment_decision"
+                )
+            )
+        ),
         "history_missing_orchestrator_edgeenv_mapping_hint": dict(
             first_missing_edgeenv_mapping_hint
         ),
@@ -1178,6 +1206,49 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
                 candidate_remote_runtime_event_summary.get(
                     "production_remote_execution"
                 )
+            )
+        ),
+        "orchestrator_operation_risk_summary": dict(candidate_operation_risk_summary),
+        "orchestrator_operation_risk_summary_present": bool(
+            candidate_operation_risk_summary
+        ),
+        "orchestrator_operation_risk_summary_schema_version": (
+            candidate_operation_risk_summary.get("schema_version")
+        ),
+        "orchestrator_operation_risk_summary_evidence_role": (
+            candidate_operation_risk_summary.get("evidence_role")
+        ),
+        "orchestrator_operation_risk_summary_decision_owner": (
+            candidate_operation_risk_summary.get("decision_owner")
+        ),
+        "orchestrator_operation_risk_summary_scheduler_owner": (
+            candidate_operation_risk_summary.get("scheduler_owner")
+        ),
+        "orchestrator_operation_risk_summary_not_a_deployment_decision": (
+            _optional_bool(
+                candidate_operation_risk_summary.get("not_a_deployment_decision")
+            )
+        ),
+        "orchestrator_operation_risk_summary_queue_pressure_reason": (
+            candidate_operation_risk_summary.get("queue_pressure_reason")
+        ),
+        "orchestrator_operation_risk_summary_max_pressure_task": (
+            candidate_operation_risk_summary.get("max_pressure_task")
+        ),
+        "orchestrator_operation_risk_summary_primary_health_reason": (
+            candidate_operation_risk_summary.get("primary_health_reason")
+        ),
+        "orchestrator_operation_risk_summary_degraded_worker_ids": _string_list(
+            candidate_operation_risk_summary.get("degraded_worker_ids")
+        ),
+        "orchestrator_operation_risk_summary_device_local_event_count": (
+            _optional_number(
+                candidate_operation_risk_summary.get("device_local_event_count")
+            )
+        ),
+        "orchestrator_operation_risk_summary_producer_event_count": (
+            _optional_number(
+                candidate_operation_risk_summary.get("producer_event_count")
             )
         ),
         "orchestrator_edgeenv_mapping_hint": dict(candidate_edgeenv_mapping_hint),
@@ -2299,6 +2370,9 @@ def _edgeenv_regression_evidence(
     )
     if producer_lineage_evidence is not None:
         evidence.append(producer_lineage_evidence)
+    operation_risk_evidence = _edgeenv_orchestrator_operation_risk_evidence(metrics)
+    if operation_risk_evidence is not None:
+        evidence.append(operation_risk_evidence)
     seed_run_config_evidence = _edgeenv_history_seed_run_config_evidence(metrics)
     if seed_run_config_evidence is not None:
         evidence.append(seed_run_config_evidence)
@@ -2886,6 +2960,110 @@ def _edgeenv_orchestrator_producer_lineage_evidence(
                 ),
                 "missing_operation_context_role": metrics.get(
                     "history_missing_orchestrator_candidate_operation_context_role"
+                ),
+            },
+        },
+    )
+
+
+def _edgeenv_orchestrator_operation_risk_evidence(
+    metrics: dict[str, Any],
+) -> dict[str, Any] | None:
+    if not metrics.get("runtime_telemetry_context_present"):
+        return None
+    if not metrics.get("orchestrator_operation_risk_summary_present"):
+        return None
+
+    degraded_worker_ids = _string_list(
+        metrics.get("orchestrator_operation_risk_summary_degraded_worker_ids")
+    )
+    queue_pressure_reason = metrics.get(
+        "orchestrator_operation_risk_summary_queue_pressure_reason"
+    )
+    primary_health_reason = metrics.get(
+        "orchestrator_operation_risk_summary_primary_health_reason"
+    )
+    max_pressure_task = metrics.get(
+        "orchestrator_operation_risk_summary_max_pressure_task"
+    )
+    boundary_ok = (
+        metrics.get("orchestrator_operation_risk_summary_decision_owner") == "lab"
+        and metrics.get("orchestrator_operation_risk_summary_scheduler_owner")
+        == "orchestrator"
+        and metrics.get(
+            "orchestrator_operation_risk_summary_not_a_deployment_decision"
+        )
+        is True
+    )
+    risk_markers: list[str] = []
+    if _queue_pressure_reason_is_concerning(queue_pressure_reason):
+        risk_markers.append("queue_pressure")
+    if _non_empty_string(primary_health_reason) and primary_health_reason != "healthy":
+        risk_markers.append("worker_health")
+    if degraded_worker_ids:
+        risk_markers.append("degraded_worker")
+    if _non_empty_string(max_pressure_task):
+        risk_markers.append("max_pressure_task")
+    if not boundary_ok:
+        risk_markers.append("operation_boundary_marker_gap")
+
+    observed_value = len(risk_markers)
+    status = "warning" if observed_value else "passed"
+    severity = "medium" if status != "passed" else "low"
+    suspected_causes = []
+    if "queue_pressure" in risk_markers:
+        suspected_causes.append("queue_pressure_context")
+    if "worker_health" in risk_markers or "degraded_worker" in risk_markers:
+        suspected_causes.append("worker_health_degradation_context")
+    if "max_pressure_task" in risk_markers:
+        suspected_causes.append("task_specific_queue_pressure_context")
+    if "operation_boundary_marker_gap" in risk_markers:
+        suspected_causes.append("operation_risk_boundary_marker_gap")
+
+    return build_evidence_item(
+        evidence_type="edgeenv_orchestrator_operation_risk_summary",
+        metric_name="orchestrator_operation_risk_marker_count",
+        observed_value=observed_value,
+        baseline_value=0,
+        threshold=1,
+        delta=None,
+        delta_pct=None,
+        increase_factor=None,
+        severity=severity,
+        status=status,
+        explanation=(
+            "EdgeEnv preserved Orchestrator operation risk summary with "
+            f"{observed_value} deterministic review marker(s)."
+        ),
+        why_it_matters=(
+            "Operation risk summary links queue pressure, worker health, and "
+            "device-local producer event context to the Lab report without "
+            "making AIGuard or Orchestrator the deployment decision owner."
+        ),
+        suspected_causes=suspected_causes,
+        recommendation=(
+            "Review the Orchestrator operation risk summary in Lab alongside "
+            "queue, worker health, and device-local producer evidence; Lab "
+            "remains the final deployment decision owner."
+            if status != "passed"
+            else "Orchestrator operation risk summary is present without "
+            "deterministic review markers."
+        ),
+        raw_context={
+            "edgeenv_regression": metrics,
+            "operation_risk_summary": {
+                "summary": metrics.get("orchestrator_operation_risk_summary"),
+                "boundary_markers_valid": boundary_ok,
+                "risk_markers": risk_markers,
+                "degraded_worker_ids": degraded_worker_ids,
+                "queue_pressure_reason": queue_pressure_reason,
+                "primary_health_reason": primary_health_reason,
+                "max_pressure_task": max_pressure_task,
+                "device_local_event_count": metrics.get(
+                    "orchestrator_operation_risk_summary_device_local_event_count"
+                ),
+                "producer_event_count": metrics.get(
+                    "orchestrator_operation_risk_summary_producer_event_count"
                 ),
             },
         },

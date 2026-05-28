@@ -107,6 +107,7 @@ deployment decision owner.
 | `runtime_telemetry_replay_context` | `runtime_telemetry_history_missing_run_count` | `>= 1` or baseline/candidate sequence order mismatch | n/a | EdgeEnv telemetry history replay has missing telemetry or ordering concerns |
 | `runtime_history_seed_run_config_traceability` | `runtime_history_seed_run_config_count` | warning when preserved Runtime history seeds lack run_config markers | n/a | EdgeEnv preserved Runtime history seed run_config markers as replay/comparability traceability evidence |
 | `edgeenv_orchestrator_producer_lineage` | `device_local_producer_context_count` | warning when preserved Orchestrator context lacks device-local producer metadata | n/a | EdgeEnv preserved device-local Orchestrator producer lineage as traceability evidence |
+| `edgeenv_orchestrator_operation_risk_summary` | `orchestrator_operation_risk_marker_count` | `>= 1` queue/worker/boundary marker | n/a | EdgeEnv preserved Orchestrator operation risk summary as supplemental operation context for Lab review |
 | `runtime_thermal_instability` | `candidate_max_temperature_c` / `candidate_throttling_detected` | temperature `>= 70.0` or throttling `true` | temperature `>= 85.0` | EdgeEnv telemetry or attached Orchestrator feed indicates thermal/throttling pressure |
 | `runtime_queue_overload` | `candidate_queue_depth` | `>= 3.0` | `>= 8.0` | EdgeEnv telemetry or attached Orchestrator feed indicates queue backlog pressure |
 | `edgeenv_comparability_guardrail` | `edgeenv_comparable` | skipped when not comparable or not same-condition | n/a | AIGuard refuses to reinterpret non-comparable EdgeEnv reports as same-condition regression |
@@ -401,6 +402,13 @@ When EdgeEnv preserves `candidate_context.producer`, AIGuard emits
 per-task source mapping, task stage mapping, and positive event/task coverage.
 This is a traceability evidence item, not a new deployment decision or
 comparability gate.
+When EdgeEnv also preserves Orchestrator `operation_risk_summary`, AIGuard emits
+`edgeenv_orchestrator_operation_risk_summary` to explain deterministic review
+markers such as queue pressure reason, max-pressure task, worker health reason,
+degraded worker IDs, and device-local producer event counts. The evidence keeps
+`decision_owner=lab`, `scheduler_owner=orchestrator`, and
+`not_a_deployment_decision=true` as boundary checks. It is supplemental runtime
+operation context for Lab review, not a final deployment decision.
 When the preserved Orchestrator context includes
 `downstream_guard_alignment.producer_lineage_evidence_type=edgeenv_orchestrator_producer_lineage`,
 AIGuard validates that marker and keeps producer-lineage reasoning separate
