@@ -253,6 +253,13 @@ max-pressure task, worker health, degraded worker ID, device-local producer
 event count를 설명합니다. 이 evidence는 `decision_owner=lab`,
 `scheduler_owner=orchestrator`, `not_a_deployment_decision=true` 경계를 확인하는
 supplemental operation context이며 최종 deployment decision이 아닙니다.
+EdgeEnv가 Orchestrator `runtime_task_event_summary`와
+`tasks_with_deadline_miss` / `tasks_with_fallback` /
+`tasks_with_scheduler_delay` rollup을 보존하면 AIGuard는
+`edgeenv_orchestrator_task_event_rollup` evidence로 task-level scheduler delay,
+deadline miss, fallback, queue-pressure reason을 설명합니다. 이 역시
+deterministic warning context이며 AIGuard가 deployment decision을 내린다는
+의미가 아닙니다.
 이때 EdgeEnv가 보존한
 `downstream_guard_alignment.producer_lineage_evidence_type=edgeenv_orchestrator_producer_lineage`
 marker도 함께 확인해 producer-lineage evidence를 queue/thermal operation

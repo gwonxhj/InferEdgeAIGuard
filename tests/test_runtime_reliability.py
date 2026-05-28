@@ -787,6 +787,60 @@ def edgeenv_regression_report_with_orchestrator_feed_context() -> dict:
                 "queue_depth": 7,
                 "deadline_missed_count": 2,
                 "fallback_count": 1,
+                "runtime_task_event_summary": {
+                    "vision_agent": {
+                        "event_count": 9,
+                        "event_type_counts": {
+                            "schedule": 3,
+                            "execution": 3,
+                            "policy_decision": 3,
+                        },
+                        "reason_counts": {
+                            "deadline_missed": 1,
+                            "queue_backlog_threshold_exceeded": 1,
+                        },
+                        "policy_decision_reason_counts": {
+                            "queue_backlog_threshold_exceeded": 1,
+                        },
+                        "drop_reason_counts": {},
+                        "deadline_missed_count": 1,
+                        "fallback_decision_count": 0,
+                        "scheduler_delay_event_count": 1,
+                        "max_scheduler_delay_cycles": 3,
+                        "max_queue_wait_ms": 15.0,
+                        "latest_event_index": 42,
+                        "latest_event_type": "execution",
+                    },
+                    "voice_command_agent": {
+                        "event_count": 6,
+                        "event_type_counts": {
+                            "drop": 1,
+                            "policy_decision": 1,
+                            "schedule": 2,
+                            "execution": 2,
+                        },
+                        "reason_counts": {
+                            "queue_backlog_threshold_exceeded": 1,
+                            "load_shedding_backlog_threshold_exceeded": 1,
+                        },
+                        "policy_decision_reason_counts": {
+                            "queue_backlog_threshold_exceeded": 1,
+                        },
+                        "drop_reason_counts": {
+                            "load_shedding_backlog_threshold_exceeded": 1,
+                        },
+                        "deadline_missed_count": 0,
+                        "fallback_decision_count": 1,
+                        "scheduler_delay_event_count": 0,
+                        "max_scheduler_delay_cycles": 0,
+                        "max_queue_wait_ms": 0.0,
+                        "latest_event_index": 39,
+                        "latest_event_type": "policy_decision",
+                    },
+                },
+                "tasks_with_deadline_miss": ["vision_agent"],
+                "tasks_with_fallback": ["voice_command_agent"],
+                "tasks_with_scheduler_delay": ["vision_agent"],
             },
             "resource": {
                 "source": "tegrastats_timeline",
@@ -1614,6 +1668,14 @@ def test_compute_edgeenv_regression_metrics_extracts_orchestrator_feed_context()
         2.0
     )
     assert metrics["orchestrator_operation_risk_summary_producer_event_count"] == 4.0
+    assert metrics["orchestrator_runtime_task_event_summary_present"] is True
+    assert set(metrics["orchestrator_runtime_task_event_summary"]) == {
+        "vision_agent",
+        "voice_command_agent",
+    }
+    assert metrics["orchestrator_tasks_with_deadline_miss"] == ["vision_agent"]
+    assert metrics["orchestrator_tasks_with_fallback"] == ["voice_command_agent"]
+    assert metrics["orchestrator_tasks_with_scheduler_delay"] == ["vision_agent"]
     assert metrics["candidate_max_temperature_c"] == 78.5
     assert metrics["candidate_throttling_detected"] is True
     assert metrics["candidate_queue_depth"] == 7.0
@@ -1899,6 +1961,7 @@ def test_analyze_edgeenv_regression_report_warns_on_orchestrator_feed_context():
     evidence_types = {item["type"] for item in report["evidence"]}
     assert "edgeenv_orchestrator_producer_lineage" in evidence_types
     assert "edgeenv_orchestrator_operation_risk_summary" in evidence_types
+    assert "edgeenv_orchestrator_task_event_rollup" in evidence_types
     assert "runtime_thermal_instability" in evidence_types
     assert "runtime_queue_overload" in evidence_types
     queue_evidence = next(
@@ -2013,6 +2076,30 @@ def test_analyze_edgeenv_regression_report_warns_on_orchestrator_feed_context():
     assert operation_risk["raw_context"]["operation_risk_summary"][
         "device_local_event_count"
     ] == 2.0
+    task_event_rollup = next(
+        item
+        for item in report["evidence"]
+        if item["type"] == "edgeenv_orchestrator_task_event_rollup"
+    )
+    assert task_event_rollup["status"] == "warning"
+    assert task_event_rollup["observed_value"] == 2.0
+    assert task_event_rollup["threshold"] == 1
+    assert "scheduler_delay_context" in task_event_rollup["suspected_causes"]
+    assert "deadline_miss_context" in task_event_rollup["suspected_causes"]
+    assert "fallback_policy_context" in task_event_rollup["suspected_causes"]
+    assert "queue_pressure_context" in task_event_rollup["suspected_causes"]
+    task_event_context = task_event_rollup["raw_context"]["task_event_rollup"]
+    assert task_event_context["affected_tasks"] == [
+        "vision_agent",
+        "voice_command_agent",
+    ]
+    assert task_event_context["tasks_with_deadline_miss"] == ["vision_agent"]
+    assert task_event_context["tasks_with_fallback"] == ["voice_command_agent"]
+    assert task_event_context["tasks_with_scheduler_delay"] == ["vision_agent"]
+    assert task_event_context["boundary_markers_valid"] is True
+    assert task_event_context["decision_owner"] == "lab"
+    assert task_event_context["scheduler_owner"] == "orchestrator"
+    assert task_event_context["not_a_deployment_decision"] is True
     assert producer_lineage["raw_context"]["producer_lineage"][
         "candidate_remote_runtime_event_summary_operation_boundary"
     ] == "remote dispatch starter evidence only"
@@ -3159,6 +3246,7 @@ def test_runtime_intelligence_example_exports_lab_ready_guard_analysis(tmp_path)
         "runtime_telemetry_context_coverage",
         "edgeenv_orchestrator_producer_lineage",
         "edgeenv_orchestrator_operation_risk_summary",
+        "edgeenv_orchestrator_task_event_rollup",
         "runtime_history_seed_run_config_traceability",
         "runtime_thermal_instability",
         "runtime_queue_overload",
@@ -3252,6 +3340,16 @@ def test_runtime_intelligence_example_exports_lab_ready_guard_analysis(tmp_path)
     assert operation_risk["raw_context"]["operation_risk_summary"][
         "queue_pressure_reason"
     ] == "queue_backlog_threshold_exceeded"
+    task_event_rollup = next(
+        item
+        for item in saved["evidence"]
+        if item["type"] == "edgeenv_orchestrator_task_event_rollup"
+    )
+    assert task_event_rollup["status"] == "warning"
+    assert task_event_rollup["observed_value"] == 2.0
+    assert task_event_rollup["raw_context"]["task_event_rollup"][
+        "affected_tasks"
+    ] == ["vision_agent", "voice_command_agent"]
     assert forbidden_decision_keys.isdisjoint(saved)
     assert forbidden_decision_keys.isdisjoint(expected)
 
