@@ -29,6 +29,9 @@ EDGEENV_HANDOFF_GUARD_ALIGNMENT_SCHEMA_VERSION = (
 EDGEENV_ORCHESTRATOR_PRODUCER_LINEAGE_EVIDENCE_TYPE = (
     "edgeenv_orchestrator_producer_lineage"
 )
+EDGEENV_ORCHESTRATOR_TASK_EVENT_ROLLUP_EVIDENCE_TYPE = (
+    "edgeenv_orchestrator_task_event_rollup"
+)
 EDGEENV_ORCHESTRATOR_OPERATION_EVIDENCE_CANDIDATES = (
     "runtime_queue_overload",
     "runtime_thermal_instability",
@@ -774,6 +777,9 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
     candidate_orchestrator_candidate_context = _mapping(
         candidate_orchestrator_context.get("candidate_context")
     )
+    candidate_orchestrator_operation = _mapping(
+        candidate_orchestrator_candidate_context.get("operation")
+    )
     candidate_orchestrator_producer = _mapping(
         candidate_orchestrator_candidate_context.get("producer")
     )
@@ -788,6 +794,10 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
     )
     candidate_operation_risk_summary = _mapping(
         candidate_orchestrator_context.get("operation_risk_summary")
+    )
+    candidate_runtime_task_event_summary = _mapping(
+        candidate_orchestrator_operation.get("runtime_task_event_summary")
+        or candidate_orchestrator_context.get("runtime_task_event_summary")
     )
     candidate_orchestrator_context_present = isinstance(
         candidate_context.get("orchestrator_operation_context"),
@@ -1250,6 +1260,24 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
             _optional_number(
                 candidate_operation_risk_summary.get("producer_event_count")
             )
+        ),
+        "orchestrator_runtime_task_event_summary": dict(
+            candidate_runtime_task_event_summary
+        ),
+        "orchestrator_runtime_task_event_summary_present": bool(
+            candidate_runtime_task_event_summary
+        ),
+        "orchestrator_tasks_with_deadline_miss": _string_list(
+            candidate_orchestrator_operation.get("tasks_with_deadline_miss")
+            or candidate_orchestrator_context.get("tasks_with_deadline_miss")
+        ),
+        "orchestrator_tasks_with_fallback": _string_list(
+            candidate_orchestrator_operation.get("tasks_with_fallback")
+            or candidate_orchestrator_context.get("tasks_with_fallback")
+        ),
+        "orchestrator_tasks_with_scheduler_delay": _string_list(
+            candidate_orchestrator_operation.get("tasks_with_scheduler_delay")
+            or candidate_orchestrator_context.get("tasks_with_scheduler_delay")
         ),
         "orchestrator_edgeenv_mapping_hint": dict(candidate_edgeenv_mapping_hint),
         "orchestrator_mapping_hint_copy_candidate_context_to": (
@@ -2373,6 +2401,11 @@ def _edgeenv_regression_evidence(
     operation_risk_evidence = _edgeenv_orchestrator_operation_risk_evidence(metrics)
     if operation_risk_evidence is not None:
         evidence.append(operation_risk_evidence)
+    task_event_rollup_evidence = _edgeenv_orchestrator_task_event_rollup_evidence(
+        metrics
+    )
+    if task_event_rollup_evidence is not None:
+        evidence.append(task_event_rollup_evidence)
     seed_run_config_evidence = _edgeenv_history_seed_run_config_evidence(metrics)
     if seed_run_config_evidence is not None:
         evidence.append(seed_run_config_evidence)
@@ -3065,6 +3098,110 @@ def _edgeenv_orchestrator_operation_risk_evidence(
                 "producer_event_count": metrics.get(
                     "orchestrator_operation_risk_summary_producer_event_count"
                 ),
+            },
+        },
+    )
+
+
+def _edgeenv_orchestrator_task_event_rollup_evidence(
+    metrics: dict[str, Any],
+) -> dict[str, Any] | None:
+    if not metrics.get("runtime_telemetry_context_present"):
+        return None
+    task_summary = _mapping(metrics.get("orchestrator_runtime_task_event_summary"))
+    if not task_summary:
+        return None
+
+    tasks_with_deadline_miss = _string_list(
+        metrics.get("orchestrator_tasks_with_deadline_miss")
+    )
+    tasks_with_fallback = _string_list(metrics.get("orchestrator_tasks_with_fallback"))
+    tasks_with_scheduler_delay = _string_list(
+        metrics.get("orchestrator_tasks_with_scheduler_delay")
+    )
+    affected_tasks = _task_event_rollup_affected_tasks(
+        task_summary=task_summary,
+        tasks_with_deadline_miss=tasks_with_deadline_miss,
+        tasks_with_fallback=tasks_with_fallback,
+        tasks_with_scheduler_delay=tasks_with_scheduler_delay,
+    )
+    reason_counts = _task_event_rollup_reason_counts(task_summary)
+    boundary_ok = (
+        metrics.get("orchestrator_guard_alignment_orchestrator_is_final_decision_owner")
+        is False
+        and metrics.get("orchestrator_guard_alignment_lab_is_final_decision_owner")
+        is True
+    )
+    review_markers: list[str] = []
+    if tasks_with_deadline_miss:
+        review_markers.append("deadline_miss")
+    if tasks_with_fallback:
+        review_markers.append("fallback")
+    if tasks_with_scheduler_delay:
+        review_markers.append("scheduler_delay")
+    if any(_queue_pressure_reason_is_concerning(reason) for reason in reason_counts):
+        review_markers.append("queue_pressure_reason")
+    if not boundary_ok:
+        review_markers.append("operation_boundary_marker_gap")
+
+    observed_value = float(len(affected_tasks))
+    status = "warning" if review_markers else "passed"
+    severity = "medium" if status != "passed" else "low"
+    suspected_causes: list[str] = []
+    if tasks_with_scheduler_delay:
+        suspected_causes.append("scheduler_delay_context")
+    if tasks_with_deadline_miss:
+        suspected_causes.append("deadline_miss_context")
+    if tasks_with_fallback:
+        suspected_causes.append("fallback_policy_context")
+    if "queue_pressure_reason" in review_markers:
+        suspected_causes.append("queue_pressure_context")
+    if "operation_boundary_marker_gap" in review_markers:
+        suspected_causes.append("operation_boundary_marker_gap")
+
+    return build_evidence_item(
+        evidence_type=EDGEENV_ORCHESTRATOR_TASK_EVENT_ROLLUP_EVIDENCE_TYPE,
+        metric_name="orchestrator_task_event_affected_task_count",
+        observed_value=observed_value,
+        baseline_value=0,
+        threshold=1,
+        delta=None,
+        delta_pct=None,
+        increase_factor=None,
+        severity=severity,
+        status=status,
+        explanation=(
+            "EdgeEnv preserved Orchestrator task event rollup with "
+            f"{int(observed_value)} task-level review target(s)."
+        ),
+        why_it_matters=(
+            "Task-level scheduler delay, deadline miss, and fallback context "
+            "explains which workload produced runtime operation risk. AIGuard "
+            "preserves this deterministic warning evidence while Lab remains "
+            "the deployment decision owner."
+        ),
+        suspected_causes=suspected_causes,
+        recommendation=(
+            "Review Orchestrator task event rollup, queue policy, deadline "
+            "budget, and fallback behavior in the Lab report before deployment."
+            if status != "passed"
+            else "Orchestrator task event rollup is present without task-level "
+            "review markers."
+        ),
+        raw_context={
+            "edgeenv_regression": metrics,
+            "task_event_rollup": {
+                "summary": task_summary,
+                "tasks_with_deadline_miss": tasks_with_deadline_miss,
+                "tasks_with_fallback": tasks_with_fallback,
+                "tasks_with_scheduler_delay": tasks_with_scheduler_delay,
+                "affected_tasks": affected_tasks,
+                "reason_counts": reason_counts,
+                "review_markers": review_markers,
+                "boundary_markers_valid": boundary_ok,
+                "decision_owner": "lab",
+                "scheduler_owner": "orchestrator",
+                "not_a_deployment_decision": True,
             },
         },
     )
@@ -4241,6 +4378,52 @@ def _history_seed_run_config_marker_label(run_config: dict[str, Any]) -> str:
     markers = _history_seed_run_config_markers(run_config)
     parts = [f"{key}={value}" for key, value in markers.items()]
     return ", ".join(parts)
+
+
+def _task_event_rollup_affected_tasks(
+    *,
+    task_summary: dict[str, Any],
+    tasks_with_deadline_miss: list[str],
+    tasks_with_fallback: list[str],
+    tasks_with_scheduler_delay: list[str],
+) -> list[str]:
+    affected = set(tasks_with_deadline_miss)
+    affected.update(tasks_with_fallback)
+    affected.update(tasks_with_scheduler_delay)
+    for task_name, summary in task_summary.items():
+        if not isinstance(task_name, str) or not isinstance(summary, dict):
+            continue
+        if _optional_number(summary.get("deadline_missed_count")):
+            affected.add(task_name)
+        if _optional_number(summary.get("fallback_decision_count")):
+            affected.add(task_name)
+        if _optional_number(summary.get("scheduler_delay_event_count")):
+            affected.add(task_name)
+        if _task_event_rollup_reason_counts({task_name: summary}):
+            affected.add(task_name)
+    return sorted(affected)
+
+
+def _task_event_rollup_reason_counts(
+    task_summary: dict[str, Any],
+) -> dict[str, float]:
+    reason_counts: dict[str, float] = {}
+    for summary in task_summary.values():
+        if not isinstance(summary, dict):
+            continue
+        for field in (
+            "reason_counts",
+            "policy_decision_reason_counts",
+            "drop_reason_counts",
+        ):
+            counts = _mapping(summary.get(field))
+            for reason, count in counts.items():
+                if not isinstance(reason, str) or not reason:
+                    continue
+                reason_counts[reason] = reason_counts.get(reason, 0.0) + (
+                    _optional_number(count) or 0.0
+                )
+    return {reason: count for reason, count in reason_counts.items() if count > 0}
 
 
 def _history_seed_run_config_shape_label(run_config: dict[str, Any]) -> str:

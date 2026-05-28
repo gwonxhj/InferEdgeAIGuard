@@ -94,7 +94,67 @@
           "operation": {
             "queue_depth": 7,
             "deadline_missed_count": 2,
-            "fallback_count": 1
+            "fallback_count": 1,
+            "runtime_task_event_summary": {
+              "vision_agent": {
+                "event_count": 9,
+                "event_type_counts": {
+                  "schedule": 3,
+                  "execution": 3,
+                  "policy_decision": 3
+                },
+                "reason_counts": {
+                  "deadline_missed": 1,
+                  "queue_backlog_threshold_exceeded": 1
+                },
+                "policy_decision_reason_counts": {
+                  "queue_backlog_threshold_exceeded": 1
+                },
+                "drop_reason_counts": {},
+                "deadline_missed_count": 1,
+                "fallback_decision_count": 0,
+                "scheduler_delay_event_count": 1,
+                "max_scheduler_delay_cycles": 3,
+                "max_queue_wait_ms": 15.0,
+                "latest_event_index": 42,
+                "latest_event_type": "execution"
+              },
+              "voice_command_agent": {
+                "event_count": 6,
+                "event_type_counts": {
+                  "drop": 1,
+                  "policy_decision": 1,
+                  "schedule": 2,
+                  "execution": 2
+                },
+                "reason_counts": {
+                  "queue_backlog_threshold_exceeded": 1,
+                  "load_shedding_backlog_threshold_exceeded": 1
+                },
+                "policy_decision_reason_counts": {
+                  "queue_backlog_threshold_exceeded": 1
+                },
+                "drop_reason_counts": {
+                  "load_shedding_backlog_threshold_exceeded": 1
+                },
+                "deadline_missed_count": 0,
+                "fallback_decision_count": 1,
+                "scheduler_delay_event_count": 0,
+                "max_scheduler_delay_cycles": 0,
+                "max_queue_wait_ms": 0.0,
+                "latest_event_index": 39,
+                "latest_event_type": "policy_decision"
+              }
+            },
+            "tasks_with_deadline_miss": [
+              "vision_agent"
+            ],
+            "tasks_with_fallback": [
+              "voice_command_agent"
+            ],
+            "tasks_with_scheduler_delay": [
+              "vision_agent"
+            ]
           },
           "resource": {
             "source": "tegrastats_timeline",
