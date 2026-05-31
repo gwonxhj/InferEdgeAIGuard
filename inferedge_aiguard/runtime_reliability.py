@@ -152,6 +152,15 @@ def validate_edgeenv_handoff_guard_evidence_alignment(
         if boundary_flags.get(field) is not expected
     ]
     handoff_summary = _mapping(edgeenv_handoff.get("edgeenv_report_summary"))
+    handoff_duration_traceability_run_ids = _unique_string_values(
+        handoff_summary.get("duration_traceability_run_ids")
+    )
+    handoff_duration_sources = _unique_string_values(
+        handoff_summary.get("duration_sources")
+    )
+    handoff_duration_scope_labels = _unique_string_values(
+        handoff_summary.get("duration_scope_labels")
+    )
     producer_lineage_evidence = _first_evidence_item(
         evidence_items,
         EDGEENV_ORCHESTRATOR_PRODUCER_LINEAGE_EVIDENCE_TYPE,
@@ -209,6 +218,14 @@ def validate_edgeenv_handoff_guard_evidence_alignment(
         "lab_report_marker_owner": "lab",
         "report_marker_context_role": "lab_report_contract_context",
         "aiguard_validates_expected_report_markers": False,
+        "handoff_duration_traceability_present": bool(
+            handoff_duration_traceability_run_ids
+        ),
+        "handoff_duration_traceability_run_ids": (
+            handoff_duration_traceability_run_ids
+        ),
+        "handoff_duration_sources": handoff_duration_sources,
+        "handoff_duration_scope_labels": handoff_duration_scope_labels,
         "required_evidence_types": required_evidence_types,
         "guard_analysis_evidence_types": guard_evidence_types,
         "missing_required_evidence_types": missing_required_evidence_types,

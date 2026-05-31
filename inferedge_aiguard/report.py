@@ -335,6 +335,14 @@ def _format_edgeenv_handoff_alignment_summary(summary: dict[str, Any]) -> str:
             f"{summary.get('aiguard_validates_expected_report_markers', False)}"
         ),
         (
+            "- handoff_duration_sources: "
+            f"{_format_list(summary.get('handoff_duration_sources', []))}"
+        ),
+        (
+            "- handoff_duration_scope_labels: "
+            f"{_format_list(summary.get('handoff_duration_scope_labels', []))}"
+        ),
+        (
             "- required_evidence_types: "
             f"{_format_list(summary.get('required_evidence_types', []))}"
         ),
@@ -423,6 +431,10 @@ def _markdown_edgeenv_handoff_alignment_report(summary: dict[str, Any]) -> str:
                     "aiguard_validates_expected_report_markers",
                     summary.get("aiguard_validates_expected_report_markers", False),
                 ],
+                [
+                    "handoff_duration_traceability_present",
+                    summary.get("handoff_duration_traceability_present", False),
+                ],
             ],
         ),
         "## Evidence Alignment",
@@ -455,6 +467,16 @@ def _markdown_edgeenv_handoff_alignment_report(summary: dict[str, Any]) -> str:
                     "lab_expected_report_markers",
                     _format_markdown_list(
                         summary.get("lab_expected_report_markers", [])
+                    ),
+                ],
+                [
+                    "handoff_duration_sources",
+                    _format_markdown_list(summary.get("handoff_duration_sources", [])),
+                ],
+                [
+                    "handoff_duration_scope_labels",
+                    _format_markdown_list(
+                        summary.get("handoff_duration_scope_labels", [])
                     ),
                 ],
                 ["errors", _format_markdown_list(summary.get("errors", []))],

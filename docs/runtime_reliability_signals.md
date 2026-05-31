@@ -454,10 +454,16 @@ Lab-owned deployment decision.
 AIGuard external and Lab as final decision owner. When EdgeEnv exposes
 `lab_bundle_alignment.expected_report_markers`, AIGuard preserves them as
 `lab_report_contract_context`: `Runtime Intelligence Risk Summary`,
-`Orchestrator operation feed context`, `AIGuard runtime operation anomalies`,
-`AIGuard remote dispatch event summary`,
-`AIGuard remote event summary consistency`,
+`Runtime replay duration scope`, `Orchestrator operation feed context`,
+`Orchestrator task event rollup`, `Lab EdgeEnv preservation context`,
+`AIGuard task event rollup evidence`, `AIGuard runtime operation anomalies`,
+`AIGuard remote dispatch event summary`, `AIGuard remote event summary consistency`,
+`Remote fallback starter evidence`,
+`lab=Remote fallback starter evidence; evidence=remote_execution_recovered_by_fallback`,
 `AIGuard producer-lineage guard alignment`, and `Lab remains the final deployment decision owner.`.
+When EdgeEnv exposes `duration_source` / `duration_scope_label`, AIGuard keeps
+values such as `source=entrypoint_requested_frames` in the alignment summary as
+Lab report contract context.
 AIGuard does not validate or own those Lab report markers; Lab's bundle/report
 gate remains responsible for enforcing the final report contract. If EdgeEnv exposes
 `edgeenv_report_summary.producer_lineage_guard_alignment_run_ids`, the same
