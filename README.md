@@ -283,10 +283,16 @@ deployment decision은 만들지 않습니다.
 type set으로 충족되는지 확인합니다. 또한
 `lab_bundle_alignment.expected_report_markers`가 있으면 이를
 `lab_report_contract_context`로 alignment summary에 보존합니다:
-`Runtime Intelligence Risk Summary`, `Orchestrator operation feed context`,
+`Runtime Intelligence Risk Summary`, `Runtime replay duration scope`,
+`Orchestrator operation feed context`, `Orchestrator task event rollup`,
+`Lab EdgeEnv preservation context`, `AIGuard task event rollup evidence`,
 `AIGuard runtime operation anomalies`, `AIGuard remote dispatch event summary`,
-`AIGuard remote event summary consistency`,
+`AIGuard remote event summary consistency`, `Remote fallback starter evidence`,
+`lab=Remote fallback starter evidence; evidence=remote_execution_recovered_by_fallback`,
 `AIGuard producer-lineage guard alignment`, `Lab remains the final deployment decision owner.`.
+EdgeEnv handoff가 `duration_source` / `duration_scope_label`을 제공하면
+AIGuard alignment summary는 `source=entrypoint_requested_frames` 같은 값을
+Lab report contract context로 보존만 합니다.
 AIGuard does not validate or own those Lab report markers; Lab's bundle/report
 gate remains responsible for enforcing the final report contract. 이어서
 `edgeenv_report_summary.producer_lineage_guard_alignment_run_ids`를

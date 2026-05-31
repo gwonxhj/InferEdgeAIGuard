@@ -22,10 +22,16 @@ EDGEENV_REGRESSION_FIXTURES = ROOT / "tests" / "fixtures" / "edgeenv_regression"
 RUNTIME_INTELLIGENCE_EXAMPLES = ROOT / "examples" / "runtime_intelligence"
 LAB_EXPECTED_REPORT_MARKERS = [
     "Runtime Intelligence Risk Summary",
+    "Runtime replay duration scope",
     "Orchestrator operation feed context",
+    "Orchestrator task event rollup",
+    "Lab EdgeEnv preservation context",
+    "AIGuard task event rollup evidence",
     "AIGuard runtime operation anomalies",
     "AIGuard remote dispatch event summary",
     "AIGuard remote event summary consistency",
+    "Remote fallback starter evidence",
+    "lab=Remote fallback starter evidence; evidence=remote_execution_recovered_by_fallback",
     "AIGuard producer-lineage guard alignment",
     "Lab remains the final deployment decision owner.",
 ]
@@ -657,14 +663,24 @@ def edgeenv_runtime_intelligence_lab_handoff() -> dict:
             "producer_lineage_guard_alignment_run_ids": [
                 "edgeenv-smoke-candidate",
             ],
+            "duration_traceability_present": True,
+            "duration_traceability_run_ids": ["edgeenv-smoke-candidate"],
+            "duration_sources": ["entrypoint_requested_frames"],
+            "duration_scope_labels": [
+                "source=entrypoint_requested_frames, "
+                "label=short 96-frame-class replay (96 frames), "
+                "class=short_96_frame_class, frames=96",
+            ],
         },
         "lab_bundle_alignment": {
             "external_aiguard_required_evidence_types": [
                 "runtime_telemetry_context_coverage",
                 "edgeenv_orchestrator_producer_lineage",
+                "edgeenv_orchestrator_task_event_rollup",
                 "runtime_history_seed_run_config_traceability",
                 "runtime_queue_overload",
                 "runtime_thermal_instability",
+                "remote_execution_recovered_by_fallback",
             ],
             "expected_report_markers": LAB_EXPECTED_REPORT_MARKERS,
             "boundary_flags": {
@@ -676,6 +692,22 @@ def edgeenv_runtime_intelligence_lab_handoff() -> dict:
             },
         },
     }
+
+
+def edgeenv_handoff_guard_analysis_with_remote_fallback() -> dict:
+    guard_analysis = analyze_edgeenv_regression_report(
+        edgeenv_regression_report_with_orchestrator_feed_context()
+    )
+    remote_report = analyze_remote_dispatch_result(
+        remote_dispatch_fallback_recovered_result()
+    )
+    remote_recovery = next(
+        item
+        for item in remote_report["evidence"]
+        if item["type"] == "remote_execution_recovered_by_fallback"
+    )
+    guard_analysis["evidence"].append(remote_recovery)
+    return guard_analysis
 
 
 def _edgeenv_history_coverage_summary() -> dict:
@@ -3355,9 +3387,7 @@ def test_runtime_intelligence_example_exports_lab_ready_guard_analysis(tmp_path)
 
 
 def test_validate_edgeenv_handoff_guard_evidence_alignment_passes():
-    guard_analysis = analyze_edgeenv_regression_report(
-        edgeenv_regression_report_with_orchestrator_feed_context()
-    )
+    guard_analysis = edgeenv_handoff_guard_analysis_with_remote_fallback()
     alignment = validate_edgeenv_handoff_guard_evidence_alignment(
         edgeenv_runtime_intelligence_lab_handoff(),
         guard_analysis,
@@ -3383,19 +3413,31 @@ def test_validate_edgeenv_handoff_guard_evidence_alignment_passes():
     assert alignment["lab_report_marker_owner"] == "lab"
     assert alignment["report_marker_context_role"] == "lab_report_contract_context"
     assert alignment["aiguard_validates_expected_report_markers"] is False
+    assert alignment["handoff_duration_traceability_present"] is True
+    assert alignment["handoff_duration_traceability_run_ids"] == [
+        "edgeenv-smoke-candidate"
+    ]
+    assert alignment["handoff_duration_sources"] == [
+        "entrypoint_requested_frames"
+    ]
+    assert alignment["handoff_duration_scope_labels"] == [
+        "source=entrypoint_requested_frames, "
+        "label=short 96-frame-class replay (96 frames), "
+        "class=short_96_frame_class, frames=96",
+    ]
     assert alignment["required_evidence_types"] == [
         "runtime_telemetry_context_coverage",
         "edgeenv_orchestrator_producer_lineage",
+        "edgeenv_orchestrator_task_event_rollup",
         "runtime_history_seed_run_config_traceability",
         "runtime_queue_overload",
         "runtime_thermal_instability",
+        "remote_execution_recovered_by_fallback",
     ]
 
 
 def test_validate_edgeenv_handoff_guard_evidence_alignment_fails_on_missing_type():
-    guard_analysis = analyze_edgeenv_regression_report(
-        edgeenv_regression_report_with_orchestrator_feed_context()
-    )
+    guard_analysis = edgeenv_handoff_guard_analysis_with_remote_fallback()
     guard_analysis["evidence"] = [
         item
         for item in guard_analysis["evidence"]
@@ -3419,9 +3461,7 @@ def test_validate_edgeenv_handoff_guard_evidence_alignment_fails_on_missing_type
 
 
 def test_validate_edgeenv_handoff_guard_evidence_alignment_fails_boundary_mismatch():
-    guard_analysis = analyze_edgeenv_regression_report(
-        edgeenv_regression_report_with_orchestrator_feed_context()
-    )
+    guard_analysis = edgeenv_handoff_guard_analysis_with_remote_fallback()
     handoff = edgeenv_runtime_intelligence_lab_handoff()
     handoff["lab_bundle_alignment"]["boundary_flags"][
         "aiguard_is_final_decision_owner"
@@ -3444,9 +3484,7 @@ def test_validate_edgeenv_handoff_guard_evidence_alignment_fails_boundary_mismat
 
 
 def test_validate_edgeenv_handoff_guard_evidence_alignment_fails_summary_mismatch():
-    guard_analysis = analyze_edgeenv_regression_report(
-        edgeenv_regression_report_with_orchestrator_feed_context()
-    )
+    guard_analysis = edgeenv_handoff_guard_analysis_with_remote_fallback()
     handoff = edgeenv_runtime_intelligence_lab_handoff()
     handoff["edgeenv_report_summary"][
         "producer_lineage_guard_alignment_run_ids"
@@ -3469,9 +3507,7 @@ def test_validate_edgeenv_handoff_guard_evidence_alignment_fails_summary_mismatc
 
 
 def test_check_edgeenv_handoff_alignment_cli_exports_gate_summary(tmp_path):
-    guard_analysis = analyze_edgeenv_regression_report(
-        edgeenv_regression_report_with_orchestrator_feed_context()
-    )
+    guard_analysis = edgeenv_handoff_guard_analysis_with_remote_fallback()
     handoff_path = tmp_path / "edgeenv_handoff.json"
     guard_path = tmp_path / "guard_analysis.json"
     output_path = tmp_path / "edgeenv_handoff_alignment.json"
@@ -3507,6 +3543,13 @@ def test_check_edgeenv_handoff_alignment_cli_exports_gate_summary(tmp_path):
     assert saved["recommendation"] == "alignment_satisfied"
     assert saved["lab_expected_report_markers"] == LAB_EXPECTED_REPORT_MARKERS
     assert saved["aiguard_validates_expected_report_markers"] is False
+    assert saved["handoff_duration_sources"] == ["entrypoint_requested_frames"]
+    assert saved["handoff_duration_scope_labels"] == [
+        "source=entrypoint_requested_frames, "
+        "label=short 96-frame-class replay (96 frames), "
+        "class=short_96_frame_class, frames=96",
+    ]
+    assert "handoff_duration_scope_labels" in result.stdout
 
 
 def test_runtime_intelligence_docs_describe_lab_report_marker_context():
