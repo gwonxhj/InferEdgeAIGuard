@@ -93,6 +93,7 @@
           "queue_depth": 7,
           "operation": {
             "queue_depth": 7,
+            "max_total_queue_depth": 7,
             "deadline_missed_count": 2,
             "fallback_count": 1,
             "runtime_task_event_summary": {
