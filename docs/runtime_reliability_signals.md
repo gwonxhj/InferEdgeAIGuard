@@ -386,6 +386,10 @@ context, AIGuard reads queue depth, thermal, and throttling hints from that
 nested context as supplemental operation evidence. It does not treat the feed as
 an Orchestrator verdict, an EdgeEnv comparability gate, or a Lab deployment
 decision.
+For queue overload evidence, AIGuard also preserves the Orchestrator source
+label `orchestrator_candidate_operation_max_total_queue_depth` in
+`raw_context.edgeenv_regression` so Lab can trace rendered
+`max_total_queue_depth` report rows back to the producer-side operation context.
 AIGuard also preserves the producer `edgeenv_mapping_hint` in its deterministic
 raw context, including `coverage_summary_owner=edgeenv`,
 `coverage_summary_path=runtime_telemetry_context.history.telemetry_coverage`,

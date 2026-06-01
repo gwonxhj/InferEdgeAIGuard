@@ -308,6 +308,11 @@ EdgeEnv가 baseline 또는 candidate telemetry context 아래에
 queue depth, thermal, throttling hint를 supplemental operation evidence로
 읽습니다. 이 feed는 Orchestrator verdict, EdgeEnv comparability gate, Lab
 deployment decision으로 취급하지 않습니다.
+queue overload evidence에서는 AIGuard가 Orchestrator 원천 라벨인
+`orchestrator_candidate_operation_max_total_queue_depth`도
+`raw_context.edgeenv_regression`에 보존합니다. 이렇게 하면 Lab report의
+`max_total_queue_depth` row가 producer-side operation context에서 온 값인지
+추적할 수 있습니다.
 EdgeEnv가 `candidate_context.producer`를 보존한 경우에는
 `edgeenv_orchestrator_producer_lineage` evidence로 device-local producer
 source, per-task source mapping, task stage mapping, event/task count를

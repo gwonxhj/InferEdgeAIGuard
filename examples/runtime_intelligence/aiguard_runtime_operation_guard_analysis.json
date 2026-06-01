@@ -386,6 +386,7 @@
           "candidate_throttling_detected": true,
           "baseline_queue_depth": null,
           "candidate_queue_depth": 7.0,
+          "orchestrator_candidate_operation_max_total_queue_depth": 7.0,
           "evidence_gap_count": 1.0,
           "evidence_gaps": []
         }
@@ -764,6 +765,7 @@
           "candidate_throttling_detected": true,
           "baseline_queue_depth": null,
           "candidate_queue_depth": 7.0,
+          "orchestrator_candidate_operation_max_total_queue_depth": 7.0,
           "evidence_gap_count": 1.0,
           "evidence_gaps": []
         },
@@ -1219,6 +1221,7 @@
           "candidate_throttling_detected": true,
           "baseline_queue_depth": null,
           "candidate_queue_depth": 7.0,
+          "orchestrator_candidate_operation_max_total_queue_depth": 7.0,
           "evidence_gap_count": 1.0,
           "evidence_gaps": []
         },
@@ -1634,6 +1637,7 @@
           "candidate_throttling_detected": true,
           "baseline_queue_depth": null,
           "candidate_queue_depth": 7.0,
+          "orchestrator_candidate_operation_max_total_queue_depth": 7.0,
           "evidence_gap_count": 1.0,
           "evidence_gaps": []
         },
@@ -2093,6 +2097,7 @@
           "candidate_throttling_detected": true,
           "baseline_queue_depth": null,
           "candidate_queue_depth": 7.0,
+          "orchestrator_candidate_operation_max_total_queue_depth": 7.0,
           "evidence_gap_count": 1.0,
           "evidence_gaps": []
         },
@@ -2490,6 +2495,7 @@
           "candidate_throttling_detected": true,
           "baseline_queue_depth": null,
           "candidate_queue_depth": 7.0,
+          "orchestrator_candidate_operation_max_total_queue_depth": 7.0,
           "evidence_gap_count": 1.0,
           "evidence_gaps": []
         }
@@ -2872,6 +2878,7 @@
           "candidate_throttling_detected": true,
           "baseline_queue_depth": null,
           "candidate_queue_depth": 7.0,
+          "orchestrator_candidate_operation_max_total_queue_depth": 7.0,
           "evidence_gap_count": 1.0,
           "evidence_gaps": []
         }
@@ -3301,6 +3308,7 @@
       "candidate_throttling_detected": true,
       "baseline_queue_depth": null,
       "candidate_queue_depth": 7.0,
+      "orchestrator_candidate_operation_max_total_queue_depth": 7.0,
       "evidence_gap_count": 1.0,
       "evidence_gaps": []
     },
@@ -3389,6 +3397,7 @@
             "queue_depth": 7,
             "operation": {
               "queue_depth": 7,
+              "max_total_queue_depth": 7,
               "deadline_missed_count": 2,
               "fallback_count": 1,
               "runtime_task_event_summary": {
@@ -3719,5 +3728,5 @@
       "evidence_gaps": []
     }
   },
-  "created_at": "2026-05-28T16:11:33Z"
+  "created_at": "2026-06-01T03:42:21Z"
 }

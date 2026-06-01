@@ -817,6 +817,7 @@ def edgeenv_regression_report_with_orchestrator_feed_context() -> dict:
             "queue_depth": 7,
             "operation": {
                 "queue_depth": 7,
+                "max_total_queue_depth": 7,
                 "deadline_missed_count": 2,
                 "fallback_count": 1,
                 "runtime_task_event_summary": {
@@ -2010,6 +2011,9 @@ def test_analyze_edgeenv_regression_report_warns_on_orchestrator_feed_context():
     assert report["candidate_summary"]["edgeenv_regression"][
         "orchestrator_mapping_hint_operation_context_role"
     ] == "supplemental"
+    assert report["candidate_summary"]["edgeenv_regression"][
+        "orchestrator_candidate_operation_max_total_queue_depth"
+    ] == 7.0
     assert set(
         report["candidate_summary"]["edgeenv_regression"][
             "orchestrator_mapping_hint_aiguard_evidence_candidates"
@@ -2026,6 +2030,10 @@ def test_analyze_edgeenv_regression_report_warns_on_orchestrator_feed_context():
     )
     assert queue_context["orchestrator_producer_contract"] == (
         "inferedge-orchestrator-edgeenv-runtime-telemetry-feed-v1"
+    )
+    assert (
+        queue_context["orchestrator_candidate_operation_max_total_queue_depth"]
+        == 7.0
     )
     assert queue_context["orchestrator_candidate_context_producer"][
         "operation_context_role"
@@ -3306,6 +3314,9 @@ def test_runtime_intelligence_example_exports_lab_ready_guard_analysis(tmp_path)
         "orchestrator_candidate_context_telemetry_source"
     ] == "inferedge_orchestrator_operation_summary"
     assert saved["candidate_summary"]["edgeenv_regression"][
+        "orchestrator_candidate_operation_max_total_queue_depth"
+    ] == 7.0
+    assert saved["candidate_summary"]["edgeenv_regression"][
         "orchestrator_source_repository"
     ] == "InferEdgeOrchestrator"
     assert saved["candidate_summary"]["edgeenv_regression"][
@@ -3347,6 +3358,10 @@ def test_runtime_intelligence_example_exports_lab_ready_guard_analysis(tmp_path)
     )
     assert coverage_context["orchestrator_producer_contract"] == (
         "inferedge-orchestrator-edgeenv-runtime-telemetry-feed-v1"
+    )
+    assert (
+        coverage_context["orchestrator_candidate_operation_max_total_queue_depth"]
+        == 7.0
     )
     producer_lineage = next(
         item

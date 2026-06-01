@@ -1377,6 +1377,11 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
             "orchestrator_operation_context.candidate_context.queue_depth",
             "orchestrator_operation_context.candidate_context.operation.queue_depth",
         ),
+        "orchestrator_candidate_operation_max_total_queue_depth": _telemetry_number(
+            candidate_context,
+            "orchestrator_operation_context.candidate_context.operation."
+            "max_total_queue_depth",
+        ),
         "evidence_gap_count": float(len(gaps)) + missing_coverage_count,
         "evidence_gaps": gaps,
     }
