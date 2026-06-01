@@ -26,6 +26,15 @@ It is a rule/evidence based diagnosis layer that:
 - preserves warnings/errors in a structured `guard_analysis` contract
 - stays optional so Lab remains the final deployment decision owner
 
+## Role Boundary At A Glance
+
+| Area | AIGuard does | AIGuard does not do |
+| --- | --- | --- |
+| Lab deployment decision | Emits optional `guard_analysis` evidence that Lab can preserve in reports/API bundles | Replace or overwrite InferEdgeLab `deployment_decision` |
+| EdgeEnv regression evidence | Explains EdgeEnv runtime regression reports as deterministic anomaly evidence | Recompute comparability, own the registry, or decide deployment |
+| Orchestrator operation context | Interprets queue/deadline/fallback/remote-dispatch starter signals as warning/review evidence | Become a scheduler, cloud control plane, or production remote execution proof |
+| Root-cause explanation | Reports observed metrics, thresholds, severity, suspected cause, and recommendation | Claim LLM-based root-cause certainty or perform automatic remediation |
+
 ## InferEdge Pipeline Role
 
 InferEdgeAIGuard is the optional rule + evidence based diagnosis layer of the larger InferEdge validation pipeline:

@@ -44,6 +44,15 @@ InferEdgeEnv -> v0.1.5 v1-complete local-first run evidence registry / comparabi
 - `guard_analysis`를 optional evidence로 출력해 Lab report/API/deployment decision 흐름에 보존될 수 있게 합니다.
 - 최종 deployment decision owner는 InferEdgeLab입니다. AIGuard는 최종 판단을 덮어쓰지 않습니다.
 
+## 역할 경계 한눈에 보기
+
+| 영역 | AIGuard가 하는 일 | AIGuard가 하지 않는 일 |
+| --- | --- | --- |
+| Lab deployment decision | Lab report/API bundle에 보존 가능한 optional `guard_analysis` evidence를 생성합니다. | InferEdgeLab의 `deployment_decision`을 대체하거나 덮어쓰지 않습니다. |
+| EdgeEnv regression evidence | EdgeEnv runtime regression report를 deterministic anomaly evidence로 설명합니다. | comparability를 재계산하거나 registry를 소유하거나 deployment를 결정하지 않습니다. |
+| Orchestrator operation context | queue/deadline/fallback/remote-dispatch starter signal을 warning/review evidence로 해석합니다. | scheduler, cloud control plane, production remote execution proof가 되지 않습니다. |
+| Root-cause explanation | 관측 metric, threshold, severity, suspected cause, recommendation을 기록합니다. | LLM 기반 root-cause 확정이나 automatic remediation을 수행하지 않습니다. |
+
 ## 중요한 경계
 
 AIGuard는 다음을 하지 않습니다.
