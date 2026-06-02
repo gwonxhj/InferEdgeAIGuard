@@ -233,7 +233,7 @@ AIGuard detector는 deterministic evidence provider입니다. `guard_verdict`는
 
 다음 후보 detector는 deterministic evidence 기반 roadmap입니다: per-class detection drift, detection disappearance hardening, calibration drift, baseline profile stability.
 
-전체 detector별 threshold, expected verdict, report field는 [docs/detector_validation_matrix.md](docs/detector_validation_matrix.md)에 정리되어 있습니다.
+전체 detector별 threshold, expected verdict, report field는 [Detector Validation Matrix](docs/detector_validation_matrix.ko.md)에 정리되어 있습니다. 대표/canonical 문서는 [English matrix](docs/detector_validation_matrix.md)입니다.
 Orchestrator summary 기반 runtime reliability mapping은 [docs/runtime_reliability_signals.ko.md](docs/runtime_reliability_signals.ko.md)에 정리되어 있습니다.
 
 Future work:

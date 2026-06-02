@@ -65,3 +65,47 @@ def test_detector_matrix_documents_current_and_next_detectors():
 
     assert "not the final Lab deployment policy" in matrix
     assert "not LLM" in matrix
+
+
+def test_detector_matrix_has_korean_quick_guide_and_boundaries():
+    readme = _read("README.md")
+    readme_ko = _read("README.ko.md")
+    matrix = _read("docs/detector_validation_matrix.md")
+    matrix_ko = _read("docs/detector_validation_matrix.ko.md")
+
+    assert "Language: English | [한국어](detector_validation_matrix.ko.md)" in matrix
+    assert "언어: [English](detector_validation_matrix.md) | 한국어" in matrix_ko
+    assert "[Detector Validation Matrix](detector_validation_matrix.md)" in matrix_ko
+    assert "대표/canonical 문서" in matrix_ko
+    assert (
+        "[docs/detector_validation_matrix.md]"
+        "(docs/detector_validation_matrix.md)"
+        in readme
+    )
+    assert (
+        "[한국어: detector validation matrix quick guide]"
+        "(docs/detector_validation_matrix.ko.md)"
+        in readme
+    )
+    assert (
+        "[Detector Validation Matrix](docs/detector_validation_matrix.ko.md)"
+        in readme_ko
+    )
+    assert "[English matrix](docs/detector_validation_matrix.md)" in readme_ko
+
+    for required in [
+        "`guard_verdict`",
+        "`deployment_decision`",
+        "InferEdgeLab",
+        "Lab-owned deployment decision",
+        "LLM-based root-cause certainty",
+        "automatic remediation",
+        "EdgeEnv comparability",
+        "runtime regression",
+        "production remote execution proof",
+        "production observability platform",
+        "general monitoring SaaS",
+        "public leaderboard",
+        "Jetson 필요 여부",
+    ]:
+        assert required in matrix_ko
