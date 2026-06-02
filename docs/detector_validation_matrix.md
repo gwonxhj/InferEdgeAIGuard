@@ -1,5 +1,7 @@
 # Detector Validation Matrix
 
+Language: English | [한국어](detector_validation_matrix.ko.md)
+
 InferEdgeAIGuard is an optional deterministic diagnosis evidence provider.
 It does not make the final deployment decision. InferEdgeLab remains the
 deployment decision owner and may use `guard_analysis` as one input signal.

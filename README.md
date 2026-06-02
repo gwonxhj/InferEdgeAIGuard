@@ -486,7 +486,7 @@ detection drift, stronger detection disappearance summaries, calibration drift
 for score distributions, and baseline profile stability. These are documented
 as roadmap items, not as implemented automatic root-cause proof.
 
-The full matrix is maintained in [docs/detector_validation_matrix.md](docs/detector_validation_matrix.md).
+The full matrix is maintained in [docs/detector_validation_matrix.md](docs/detector_validation_matrix.md) ([한국어: detector validation matrix quick guide](docs/detector_validation_matrix.ko.md)).
 
 ## Output JSON Schema
 
