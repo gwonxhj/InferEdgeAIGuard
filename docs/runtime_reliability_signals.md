@@ -108,6 +108,7 @@ deployment decision owner.
 | `runtime_history_seed_run_config_traceability` | `runtime_history_seed_run_config_count` | warning when preserved Runtime history seeds lack run_config markers | n/a | EdgeEnv preserved Runtime history seed run_config markers as replay/comparability traceability evidence |
 | `edgeenv_orchestrator_producer_lineage` | `device_local_producer_context_count` | warning when preserved Orchestrator context lacks device-local producer metadata | n/a | EdgeEnv preserved device-local Orchestrator producer lineage as traceability evidence |
 | `edgeenv_orchestrator_operation_risk_summary` | `orchestrator_operation_risk_marker_count` | `>= 1` queue/worker/boundary marker | n/a | EdgeEnv preserved Orchestrator operation risk summary as supplemental operation context for Lab review |
+| `edgeenv_orchestrator_latency_budget_protection` | `orchestrator_latency_budget_protection_marker_count` | `>= 1` risk/boundary marker | n/a | EdgeEnv preserved Orchestrator latency-budget protection context for protected high-priority tasks and budget-risk tasks |
 | `runtime_thermal_instability` | `candidate_max_temperature_c` / `candidate_throttling_detected` | temperature `>= 70.0` or throttling `true` | temperature `>= 85.0` | EdgeEnv telemetry or attached Orchestrator feed indicates thermal/throttling pressure |
 | `runtime_queue_overload` | `candidate_queue_depth` | `>= 3.0` | `>= 8.0` | EdgeEnv telemetry or attached Orchestrator feed indicates queue backlog pressure |
 | `edgeenv_comparability_guardrail` | `edgeenv_comparable` | skipped when not comparable or not same-condition | n/a | AIGuard refuses to reinterpret non-comparable EdgeEnv reports as same-condition regression |
@@ -413,6 +414,11 @@ degraded worker IDs, and device-local producer event counts. The evidence keeps
 `decision_owner=lab`, `scheduler_owner=orchestrator`, and
 `not_a_deployment_decision=true` as boundary checks. It is supplemental runtime
 operation context for Lab review, not a final deployment decision.
+When EdgeEnv also preserves Orchestrator `latency_budget_protection`, AIGuard
+emits `edgeenv_orchestrator_latency_budget_protection` to explain protected
+high-priority tasks, latency-budget risk tasks, deadline/scheduler/queue
+reasons, and per-task budget context. This remains operation warning context;
+AIGuard does not become the scheduler or final deployment decision owner.
 When the preserved Orchestrator context includes
 `downstream_guard_alignment.producer_lineage_evidence_type=edgeenv_orchestrator_producer_lineage`,
 AIGuard validates that marker and keeps producer-lineage reasoning separate

@@ -32,9 +32,16 @@ EDGEENV_ORCHESTRATOR_PRODUCER_LINEAGE_EVIDENCE_TYPE = (
 EDGEENV_ORCHESTRATOR_TASK_EVENT_ROLLUP_EVIDENCE_TYPE = (
     "edgeenv_orchestrator_task_event_rollup"
 )
+EDGEENV_ORCHESTRATOR_LATENCY_BUDGET_PROTECTION_EVIDENCE_TYPE = (
+    "edgeenv_orchestrator_latency_budget_protection"
+)
+EDGEENV_ORCHESTRATOR_LATENCY_BUDGET_PROTECTION_SCHEMA_VERSION = (
+    "inferedge-orchestrator-latency-budget-protection-v1"
+)
 EDGEENV_ORCHESTRATOR_OPERATION_EVIDENCE_CANDIDATES = (
     "runtime_queue_overload",
     "runtime_thermal_instability",
+    EDGEENV_ORCHESTRATOR_LATENCY_BUDGET_PROTECTION_EVIDENCE_TYPE,
 )
 RUN_CONFIG_MARKER_FIELDS = (
     "input_mode",
@@ -812,6 +819,10 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
     candidate_operation_risk_summary = _mapping(
         candidate_orchestrator_context.get("operation_risk_summary")
     )
+    candidate_latency_budget_protection = _mapping(
+        candidate_orchestrator_operation.get("latency_budget_protection")
+        or candidate_orchestrator_context.get("latency_budget_protection")
+    )
     candidate_runtime_task_event_summary = _mapping(
         candidate_orchestrator_operation.get("runtime_task_event_summary")
         or candidate_orchestrator_context.get("runtime_task_event_summary")
@@ -1276,6 +1287,67 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
         "orchestrator_operation_risk_summary_producer_event_count": (
             _optional_number(
                 candidate_operation_risk_summary.get("producer_event_count")
+            )
+        ),
+        "orchestrator_latency_budget_protection": dict(
+            candidate_latency_budget_protection
+        ),
+        "orchestrator_latency_budget_protection_present": bool(
+            candidate_latency_budget_protection
+        ),
+        "orchestrator_latency_budget_protection_schema_version": (
+            candidate_latency_budget_protection.get("schema_version")
+        ),
+        "orchestrator_latency_budget_protection_evidence_role": (
+            candidate_latency_budget_protection.get("evidence_role")
+        ),
+        "orchestrator_latency_budget_protection_decision_owner": (
+            candidate_latency_budget_protection.get("decision_owner")
+        ),
+        "orchestrator_latency_budget_protection_scheduler_owner": (
+            candidate_latency_budget_protection.get("scheduler_owner")
+        ),
+        "orchestrator_latency_budget_protection_regression_owner": (
+            candidate_latency_budget_protection.get("regression_owner")
+        ),
+        "orchestrator_latency_budget_protection_not_a_deployment_decision": (
+            _optional_bool(
+                candidate_latency_budget_protection.get(
+                    "not_a_deployment_decision"
+                )
+            )
+        ),
+        "orchestrator_latency_budget_protection_protected_tasks": (
+            _first_string_list(
+                candidate_latency_budget_protection.get(
+                    "protected_high_priority_tasks"
+                ),
+                candidate_latency_budget_protection.get(
+                    "protected_high_priority_task_candidates"
+                ),
+                candidate_latency_budget_protection.get("protected_tasks"),
+            )
+        ),
+        "orchestrator_latency_budget_protection_risk_tasks": (
+            _first_string_list(
+                candidate_latency_budget_protection.get(
+                    "tasks_with_latency_budget_risk"
+                ),
+                candidate_latency_budget_protection.get("budget_risk_tasks"),
+                candidate_latency_budget_protection.get("tasks_with_budget_risk"),
+            )
+        ),
+        "orchestrator_latency_budget_protection_risk_reasons": (
+            _first_string_list(
+                candidate_latency_budget_protection.get("risk_reasons"),
+                candidate_latency_budget_protection.get("latency_budget_risk_reasons"),
+            )
+        ),
+        "orchestrator_latency_budget_protection_per_task_budget_context": (
+            _mapping(
+                candidate_latency_budget_protection.get("per_task_budget_context")
+                or candidate_latency_budget_protection.get("task_budget_context")
+                or candidate_latency_budget_protection.get("budget_context_by_task")
             )
         ),
         "orchestrator_runtime_task_event_summary": dict(
@@ -2428,6 +2500,11 @@ def _edgeenv_regression_evidence(
     )
     if task_event_rollup_evidence is not None:
         evidence.append(task_event_rollup_evidence)
+    latency_budget_protection_evidence = (
+        _edgeenv_orchestrator_latency_budget_protection_evidence(metrics)
+    )
+    if latency_budget_protection_evidence is not None:
+        evidence.append(latency_budget_protection_evidence)
     seed_run_config_evidence = _edgeenv_history_seed_run_config_evidence(metrics)
     if seed_run_config_evidence is not None:
         evidence.append(seed_run_config_evidence)
@@ -3223,6 +3300,117 @@ def _edgeenv_orchestrator_task_event_rollup_evidence(
                 "boundary_markers_valid": boundary_ok,
                 "decision_owner": "lab",
                 "scheduler_owner": "orchestrator",
+                "not_a_deployment_decision": True,
+            },
+        },
+    )
+
+
+def _edgeenv_orchestrator_latency_budget_protection_evidence(
+    metrics: dict[str, Any],
+) -> dict[str, Any] | None:
+    if not metrics.get("runtime_telemetry_context_present"):
+        return None
+    if not metrics.get("orchestrator_latency_budget_protection_present"):
+        return None
+
+    protected_tasks = _string_list(
+        metrics.get("orchestrator_latency_budget_protection_protected_tasks")
+    )
+    risk_tasks = _string_list(
+        metrics.get("orchestrator_latency_budget_protection_risk_tasks")
+    )
+    risk_reasons = _string_list(
+        metrics.get("orchestrator_latency_budget_protection_risk_reasons")
+    )
+    per_task_budget_context = _mapping(
+        metrics.get("orchestrator_latency_budget_protection_per_task_budget_context")
+    )
+    boundary_ok = (
+        metrics.get("orchestrator_latency_budget_protection_schema_version")
+        == EDGEENV_ORCHESTRATOR_LATENCY_BUDGET_PROTECTION_SCHEMA_VERSION
+        and metrics.get("orchestrator_latency_budget_protection_decision_owner")
+        == "lab"
+        and metrics.get("orchestrator_latency_budget_protection_scheduler_owner")
+        == "orchestrator"
+        and metrics.get("orchestrator_latency_budget_protection_regression_owner")
+        == "edgeenv"
+        and metrics.get(
+            "orchestrator_latency_budget_protection_not_a_deployment_decision"
+        )
+        is True
+    )
+
+    review_markers: list[str] = []
+    if risk_tasks:
+        review_markers.append("latency_budget_risk_task")
+    if any("deadline" in reason for reason in risk_reasons):
+        review_markers.append("deadline_miss_context")
+    if any("scheduler" in reason for reason in risk_reasons):
+        review_markers.append("scheduler_delay_context")
+    if any("queue" in reason or "backlog" in reason for reason in risk_reasons):
+        review_markers.append("queue_pressure_context")
+    if not boundary_ok:
+        review_markers.append("operation_boundary_marker_gap")
+
+    observed_value = len(review_markers)
+    status = "warning" if review_markers else "passed"
+    severity = "medium" if status != "passed" else "low"
+    suspected_causes: list[str] = []
+    if risk_tasks:
+        suspected_causes.append("latency_budget_pressure_context")
+    if "deadline_miss_context" in review_markers:
+        suspected_causes.append("deadline_miss_context")
+    if "scheduler_delay_context" in review_markers:
+        suspected_causes.append("scheduler_delay_context")
+    if "queue_pressure_context" in review_markers:
+        suspected_causes.append("queue_pressure_context")
+    if "operation_boundary_marker_gap" in review_markers:
+        suspected_causes.append("operation_boundary_marker_gap")
+
+    return build_evidence_item(
+        evidence_type=EDGEENV_ORCHESTRATOR_LATENCY_BUDGET_PROTECTION_EVIDENCE_TYPE,
+        metric_name="orchestrator_latency_budget_protection_marker_count",
+        observed_value=observed_value,
+        baseline_value=0,
+        threshold=1,
+        delta=None,
+        delta_pct=None,
+        increase_factor=None,
+        severity=severity,
+        status=status,
+        explanation=(
+            "EdgeEnv preserved Orchestrator latency budget protection context "
+            f"with {observed_value} deterministic review marker(s)."
+        ),
+        why_it_matters=(
+            "Latency budget protection shows which high-priority workloads were "
+            "protected and which tasks still carried budget risk. AIGuard keeps "
+            "this as deterministic warning evidence while Lab remains the final "
+            "deployment decision owner."
+        ),
+        suspected_causes=suspected_causes,
+        recommendation=(
+            "Review protected tasks, latency-budget risk tasks, deadline/scheduler "
+            "reasons, and per-task budget context in the Lab report before "
+            "deployment."
+            if status != "passed"
+            else "Latency budget protection context is present without deterministic "
+            "review markers."
+        ),
+        raw_context={
+            "edgeenv_regression": metrics,
+            "latency_budget_protection": {
+                "context": metrics.get("orchestrator_latency_budget_protection"),
+                "boundary_markers_valid": boundary_ok,
+                "protected_tasks": protected_tasks,
+                "risk_tasks": risk_tasks,
+                "risk_reasons": risk_reasons,
+                "per_task_budget_context": per_task_budget_context,
+                "review_markers": review_markers,
+                "decision_owner": "lab",
+                "scheduler_owner": "orchestrator",
+                "regression_owner": "edgeenv",
                 "not_a_deployment_decision": True,
             },
         },
@@ -4121,6 +4309,14 @@ def _string_list(value: Any) -> list[str]:
     if not isinstance(value, list):
         return []
     return [item for item in value if isinstance(item, str) and item]
+
+
+def _first_string_list(*values: Any) -> list[str]:
+    for value in values:
+        strings = _string_list(value)
+        if strings:
+            return strings
+    return []
 
 
 def _tegrastats_timeline(summary: dict[str, Any]) -> dict[str, Any]:
