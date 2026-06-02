@@ -87,6 +87,7 @@ deployment decision owner는 Lab입니다.
 | `runtime_history_seed_run_config_traceability` | `runtime_history_seed_run_config_count` | Runtime history seed는 보존됐지만 run_config marker가 부족하면 warning | n/a | EdgeEnv가 보존한 Runtime history seed run_config marker를 replay/comparability traceability evidence로 설명함 |
 | `edgeenv_orchestrator_producer_lineage` | `device_local_producer_context_count` | 보존된 Orchestrator context에 device-local producer metadata가 없으면 warning | n/a | EdgeEnv가 보존한 device-local Orchestrator producer lineage를 traceability evidence로 설명함 |
 | `edgeenv_orchestrator_operation_risk_summary` | `orchestrator_operation_risk_marker_count` | queue/worker/boundary marker `>= 1` | n/a | EdgeEnv가 보존한 Orchestrator operation risk summary를 Lab review용 supplemental operation context로 설명함 |
+| `edgeenv_orchestrator_latency_budget_protection` | `orchestrator_latency_budget_protection_marker_count` | risk/boundary marker `>= 1` | n/a | EdgeEnv가 보존한 Orchestrator latency-budget protection context로 protected high-priority task와 budget-risk task를 설명함 |
 | `remote_execution_plan_only` | `execution_requested` | `false` | n/a | remote dispatch가 worker를 선택했지만 plan-only starter boundary 안에 머무름 |
 | `remote_execution_starter_success` | `remote_execution_status` | pass evidence only | n/a | explicit HTTP/SSH starter가 structured success response를 반환함 |
 | `remote_execution_failed` | `remote_execution_status` / `error_category` | starter execution 실패 시 | n/a | explicit starter execution failure를 remote operation review evidence로 설명함 |
@@ -326,6 +327,12 @@ device-local producer event count 같은 deterministic review marker를
 `scheduler_owner=orchestrator`, `not_a_deployment_decision=true` boundary를
 확인하며, Lab review를 위한 supplemental runtime operation context일 뿐
 final deployment decision이 아닙니다.
+EdgeEnv가 Orchestrator `latency_budget_protection`도 보존한 경우 AIGuard는
+`edgeenv_orchestrator_latency_budget_protection` evidence로 protected
+high-priority task, latency-budget risk task, deadline/scheduler/queue reason,
+per-task budget context를 설명합니다. 이 evidence는 runtime operation warning
+context이며 AIGuard가 scheduler나 final decision owner가 된다는 의미가
+아닙니다.
 보존된 Orchestrator context에
 `downstream_guard_alignment.producer_lineage_evidence_type=edgeenv_orchestrator_producer_lineage`
 가 포함되어 있으면 AIGuard는 이 marker도 검증해 producer-lineage reasoning을

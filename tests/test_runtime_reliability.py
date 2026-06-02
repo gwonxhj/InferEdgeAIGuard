@@ -677,6 +677,7 @@ def edgeenv_runtime_intelligence_lab_handoff() -> dict:
                 "runtime_telemetry_context_coverage",
                 "edgeenv_orchestrator_producer_lineage",
                 "edgeenv_orchestrator_task_event_rollup",
+                "edgeenv_orchestrator_latency_budget_protection",
                 "runtime_history_seed_run_config_traceability",
                 "runtime_queue_overload",
                 "runtime_thermal_instability",
@@ -874,6 +875,39 @@ def edgeenv_regression_report_with_orchestrator_feed_context() -> dict:
                 "tasks_with_deadline_miss": ["vision_agent"],
                 "tasks_with_fallback": ["voice_command_agent"],
                 "tasks_with_scheduler_delay": ["vision_agent"],
+                "latency_budget_protection": {
+                    "schema_version": (
+                        "inferedge-orchestrator-latency-budget-protection-v1"
+                    ),
+                    "evidence_role": "latency_budget_protection_context",
+                    "decision_owner": "lab",
+                    "scheduler_owner": "orchestrator",
+                    "regression_owner": "edgeenv",
+                    "not_a_deployment_decision": True,
+                    "protected_high_priority_task_candidates": [
+                        "safety_monitor_agent"
+                    ],
+                    "tasks_with_latency_budget_risk": ["vision_agent"],
+                    "risk_reasons": [
+                        "deadline_missed",
+                        "scheduler_delay_observed",
+                        "queue_backlog_threshold_exceeded",
+                    ],
+                    "per_task_budget_context": {
+                        "safety_monitor_agent": {
+                            "latency_budget_ms": 20.0,
+                            "deadline_missed_count": 0,
+                            "scheduler_delay_event_count": 0,
+                            "protected_priority": True,
+                        },
+                        "vision_agent": {
+                            "latency_budget_ms": 33.0,
+                            "deadline_missed_count": 1,
+                            "scheduler_delay_event_count": 1,
+                            "max_scheduler_delay_cycles": 3,
+                        },
+                    },
+                },
             },
             "resource": {
                 "source": "tegrastats_timeline",
@@ -916,6 +950,7 @@ def edgeenv_regression_report_with_orchestrator_feed_context() -> dict:
             "aiguard_evidence_candidates": [
                 "runtime_queue_overload",
                 "runtime_thermal_instability",
+                "edgeenv_orchestrator_latency_budget_protection",
             ],
         },
         "downstream_guard_alignment": {
@@ -926,6 +961,7 @@ def edgeenv_regression_report_with_orchestrator_feed_context() -> dict:
             "operation_evidence_candidates": [
                 "runtime_queue_overload",
                 "runtime_thermal_instability",
+                "edgeenv_orchestrator_latency_budget_protection",
             ],
             "validated_by": [
                 "edgeenv runs telemetry inspect-history",
@@ -1622,6 +1658,7 @@ def test_compute_edgeenv_regression_metrics_extracts_orchestrator_feed_context()
     assert set(metrics["orchestrator_mapping_hint_aiguard_evidence_candidates"]) == {
         "runtime_queue_overload",
         "runtime_thermal_instability",
+        "edgeenv_orchestrator_latency_budget_protection",
     }
     assert metrics["orchestrator_guard_alignment_declared_by"] == "orchestrator"
     assert metrics[
@@ -1632,6 +1669,7 @@ def test_compute_edgeenv_regression_metrics_extracts_orchestrator_feed_context()
     ) == {
         "runtime_queue_overload",
         "runtime_thermal_instability",
+        "edgeenv_orchestrator_latency_budget_protection",
     }
     assert (
         metrics["orchestrator_guard_alignment_orchestrator_is_final_decision_owner"]
@@ -1701,6 +1739,41 @@ def test_compute_edgeenv_regression_metrics_extracts_orchestrator_feed_context()
         2.0
     )
     assert metrics["orchestrator_operation_risk_summary_producer_event_count"] == 4.0
+    assert metrics["orchestrator_latency_budget_protection_present"] is True
+    assert metrics["orchestrator_latency_budget_protection_schema_version"] == (
+        "inferedge-orchestrator-latency-budget-protection-v1"
+    )
+    assert metrics["orchestrator_latency_budget_protection_decision_owner"] == "lab"
+    assert (
+        metrics["orchestrator_latency_budget_protection_scheduler_owner"]
+        == "orchestrator"
+    )
+    assert (
+        metrics["orchestrator_latency_budget_protection_regression_owner"]
+        == "edgeenv"
+    )
+    assert (
+        metrics[
+            "orchestrator_latency_budget_protection_not_a_deployment_decision"
+        ]
+        is True
+    )
+    assert metrics["orchestrator_latency_budget_protection_protected_tasks"] == [
+        "safety_monitor_agent"
+    ]
+    assert metrics["orchestrator_latency_budget_protection_risk_tasks"] == [
+        "vision_agent"
+    ]
+    assert metrics["orchestrator_latency_budget_protection_risk_reasons"] == [
+        "deadline_missed",
+        "scheduler_delay_observed",
+        "queue_backlog_threshold_exceeded",
+    ]
+    assert set(
+        metrics[
+            "orchestrator_latency_budget_protection_per_task_budget_context"
+        ]
+    ) == {"safety_monitor_agent", "vision_agent"}
     assert metrics["orchestrator_runtime_task_event_summary_present"] is True
     assert set(metrics["orchestrator_runtime_task_event_summary"]) == {
         "vision_agent",
@@ -1797,6 +1870,7 @@ def test_compute_edgeenv_regression_metrics_preserves_missing_orchestrator_conte
     ) == {
         "runtime_queue_overload",
         "runtime_thermal_instability",
+        "edgeenv_orchestrator_latency_budget_protection",
     }
 
 
@@ -1995,6 +2069,7 @@ def test_analyze_edgeenv_regression_report_warns_on_orchestrator_feed_context():
     assert "edgeenv_orchestrator_producer_lineage" in evidence_types
     assert "edgeenv_orchestrator_operation_risk_summary" in evidence_types
     assert "edgeenv_orchestrator_task_event_rollup" in evidence_types
+    assert "edgeenv_orchestrator_latency_budget_protection" in evidence_types
     assert "runtime_thermal_instability" in evidence_types
     assert "runtime_queue_overload" in evidence_types
     queue_evidence = next(
@@ -2021,6 +2096,7 @@ def test_analyze_edgeenv_regression_report_warns_on_orchestrator_feed_context():
     ) == {
         "runtime_queue_overload",
         "runtime_thermal_instability",
+        "edgeenv_orchestrator_latency_budget_protection",
     }
     queue_context = queue_evidence["raw_context"]["edgeenv_regression"]
     assert queue_context["orchestrator_source_repository"] == "InferEdgeOrchestrator"
@@ -2089,6 +2165,7 @@ def test_analyze_edgeenv_regression_report_warns_on_orchestrator_feed_context():
     ) == {
         "runtime_queue_overload",
         "runtime_thermal_instability",
+        "edgeenv_orchestrator_latency_budget_protection",
     }
     assert producer_lineage["raw_context"]["producer_lineage"][
         "candidate_remote_runtime_event_summary_evidence_role"
@@ -2140,6 +2217,38 @@ def test_analyze_edgeenv_regression_report_warns_on_orchestrator_feed_context():
     assert task_event_context["decision_owner"] == "lab"
     assert task_event_context["scheduler_owner"] == "orchestrator"
     assert task_event_context["not_a_deployment_decision"] is True
+    latency_budget_protection = next(
+        item
+        for item in report["evidence"]
+        if item["type"] == "edgeenv_orchestrator_latency_budget_protection"
+    )
+    assert latency_budget_protection["status"] == "warning"
+    assert latency_budget_protection["observed_value"] == 4
+    assert latency_budget_protection["threshold"] == 1
+    assert "latency_budget_pressure_context" in (
+        latency_budget_protection["suspected_causes"]
+    )
+    assert "deadline_miss_context" in latency_budget_protection["suspected_causes"]
+    assert "scheduler_delay_context" in latency_budget_protection["suspected_causes"]
+    assert "queue_pressure_context" in latency_budget_protection["suspected_causes"]
+    latency_budget_context = latency_budget_protection["raw_context"][
+        "latency_budget_protection"
+    ]
+    assert latency_budget_context["boundary_markers_valid"] is True
+    assert latency_budget_context["protected_tasks"] == ["safety_monitor_agent"]
+    assert latency_budget_context["risk_tasks"] == ["vision_agent"]
+    assert latency_budget_context["risk_reasons"] == [
+        "deadline_missed",
+        "scheduler_delay_observed",
+        "queue_backlog_threshold_exceeded",
+    ]
+    assert latency_budget_context["per_task_budget_context"]["vision_agent"][
+        "max_scheduler_delay_cycles"
+    ] == 3
+    assert latency_budget_context["decision_owner"] == "lab"
+    assert latency_budget_context["scheduler_owner"] == "orchestrator"
+    assert latency_budget_context["regression_owner"] == "edgeenv"
+    assert latency_budget_context["not_a_deployment_decision"] is True
     assert producer_lineage["raw_context"]["producer_lineage"][
         "candidate_remote_runtime_event_summary_operation_boundary"
     ] == "remote dispatch starter evidence only"
@@ -2328,6 +2437,7 @@ def test_analyze_edgeenv_regression_report_preserves_missing_orchestrator_raw_co
     ) == {
         "runtime_queue_overload",
         "runtime_thermal_instability",
+        "edgeenv_orchestrator_latency_budget_protection",
     }
     assert set(
         replay_context[
@@ -2336,6 +2446,7 @@ def test_analyze_edgeenv_regression_report_preserves_missing_orchestrator_raw_co
     ) == {
         "runtime_queue_overload",
         "runtime_thermal_instability",
+        "edgeenv_orchestrator_latency_budget_protection",
     }
     assert report["candidate_summary"]["edgeenv_regression"][
         "history_missing_orchestrator_context_count"
@@ -3287,6 +3398,7 @@ def test_runtime_intelligence_example_exports_lab_ready_guard_analysis(tmp_path)
         "edgeenv_orchestrator_producer_lineage",
         "edgeenv_orchestrator_operation_risk_summary",
         "edgeenv_orchestrator_task_event_rollup",
+        "edgeenv_orchestrator_latency_budget_protection",
         "runtime_history_seed_run_config_traceability",
         "runtime_thermal_instability",
         "runtime_queue_overload",
@@ -3332,6 +3444,7 @@ def test_runtime_intelligence_example_exports_lab_ready_guard_analysis(tmp_path)
     ) == {
         "runtime_queue_overload",
         "runtime_thermal_instability",
+        "edgeenv_orchestrator_latency_budget_protection",
     }
     coverage_evidence = next(
         item
@@ -3350,6 +3463,7 @@ def test_runtime_intelligence_example_exports_lab_ready_guard_analysis(tmp_path)
     ) == {
         "runtime_queue_overload",
         "runtime_thermal_instability",
+        "edgeenv_orchestrator_latency_budget_protection",
     }
     assert coverage_context["orchestrator_source_repository"] == "InferEdgeOrchestrator"
     assert (
@@ -3397,6 +3511,19 @@ def test_runtime_intelligence_example_exports_lab_ready_guard_analysis(tmp_path)
     assert task_event_rollup["raw_context"]["task_event_rollup"][
         "affected_tasks"
     ] == ["vision_agent", "voice_command_agent"]
+    latency_budget_protection = next(
+        item
+        for item in saved["evidence"]
+        if item["type"] == "edgeenv_orchestrator_latency_budget_protection"
+    )
+    assert latency_budget_protection["status"] == "warning"
+    assert latency_budget_protection["observed_value"] == 4
+    assert latency_budget_protection["raw_context"]["latency_budget_protection"][
+        "protected_tasks"
+    ] == ["safety_monitor_agent"]
+    assert latency_budget_protection["raw_context"]["latency_budget_protection"][
+        "risk_tasks"
+    ] == ["vision_agent"]
     assert forbidden_decision_keys.isdisjoint(saved)
     assert forbidden_decision_keys.isdisjoint(expected)
 
@@ -3444,6 +3571,7 @@ def test_validate_edgeenv_handoff_guard_evidence_alignment_passes():
         "runtime_telemetry_context_coverage",
         "edgeenv_orchestrator_producer_lineage",
         "edgeenv_orchestrator_task_event_rollup",
+        "edgeenv_orchestrator_latency_budget_protection",
         "runtime_history_seed_run_config_traceability",
         "runtime_queue_overload",
         "runtime_thermal_instability",

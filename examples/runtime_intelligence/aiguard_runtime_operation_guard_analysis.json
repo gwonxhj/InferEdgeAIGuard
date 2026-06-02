@@ -266,6 +266,71 @@
           ],
           "orchestrator_operation_risk_summary_device_local_event_count": 2.0,
           "orchestrator_operation_risk_summary_producer_event_count": 4.0,
+          "orchestrator_latency_budget_protection": {
+            "schema_version": "inferedge-orchestrator-latency-budget-protection-v1",
+            "evidence_role": "latency_budget_protection_context",
+            "decision_owner": "lab",
+            "scheduler_owner": "orchestrator",
+            "regression_owner": "edgeenv",
+            "not_a_deployment_decision": true,
+            "protected_high_priority_task_candidates": [
+              "safety_monitor_agent"
+            ],
+            "tasks_with_latency_budget_risk": [
+              "vision_agent"
+            ],
+            "risk_reasons": [
+              "deadline_missed",
+              "scheduler_delay_observed",
+              "queue_backlog_threshold_exceeded"
+            ],
+            "per_task_budget_context": {
+              "safety_monitor_agent": {
+                "latency_budget_ms": 20.0,
+                "deadline_missed_count": 0,
+                "scheduler_delay_event_count": 0,
+                "protected_priority": true
+              },
+              "vision_agent": {
+                "latency_budget_ms": 33.0,
+                "deadline_missed_count": 1,
+                "scheduler_delay_event_count": 1,
+                "max_scheduler_delay_cycles": 3
+              }
+            }
+          },
+          "orchestrator_latency_budget_protection_present": true,
+          "orchestrator_latency_budget_protection_schema_version": "inferedge-orchestrator-latency-budget-protection-v1",
+          "orchestrator_latency_budget_protection_evidence_role": "latency_budget_protection_context",
+          "orchestrator_latency_budget_protection_decision_owner": "lab",
+          "orchestrator_latency_budget_protection_scheduler_owner": "orchestrator",
+          "orchestrator_latency_budget_protection_regression_owner": "edgeenv",
+          "orchestrator_latency_budget_protection_not_a_deployment_decision": true,
+          "orchestrator_latency_budget_protection_protected_tasks": [
+            "safety_monitor_agent"
+          ],
+          "orchestrator_latency_budget_protection_risk_tasks": [
+            "vision_agent"
+          ],
+          "orchestrator_latency_budget_protection_risk_reasons": [
+            "deadline_missed",
+            "scheduler_delay_observed",
+            "queue_backlog_threshold_exceeded"
+          ],
+          "orchestrator_latency_budget_protection_per_task_budget_context": {
+            "safety_monitor_agent": {
+              "latency_budget_ms": 20.0,
+              "deadline_missed_count": 0,
+              "scheduler_delay_event_count": 0,
+              "protected_priority": true
+            },
+            "vision_agent": {
+              "latency_budget_ms": 33.0,
+              "deadline_missed_count": 1,
+              "scheduler_delay_event_count": 1,
+              "max_scheduler_delay_cycles": 3
+            }
+          },
           "orchestrator_runtime_task_event_summary": {
             "vision_agent": {
               "event_count": 9,
@@ -340,7 +405,8 @@
             ],
             "aiguard_evidence_candidates": [
               "runtime_queue_overload",
-              "runtime_thermal_instability"
+              "runtime_thermal_instability",
+              "edgeenv_orchestrator_latency_budget_protection"
             ]
           },
           "orchestrator_mapping_hint_copy_candidate_context_to": "runtime_telemetry_context.candidate",
@@ -355,14 +421,16 @@
           ],
           "orchestrator_mapping_hint_aiguard_evidence_candidates": [
             "runtime_queue_overload",
-            "runtime_thermal_instability"
+            "runtime_thermal_instability",
+            "edgeenv_orchestrator_latency_budget_protection"
           ],
           "orchestrator_downstream_guard_alignment": {
             "declared_by": "orchestrator",
             "producer_lineage_evidence_type": "edgeenv_orchestrator_producer_lineage",
             "operation_evidence_candidates": [
               "runtime_queue_overload",
-              "runtime_thermal_instability"
+              "runtime_thermal_instability",
+              "edgeenv_orchestrator_latency_budget_protection"
             ],
             "validated_by": [
               "edgeenv runs telemetry inspect-history",
@@ -376,7 +444,8 @@
           "orchestrator_guard_alignment_producer_lineage_evidence_type": "edgeenv_orchestrator_producer_lineage",
           "orchestrator_guard_alignment_operation_evidence_candidates": [
             "runtime_queue_overload",
-            "runtime_thermal_instability"
+            "runtime_thermal_instability",
+            "edgeenv_orchestrator_latency_budget_protection"
           ],
           "orchestrator_guard_alignment_orchestrator_is_final_decision_owner": false,
           "orchestrator_guard_alignment_lab_is_final_decision_owner": true,
@@ -645,6 +714,71 @@
           ],
           "orchestrator_operation_risk_summary_device_local_event_count": 2.0,
           "orchestrator_operation_risk_summary_producer_event_count": 4.0,
+          "orchestrator_latency_budget_protection": {
+            "schema_version": "inferedge-orchestrator-latency-budget-protection-v1",
+            "evidence_role": "latency_budget_protection_context",
+            "decision_owner": "lab",
+            "scheduler_owner": "orchestrator",
+            "regression_owner": "edgeenv",
+            "not_a_deployment_decision": true,
+            "protected_high_priority_task_candidates": [
+              "safety_monitor_agent"
+            ],
+            "tasks_with_latency_budget_risk": [
+              "vision_agent"
+            ],
+            "risk_reasons": [
+              "deadline_missed",
+              "scheduler_delay_observed",
+              "queue_backlog_threshold_exceeded"
+            ],
+            "per_task_budget_context": {
+              "safety_monitor_agent": {
+                "latency_budget_ms": 20.0,
+                "deadline_missed_count": 0,
+                "scheduler_delay_event_count": 0,
+                "protected_priority": true
+              },
+              "vision_agent": {
+                "latency_budget_ms": 33.0,
+                "deadline_missed_count": 1,
+                "scheduler_delay_event_count": 1,
+                "max_scheduler_delay_cycles": 3
+              }
+            }
+          },
+          "orchestrator_latency_budget_protection_present": true,
+          "orchestrator_latency_budget_protection_schema_version": "inferedge-orchestrator-latency-budget-protection-v1",
+          "orchestrator_latency_budget_protection_evidence_role": "latency_budget_protection_context",
+          "orchestrator_latency_budget_protection_decision_owner": "lab",
+          "orchestrator_latency_budget_protection_scheduler_owner": "orchestrator",
+          "orchestrator_latency_budget_protection_regression_owner": "edgeenv",
+          "orchestrator_latency_budget_protection_not_a_deployment_decision": true,
+          "orchestrator_latency_budget_protection_protected_tasks": [
+            "safety_monitor_agent"
+          ],
+          "orchestrator_latency_budget_protection_risk_tasks": [
+            "vision_agent"
+          ],
+          "orchestrator_latency_budget_protection_risk_reasons": [
+            "deadline_missed",
+            "scheduler_delay_observed",
+            "queue_backlog_threshold_exceeded"
+          ],
+          "orchestrator_latency_budget_protection_per_task_budget_context": {
+            "safety_monitor_agent": {
+              "latency_budget_ms": 20.0,
+              "deadline_missed_count": 0,
+              "scheduler_delay_event_count": 0,
+              "protected_priority": true
+            },
+            "vision_agent": {
+              "latency_budget_ms": 33.0,
+              "deadline_missed_count": 1,
+              "scheduler_delay_event_count": 1,
+              "max_scheduler_delay_cycles": 3
+            }
+          },
           "orchestrator_runtime_task_event_summary": {
             "vision_agent": {
               "event_count": 9,
@@ -719,7 +853,8 @@
             ],
             "aiguard_evidence_candidates": [
               "runtime_queue_overload",
-              "runtime_thermal_instability"
+              "runtime_thermal_instability",
+              "edgeenv_orchestrator_latency_budget_protection"
             ]
           },
           "orchestrator_mapping_hint_copy_candidate_context_to": "runtime_telemetry_context.candidate",
@@ -734,14 +869,16 @@
           ],
           "orchestrator_mapping_hint_aiguard_evidence_candidates": [
             "runtime_queue_overload",
-            "runtime_thermal_instability"
+            "runtime_thermal_instability",
+            "edgeenv_orchestrator_latency_budget_protection"
           ],
           "orchestrator_downstream_guard_alignment": {
             "declared_by": "orchestrator",
             "producer_lineage_evidence_type": "edgeenv_orchestrator_producer_lineage",
             "operation_evidence_candidates": [
               "runtime_queue_overload",
-              "runtime_thermal_instability"
+              "runtime_thermal_instability",
+              "edgeenv_orchestrator_latency_budget_protection"
             ],
             "validated_by": [
               "edgeenv runs telemetry inspect-history",
@@ -755,7 +892,8 @@
           "orchestrator_guard_alignment_producer_lineage_evidence_type": "edgeenv_orchestrator_producer_lineage",
           "orchestrator_guard_alignment_operation_evidence_candidates": [
             "runtime_queue_overload",
-            "runtime_thermal_instability"
+            "runtime_thermal_instability",
+            "edgeenv_orchestrator_latency_budget_protection"
           ],
           "orchestrator_guard_alignment_orchestrator_is_final_decision_owner": false,
           "orchestrator_guard_alignment_lab_is_final_decision_owner": true,
@@ -795,7 +933,8 @@
             "producer_lineage_evidence_type": "edgeenv_orchestrator_producer_lineage",
             "operation_evidence_candidates": [
               "runtime_queue_overload",
-              "runtime_thermal_instability"
+              "runtime_thermal_instability",
+              "edgeenv_orchestrator_latency_budget_protection"
             ],
             "validated_by": [
               "edgeenv runs telemetry inspect-history",
@@ -809,7 +948,8 @@
           "candidate_guard_alignment_producer_lineage_evidence_type": "edgeenv_orchestrator_producer_lineage",
           "candidate_guard_alignment_operation_evidence_candidates": [
             "runtime_queue_overload",
-            "runtime_thermal_instability"
+            "runtime_thermal_instability",
+            "edgeenv_orchestrator_latency_budget_protection"
           ],
           "candidate_remote_runtime_event_summary": {
             "event_count": 4,
@@ -1101,6 +1241,71 @@
           ],
           "orchestrator_operation_risk_summary_device_local_event_count": 2.0,
           "orchestrator_operation_risk_summary_producer_event_count": 4.0,
+          "orchestrator_latency_budget_protection": {
+            "schema_version": "inferedge-orchestrator-latency-budget-protection-v1",
+            "evidence_role": "latency_budget_protection_context",
+            "decision_owner": "lab",
+            "scheduler_owner": "orchestrator",
+            "regression_owner": "edgeenv",
+            "not_a_deployment_decision": true,
+            "protected_high_priority_task_candidates": [
+              "safety_monitor_agent"
+            ],
+            "tasks_with_latency_budget_risk": [
+              "vision_agent"
+            ],
+            "risk_reasons": [
+              "deadline_missed",
+              "scheduler_delay_observed",
+              "queue_backlog_threshold_exceeded"
+            ],
+            "per_task_budget_context": {
+              "safety_monitor_agent": {
+                "latency_budget_ms": 20.0,
+                "deadline_missed_count": 0,
+                "scheduler_delay_event_count": 0,
+                "protected_priority": true
+              },
+              "vision_agent": {
+                "latency_budget_ms": 33.0,
+                "deadline_missed_count": 1,
+                "scheduler_delay_event_count": 1,
+                "max_scheduler_delay_cycles": 3
+              }
+            }
+          },
+          "orchestrator_latency_budget_protection_present": true,
+          "orchestrator_latency_budget_protection_schema_version": "inferedge-orchestrator-latency-budget-protection-v1",
+          "orchestrator_latency_budget_protection_evidence_role": "latency_budget_protection_context",
+          "orchestrator_latency_budget_protection_decision_owner": "lab",
+          "orchestrator_latency_budget_protection_scheduler_owner": "orchestrator",
+          "orchestrator_latency_budget_protection_regression_owner": "edgeenv",
+          "orchestrator_latency_budget_protection_not_a_deployment_decision": true,
+          "orchestrator_latency_budget_protection_protected_tasks": [
+            "safety_monitor_agent"
+          ],
+          "orchestrator_latency_budget_protection_risk_tasks": [
+            "vision_agent"
+          ],
+          "orchestrator_latency_budget_protection_risk_reasons": [
+            "deadline_missed",
+            "scheduler_delay_observed",
+            "queue_backlog_threshold_exceeded"
+          ],
+          "orchestrator_latency_budget_protection_per_task_budget_context": {
+            "safety_monitor_agent": {
+              "latency_budget_ms": 20.0,
+              "deadline_missed_count": 0,
+              "scheduler_delay_event_count": 0,
+              "protected_priority": true
+            },
+            "vision_agent": {
+              "latency_budget_ms": 33.0,
+              "deadline_missed_count": 1,
+              "scheduler_delay_event_count": 1,
+              "max_scheduler_delay_cycles": 3
+            }
+          },
           "orchestrator_runtime_task_event_summary": {
             "vision_agent": {
               "event_count": 9,
@@ -1175,7 +1380,8 @@
             ],
             "aiguard_evidence_candidates": [
               "runtime_queue_overload",
-              "runtime_thermal_instability"
+              "runtime_thermal_instability",
+              "edgeenv_orchestrator_latency_budget_protection"
             ]
           },
           "orchestrator_mapping_hint_copy_candidate_context_to": "runtime_telemetry_context.candidate",
@@ -1190,14 +1396,16 @@
           ],
           "orchestrator_mapping_hint_aiguard_evidence_candidates": [
             "runtime_queue_overload",
-            "runtime_thermal_instability"
+            "runtime_thermal_instability",
+            "edgeenv_orchestrator_latency_budget_protection"
           ],
           "orchestrator_downstream_guard_alignment": {
             "declared_by": "orchestrator",
             "producer_lineage_evidence_type": "edgeenv_orchestrator_producer_lineage",
             "operation_evidence_candidates": [
               "runtime_queue_overload",
-              "runtime_thermal_instability"
+              "runtime_thermal_instability",
+              "edgeenv_orchestrator_latency_budget_protection"
             ],
             "validated_by": [
               "edgeenv runs telemetry inspect-history",
@@ -1211,7 +1419,8 @@
           "orchestrator_guard_alignment_producer_lineage_evidence_type": "edgeenv_orchestrator_producer_lineage",
           "orchestrator_guard_alignment_operation_evidence_candidates": [
             "runtime_queue_overload",
-            "runtime_thermal_instability"
+            "runtime_thermal_instability",
+            "edgeenv_orchestrator_latency_budget_protection"
           ],
           "orchestrator_guard_alignment_orchestrator_is_final_decision_owner": false,
           "orchestrator_guard_alignment_lab_is_final_decision_owner": true,
@@ -1517,6 +1726,71 @@
           ],
           "orchestrator_operation_risk_summary_device_local_event_count": 2.0,
           "orchestrator_operation_risk_summary_producer_event_count": 4.0,
+          "orchestrator_latency_budget_protection": {
+            "schema_version": "inferedge-orchestrator-latency-budget-protection-v1",
+            "evidence_role": "latency_budget_protection_context",
+            "decision_owner": "lab",
+            "scheduler_owner": "orchestrator",
+            "regression_owner": "edgeenv",
+            "not_a_deployment_decision": true,
+            "protected_high_priority_task_candidates": [
+              "safety_monitor_agent"
+            ],
+            "tasks_with_latency_budget_risk": [
+              "vision_agent"
+            ],
+            "risk_reasons": [
+              "deadline_missed",
+              "scheduler_delay_observed",
+              "queue_backlog_threshold_exceeded"
+            ],
+            "per_task_budget_context": {
+              "safety_monitor_agent": {
+                "latency_budget_ms": 20.0,
+                "deadline_missed_count": 0,
+                "scheduler_delay_event_count": 0,
+                "protected_priority": true
+              },
+              "vision_agent": {
+                "latency_budget_ms": 33.0,
+                "deadline_missed_count": 1,
+                "scheduler_delay_event_count": 1,
+                "max_scheduler_delay_cycles": 3
+              }
+            }
+          },
+          "orchestrator_latency_budget_protection_present": true,
+          "orchestrator_latency_budget_protection_schema_version": "inferedge-orchestrator-latency-budget-protection-v1",
+          "orchestrator_latency_budget_protection_evidence_role": "latency_budget_protection_context",
+          "orchestrator_latency_budget_protection_decision_owner": "lab",
+          "orchestrator_latency_budget_protection_scheduler_owner": "orchestrator",
+          "orchestrator_latency_budget_protection_regression_owner": "edgeenv",
+          "orchestrator_latency_budget_protection_not_a_deployment_decision": true,
+          "orchestrator_latency_budget_protection_protected_tasks": [
+            "safety_monitor_agent"
+          ],
+          "orchestrator_latency_budget_protection_risk_tasks": [
+            "vision_agent"
+          ],
+          "orchestrator_latency_budget_protection_risk_reasons": [
+            "deadline_missed",
+            "scheduler_delay_observed",
+            "queue_backlog_threshold_exceeded"
+          ],
+          "orchestrator_latency_budget_protection_per_task_budget_context": {
+            "safety_monitor_agent": {
+              "latency_budget_ms": 20.0,
+              "deadline_missed_count": 0,
+              "scheduler_delay_event_count": 0,
+              "protected_priority": true
+            },
+            "vision_agent": {
+              "latency_budget_ms": 33.0,
+              "deadline_missed_count": 1,
+              "scheduler_delay_event_count": 1,
+              "max_scheduler_delay_cycles": 3
+            }
+          },
           "orchestrator_runtime_task_event_summary": {
             "vision_agent": {
               "event_count": 9,
@@ -1591,7 +1865,8 @@
             ],
             "aiguard_evidence_candidates": [
               "runtime_queue_overload",
-              "runtime_thermal_instability"
+              "runtime_thermal_instability",
+              "edgeenv_orchestrator_latency_budget_protection"
             ]
           },
           "orchestrator_mapping_hint_copy_candidate_context_to": "runtime_telemetry_context.candidate",
@@ -1606,14 +1881,16 @@
           ],
           "orchestrator_mapping_hint_aiguard_evidence_candidates": [
             "runtime_queue_overload",
-            "runtime_thermal_instability"
+            "runtime_thermal_instability",
+            "edgeenv_orchestrator_latency_budget_protection"
           ],
           "orchestrator_downstream_guard_alignment": {
             "declared_by": "orchestrator",
             "producer_lineage_evidence_type": "edgeenv_orchestrator_producer_lineage",
             "operation_evidence_candidates": [
               "runtime_queue_overload",
-              "runtime_thermal_instability"
+              "runtime_thermal_instability",
+              "edgeenv_orchestrator_latency_budget_protection"
             ],
             "validated_by": [
               "edgeenv runs telemetry inspect-history",
@@ -1627,7 +1904,8 @@
           "orchestrator_guard_alignment_producer_lineage_evidence_type": "edgeenv_orchestrator_producer_lineage",
           "orchestrator_guard_alignment_operation_evidence_candidates": [
             "runtime_queue_overload",
-            "runtime_thermal_instability"
+            "runtime_thermal_instability",
+            "edgeenv_orchestrator_latency_budget_protection"
           ],
           "orchestrator_guard_alignment_orchestrator_is_final_decision_owner": false,
           "orchestrator_guard_alignment_lab_is_final_decision_owner": true,
@@ -1720,6 +1998,530 @@
           "boundary_markers_valid": true,
           "decision_owner": "lab",
           "scheduler_owner": "orchestrator",
+          "not_a_deployment_decision": true
+        }
+      }
+    },
+    {
+      "type": "edgeenv_orchestrator_latency_budget_protection",
+      "metric_name": "orchestrator_latency_budget_protection_marker_count",
+      "observed_value": 4,
+      "baseline_value": 0,
+      "threshold": 1,
+      "delta": null,
+      "delta_pct": null,
+      "increase_factor": null,
+      "severity": "medium",
+      "status": "warning",
+      "explanation": "EdgeEnv preserved Orchestrator latency budget protection context with 4 deterministic review marker(s).",
+      "why_it_matters": "Latency budget protection shows which high-priority workloads were protected and which tasks still carried budget risk. AIGuard keeps this as deterministic warning evidence while Lab remains the final deployment decision owner.",
+      "suspected_causes": [
+        "latency_budget_pressure_context",
+        "deadline_miss_context",
+        "scheduler_delay_context",
+        "queue_pressure_context"
+      ],
+      "recommendation": "Review protected tasks, latency-budget risk tasks, deadline/scheduler reasons, and per-task budget context in the Lab report before deployment.",
+      "raw_context": {
+        "edgeenv_regression": {
+          "baseline_run_id": "edgeenv-smoke-baseline",
+          "candidate_run_id": "edgeenv-smoke-candidate",
+          "comparable": true,
+          "mode": "same-condition",
+          "regression_detected": false,
+          "regression_type": "operation-context",
+          "severity": "medium",
+          "recommendation": "review_required",
+          "mean_delta_pct": null,
+          "p95_delta_pct": null,
+          "p99_delta_pct": null,
+          "fps_delta_pct": null,
+          "memory_peak_delta_pct": null,
+          "triggered_thresholds": [],
+          "runtime_telemetry_context_present": true,
+          "runtime_telemetry_source": "result_artifacts+runtime_telemetry_history",
+          "runtime_telemetry_history_schema_version": "edgeenv.runtime-telemetry-history.v1",
+          "history_orchestrator_feed_runs": 1.0,
+          "history_registered_runs": 2.0,
+          "history_telemetry_runs": 2.0,
+          "history_telemetry_seed_runs": 2.0,
+          "history_telemetry_seed_run_config_runs": 2.0,
+          "baseline_runtime_telemetry_history_seed_schema_version": "inferedge-runtime-telemetry-history-seed-v1",
+          "candidate_runtime_telemetry_history_seed_schema_version": "inferedge-runtime-telemetry-history-seed-v1",
+          "baseline_runtime_telemetry_history_seed_registry_owner": "edgeenv",
+          "candidate_runtime_telemetry_history_seed_registry_owner": "edgeenv",
+          "baseline_runtime_telemetry_history_seed_decision_owner": "lab",
+          "candidate_runtime_telemetry_history_seed_decision_owner": "lab",
+          "candidate_runtime_telemetry_history_seed_production_monitoring": false,
+          "candidate_runtime_telemetry_history_seed_missing_telemetry_is_failure": false,
+          "candidate_runtime_telemetry_history_seed_point_count": 1.0,
+          "runtime_telemetry_history_seed_run_config_marker_fields": [
+            "input_mode",
+            "input_preprocess",
+            "power_mode",
+            "jetson_clocks",
+            "warmup",
+            "runs"
+          ],
+          "runtime_telemetry_history_seed_run_config_marker_labels": [
+            "baseline/candidate=shape=1x640x640, input_mode=dummy, input_preprocess=none, power_mode=unknown, jetson_clocks=unknown, warmup=1, runs=10"
+          ],
+          "baseline_runtime_telemetry_history_seed_run_config": {
+            "batch": 1,
+            "height": 640,
+            "width": 640,
+            "warmup": 1,
+            "runs": 10,
+            "timeout_ms": null,
+            "input_mode": "dummy",
+            "input_preprocess": "none",
+            "power_mode": "unknown",
+            "jetson_clocks": "unknown"
+          },
+          "baseline_runtime_telemetry_history_seed_run_config_markers": {
+            "shape": "1x640x640",
+            "input_mode": "dummy",
+            "input_preprocess": "none",
+            "power_mode": "unknown",
+            "jetson_clocks": "unknown",
+            "warmup": 1,
+            "runs": 10
+          },
+          "candidate_runtime_telemetry_history_seed_run_config": {
+            "batch": 1,
+            "height": 640,
+            "width": 640,
+            "warmup": 1,
+            "runs": 10,
+            "timeout_ms": null,
+            "input_mode": "dummy",
+            "input_preprocess": "none",
+            "power_mode": "unknown",
+            "jetson_clocks": "unknown"
+          },
+          "candidate_runtime_telemetry_history_seed_run_config_markers": {
+            "shape": "1x640x640",
+            "input_mode": "dummy",
+            "input_preprocess": "none",
+            "power_mode": "unknown",
+            "jetson_clocks": "unknown",
+            "warmup": 1,
+            "runs": 10
+          },
+          "candidate_runtime_telemetry_history_seed_run_config_present": true,
+          "history_missing_telemetry_runs": 0.0,
+          "history_missing_orchestrator_context_count": 0.0,
+          "history_missing_orchestrator_context_run_ids": [],
+          "history_missing_orchestrator_contexts": [],
+          "history_missing_orchestrator_source_repository": null,
+          "history_missing_orchestrator_artifact_role": null,
+          "history_missing_orchestrator_producer_contract": null,
+          "history_missing_orchestrator_candidate_context_telemetry_source": null,
+          "history_missing_orchestrator_candidate_context_producer": {},
+          "history_missing_orchestrator_candidate_producer_sources": [],
+          "history_missing_orchestrator_candidate_device_local_producer_sources": [],
+          "history_missing_orchestrator_candidate_producer_sources_by_task": {},
+          "history_missing_orchestrator_candidate_producer_stage_by_task": {},
+          "history_missing_orchestrator_candidate_producer_event_count": null,
+          "history_missing_orchestrator_candidate_device_local_event_count": null,
+          "history_missing_orchestrator_candidate_device_local_task_count": null,
+          "history_missing_orchestrator_candidate_operation_context_role": null,
+          "history_missing_orchestrator_remote_runtime_event_summary": {},
+          "history_missing_orchestrator_remote_runtime_event_summary_present": false,
+          "history_missing_orchestrator_remote_runtime_event_summary_evidence_role": null,
+          "history_missing_orchestrator_remote_runtime_event_summary_operation_boundary": null,
+          "history_missing_orchestrator_remote_runtime_event_summary_production_remote_execution": null,
+          "history_missing_orchestrator_operation_risk_summary": {},
+          "history_missing_orchestrator_operation_risk_summary_present": false,
+          "history_missing_orchestrator_operation_risk_summary_evidence_role": null,
+          "history_missing_orchestrator_operation_risk_summary_decision_owner": null,
+          "history_missing_orchestrator_operation_risk_summary_scheduler_owner": null,
+          "history_missing_orchestrator_operation_risk_summary_not_a_deployment_decision": null,
+          "history_missing_orchestrator_edgeenv_mapping_hint": {},
+          "history_missing_orchestrator_mapping_hint_aiguard_evidence_candidates": [],
+          "history_missing_orchestrator_downstream_guard_alignment": {},
+          "history_missing_orchestrator_guard_alignment_declared_by": null,
+          "history_missing_orchestrator_guard_alignment_producer_lineage_evidence_type": null,
+          "history_missing_orchestrator_guard_alignment_operation_evidence_candidates": [],
+          "history_missing_orchestrator_guard_alignment_orchestrator_is_final_decision_owner": null,
+          "history_missing_orchestrator_guard_alignment_lab_is_final_decision_owner": null,
+          "telemetry_coverage_source": "history_telemetry_coverage",
+          "history_telemetry_coverage_missing_field_run_count": 1.0,
+          "history_telemetry_coverage_missing_field_runs": [
+            {
+              "run_id": "edgeenv-smoke-candidate",
+              "missing_fields": [
+                "queue_depth"
+              ],
+              "missing_field_count": 1,
+              "missing_telemetry_is_failure": false
+            }
+          ],
+          "history_telemetry_coverage_run_summaries_present": true,
+          "baseline_telemetry_present": true,
+          "candidate_telemetry_present": true,
+          "baseline_history_entry_present": true,
+          "candidate_history_entry_present": true,
+          "baseline_telemetry_coverage_ratio": 1.0,
+          "candidate_telemetry_coverage_ratio": 0.666667,
+          "baseline_telemetry_coverage_missing_fields": [],
+          "candidate_telemetry_coverage_missing_fields": [
+            "queue_depth"
+          ],
+          "telemetry_coverage_missing_field_count": 1.0,
+          "baseline_missing_telemetry_is_failure": false,
+          "candidate_missing_telemetry_is_failure": false,
+          "baseline_execution_sequence_id": 1.0,
+          "candidate_execution_sequence_id": 2.0,
+          "execution_sequence_order_valid": true,
+          "baseline_orchestrator_context_present": false,
+          "candidate_orchestrator_context_present": true,
+          "orchestrator_source_repository": "InferEdgeOrchestrator",
+          "orchestrator_artifact_role": "orchestrator-supplemental-operation-context",
+          "orchestrator_producer_contract": "inferedge-orchestrator-edgeenv-runtime-telemetry-feed-v1",
+          "orchestrator_candidate_context_telemetry_source": "inferedge_orchestrator_operation_summary",
+          "orchestrator_candidate_context_producer": {
+            "operation_context_role": "supplemental",
+            "producer_sources": [
+              "device_local_cli_override",
+              "orchestration_summary"
+            ],
+            "device_local_producer_sources": [
+              "device_local_cli_override"
+            ],
+            "producer_sources_by_task": {
+              "vision_agent": [
+                "device_local_cli_override"
+              ]
+            },
+            "producer_stage_by_task": {
+              "vision_agent": "device_local_starter"
+            },
+            "producer_event_count": 4,
+            "device_local_event_count": 2,
+            "device_local_task_count": 1
+          },
+          "orchestrator_candidate_producer_sources": [
+            "device_local_cli_override",
+            "orchestration_summary"
+          ],
+          "orchestrator_candidate_device_local_producer_sources": [
+            "device_local_cli_override"
+          ],
+          "orchestrator_candidate_producer_sources_by_task": {
+            "vision_agent": [
+              "device_local_cli_override"
+            ]
+          },
+          "orchestrator_candidate_producer_stage_by_task": {
+            "vision_agent": "device_local_starter"
+          },
+          "orchestrator_candidate_producer_event_count": 4.0,
+          "orchestrator_candidate_device_local_event_count": 2.0,
+          "orchestrator_candidate_device_local_task_count": 1.0,
+          "orchestrator_candidate_operation_context_role": "supplemental",
+          "orchestrator_remote_runtime_event_summary": {
+            "event_count": 4,
+            "runtime_event_count": 4,
+            "production_remote_execution": false,
+            "evidence_role": "remote_dispatch_runtime_event_compact_summary",
+            "operation_boundary": "remote dispatch starter evidence only"
+          },
+          "orchestrator_remote_runtime_event_summary_present": true,
+          "orchestrator_remote_runtime_event_summary_evidence_role": "remote_dispatch_runtime_event_compact_summary",
+          "orchestrator_remote_runtime_event_summary_operation_boundary": "remote dispatch starter evidence only",
+          "orchestrator_remote_runtime_event_summary_production_remote_execution": false,
+          "orchestrator_operation_risk_summary": {
+            "schema_version": "inferedge-entrypoint-operation-risk-summary-v1",
+            "evidence_role": "derived_navigation_context",
+            "decision_owner": "lab",
+            "scheduler_owner": "orchestrator",
+            "not_a_deployment_decision": true,
+            "queue_pressure_reason": "queue_backlog_threshold_exceeded",
+            "max_pressure_task": "vision_agent",
+            "primary_health_reason": "worker_queue_pressure",
+            "degraded_worker_ids": [
+              "worker-jetson-01"
+            ],
+            "device_local_event_count": 2,
+            "producer_event_count": 4
+          },
+          "orchestrator_operation_risk_summary_present": true,
+          "orchestrator_operation_risk_summary_schema_version": "inferedge-entrypoint-operation-risk-summary-v1",
+          "orchestrator_operation_risk_summary_evidence_role": "derived_navigation_context",
+          "orchestrator_operation_risk_summary_decision_owner": "lab",
+          "orchestrator_operation_risk_summary_scheduler_owner": "orchestrator",
+          "orchestrator_operation_risk_summary_not_a_deployment_decision": true,
+          "orchestrator_operation_risk_summary_queue_pressure_reason": "queue_backlog_threshold_exceeded",
+          "orchestrator_operation_risk_summary_max_pressure_task": "vision_agent",
+          "orchestrator_operation_risk_summary_primary_health_reason": "worker_queue_pressure",
+          "orchestrator_operation_risk_summary_degraded_worker_ids": [
+            "worker-jetson-01"
+          ],
+          "orchestrator_operation_risk_summary_device_local_event_count": 2.0,
+          "orchestrator_operation_risk_summary_producer_event_count": 4.0,
+          "orchestrator_latency_budget_protection": {
+            "schema_version": "inferedge-orchestrator-latency-budget-protection-v1",
+            "evidence_role": "latency_budget_protection_context",
+            "decision_owner": "lab",
+            "scheduler_owner": "orchestrator",
+            "regression_owner": "edgeenv",
+            "not_a_deployment_decision": true,
+            "protected_high_priority_task_candidates": [
+              "safety_monitor_agent"
+            ],
+            "tasks_with_latency_budget_risk": [
+              "vision_agent"
+            ],
+            "risk_reasons": [
+              "deadline_missed",
+              "scheduler_delay_observed",
+              "queue_backlog_threshold_exceeded"
+            ],
+            "per_task_budget_context": {
+              "safety_monitor_agent": {
+                "latency_budget_ms": 20.0,
+                "deadline_missed_count": 0,
+                "scheduler_delay_event_count": 0,
+                "protected_priority": true
+              },
+              "vision_agent": {
+                "latency_budget_ms": 33.0,
+                "deadline_missed_count": 1,
+                "scheduler_delay_event_count": 1,
+                "max_scheduler_delay_cycles": 3
+              }
+            }
+          },
+          "orchestrator_latency_budget_protection_present": true,
+          "orchestrator_latency_budget_protection_schema_version": "inferedge-orchestrator-latency-budget-protection-v1",
+          "orchestrator_latency_budget_protection_evidence_role": "latency_budget_protection_context",
+          "orchestrator_latency_budget_protection_decision_owner": "lab",
+          "orchestrator_latency_budget_protection_scheduler_owner": "orchestrator",
+          "orchestrator_latency_budget_protection_regression_owner": "edgeenv",
+          "orchestrator_latency_budget_protection_not_a_deployment_decision": true,
+          "orchestrator_latency_budget_protection_protected_tasks": [
+            "safety_monitor_agent"
+          ],
+          "orchestrator_latency_budget_protection_risk_tasks": [
+            "vision_agent"
+          ],
+          "orchestrator_latency_budget_protection_risk_reasons": [
+            "deadline_missed",
+            "scheduler_delay_observed",
+            "queue_backlog_threshold_exceeded"
+          ],
+          "orchestrator_latency_budget_protection_per_task_budget_context": {
+            "safety_monitor_agent": {
+              "latency_budget_ms": 20.0,
+              "deadline_missed_count": 0,
+              "scheduler_delay_event_count": 0,
+              "protected_priority": true
+            },
+            "vision_agent": {
+              "latency_budget_ms": 33.0,
+              "deadline_missed_count": 1,
+              "scheduler_delay_event_count": 1,
+              "max_scheduler_delay_cycles": 3
+            }
+          },
+          "orchestrator_runtime_task_event_summary": {
+            "vision_agent": {
+              "event_count": 9,
+              "event_type_counts": {
+                "schedule": 3,
+                "execution": 3,
+                "policy_decision": 3
+              },
+              "reason_counts": {
+                "deadline_missed": 1,
+                "queue_backlog_threshold_exceeded": 1
+              },
+              "policy_decision_reason_counts": {
+                "queue_backlog_threshold_exceeded": 1
+              },
+              "drop_reason_counts": {},
+              "deadline_missed_count": 1,
+              "fallback_decision_count": 0,
+              "scheduler_delay_event_count": 1,
+              "max_scheduler_delay_cycles": 3,
+              "max_queue_wait_ms": 15.0,
+              "latest_event_index": 42,
+              "latest_event_type": "execution"
+            },
+            "voice_command_agent": {
+              "event_count": 6,
+              "event_type_counts": {
+                "drop": 1,
+                "policy_decision": 1,
+                "schedule": 2,
+                "execution": 2
+              },
+              "reason_counts": {
+                "queue_backlog_threshold_exceeded": 1,
+                "load_shedding_backlog_threshold_exceeded": 1
+              },
+              "policy_decision_reason_counts": {
+                "queue_backlog_threshold_exceeded": 1
+              },
+              "drop_reason_counts": {
+                "load_shedding_backlog_threshold_exceeded": 1
+              },
+              "deadline_missed_count": 0,
+              "fallback_decision_count": 1,
+              "scheduler_delay_event_count": 0,
+              "max_scheduler_delay_cycles": 0,
+              "max_queue_wait_ms": 0.0,
+              "latest_event_index": 39,
+              "latest_event_type": "policy_decision"
+            }
+          },
+          "orchestrator_runtime_task_event_summary_present": true,
+          "orchestrator_tasks_with_deadline_miss": [
+            "vision_agent"
+          ],
+          "orchestrator_tasks_with_fallback": [
+            "voice_command_agent"
+          ],
+          "orchestrator_tasks_with_scheduler_delay": [
+            "vision_agent"
+          ],
+          "orchestrator_edgeenv_mapping_hint": {
+            "copy_candidate_context_to": "runtime_telemetry_context.candidate",
+            "operation_context_role": "supplemental",
+            "coverage_summary_owner": "edgeenv",
+            "coverage_summary_path": "runtime_telemetry_context.history.telemetry_coverage",
+            "candidate_context_required_fields": [
+              "run_id",
+              "telemetry_source",
+              "operation",
+              "resource"
+            ],
+            "aiguard_evidence_candidates": [
+              "runtime_queue_overload",
+              "runtime_thermal_instability",
+              "edgeenv_orchestrator_latency_budget_protection"
+            ]
+          },
+          "orchestrator_mapping_hint_copy_candidate_context_to": "runtime_telemetry_context.candidate",
+          "orchestrator_mapping_hint_operation_context_role": "supplemental",
+          "orchestrator_mapping_hint_coverage_summary_owner": "edgeenv",
+          "orchestrator_mapping_hint_coverage_summary_path": "runtime_telemetry_context.history.telemetry_coverage",
+          "orchestrator_mapping_hint_candidate_context_required_fields": [
+            "run_id",
+            "telemetry_source",
+            "operation",
+            "resource"
+          ],
+          "orchestrator_mapping_hint_aiguard_evidence_candidates": [
+            "runtime_queue_overload",
+            "runtime_thermal_instability",
+            "edgeenv_orchestrator_latency_budget_protection"
+          ],
+          "orchestrator_downstream_guard_alignment": {
+            "declared_by": "orchestrator",
+            "producer_lineage_evidence_type": "edgeenv_orchestrator_producer_lineage",
+            "operation_evidence_candidates": [
+              "runtime_queue_overload",
+              "runtime_thermal_instability",
+              "edgeenv_orchestrator_latency_budget_protection"
+            ],
+            "validated_by": [
+              "edgeenv runs telemetry inspect-history",
+              "inferedge-aiguard reason-edgeenv-regression",
+              "inferedgelab runtime-intelligence bundle manifest gate"
+            ],
+            "orchestrator_is_final_decision_owner": false,
+            "lab_is_final_decision_owner": true
+          },
+          "orchestrator_guard_alignment_declared_by": "orchestrator",
+          "orchestrator_guard_alignment_producer_lineage_evidence_type": "edgeenv_orchestrator_producer_lineage",
+          "orchestrator_guard_alignment_operation_evidence_candidates": [
+            "runtime_queue_overload",
+            "runtime_thermal_instability",
+            "edgeenv_orchestrator_latency_budget_protection"
+          ],
+          "orchestrator_guard_alignment_orchestrator_is_final_decision_owner": false,
+          "orchestrator_guard_alignment_lab_is_final_decision_owner": true,
+          "baseline_max_temperature_c": null,
+          "candidate_max_temperature_c": 78.5,
+          "baseline_throttling_detected": null,
+          "candidate_throttling_detected": true,
+          "baseline_queue_depth": null,
+          "candidate_queue_depth": 7.0,
+          "orchestrator_candidate_operation_max_total_queue_depth": 7.0,
+          "evidence_gap_count": 1.0,
+          "evidence_gaps": []
+        },
+        "latency_budget_protection": {
+          "context": {
+            "schema_version": "inferedge-orchestrator-latency-budget-protection-v1",
+            "evidence_role": "latency_budget_protection_context",
+            "decision_owner": "lab",
+            "scheduler_owner": "orchestrator",
+            "regression_owner": "edgeenv",
+            "not_a_deployment_decision": true,
+            "protected_high_priority_task_candidates": [
+              "safety_monitor_agent"
+            ],
+            "tasks_with_latency_budget_risk": [
+              "vision_agent"
+            ],
+            "risk_reasons": [
+              "deadline_missed",
+              "scheduler_delay_observed",
+              "queue_backlog_threshold_exceeded"
+            ],
+            "per_task_budget_context": {
+              "safety_monitor_agent": {
+                "latency_budget_ms": 20.0,
+                "deadline_missed_count": 0,
+                "scheduler_delay_event_count": 0,
+                "protected_priority": true
+              },
+              "vision_agent": {
+                "latency_budget_ms": 33.0,
+                "deadline_missed_count": 1,
+                "scheduler_delay_event_count": 1,
+                "max_scheduler_delay_cycles": 3
+              }
+            }
+          },
+          "boundary_markers_valid": true,
+          "protected_tasks": [
+            "safety_monitor_agent"
+          ],
+          "risk_tasks": [
+            "vision_agent"
+          ],
+          "risk_reasons": [
+            "deadline_missed",
+            "scheduler_delay_observed",
+            "queue_backlog_threshold_exceeded"
+          ],
+          "per_task_budget_context": {
+            "safety_monitor_agent": {
+              "latency_budget_ms": 20.0,
+              "deadline_missed_count": 0,
+              "scheduler_delay_event_count": 0,
+              "protected_priority": true
+            },
+            "vision_agent": {
+              "latency_budget_ms": 33.0,
+              "deadline_missed_count": 1,
+              "scheduler_delay_event_count": 1,
+              "max_scheduler_delay_cycles": 3
+            }
+          },
+          "review_markers": [
+            "latency_budget_risk_task",
+            "deadline_miss_context",
+            "scheduler_delay_context",
+            "queue_pressure_context"
+          ],
+          "decision_owner": "lab",
+          "scheduler_owner": "orchestrator",
+          "regression_owner": "edgeenv",
           "not_a_deployment_decision": true
         }
       }
@@ -1977,6 +2779,71 @@
           ],
           "orchestrator_operation_risk_summary_device_local_event_count": 2.0,
           "orchestrator_operation_risk_summary_producer_event_count": 4.0,
+          "orchestrator_latency_budget_protection": {
+            "schema_version": "inferedge-orchestrator-latency-budget-protection-v1",
+            "evidence_role": "latency_budget_protection_context",
+            "decision_owner": "lab",
+            "scheduler_owner": "orchestrator",
+            "regression_owner": "edgeenv",
+            "not_a_deployment_decision": true,
+            "protected_high_priority_task_candidates": [
+              "safety_monitor_agent"
+            ],
+            "tasks_with_latency_budget_risk": [
+              "vision_agent"
+            ],
+            "risk_reasons": [
+              "deadline_missed",
+              "scheduler_delay_observed",
+              "queue_backlog_threshold_exceeded"
+            ],
+            "per_task_budget_context": {
+              "safety_monitor_agent": {
+                "latency_budget_ms": 20.0,
+                "deadline_missed_count": 0,
+                "scheduler_delay_event_count": 0,
+                "protected_priority": true
+              },
+              "vision_agent": {
+                "latency_budget_ms": 33.0,
+                "deadline_missed_count": 1,
+                "scheduler_delay_event_count": 1,
+                "max_scheduler_delay_cycles": 3
+              }
+            }
+          },
+          "orchestrator_latency_budget_protection_present": true,
+          "orchestrator_latency_budget_protection_schema_version": "inferedge-orchestrator-latency-budget-protection-v1",
+          "orchestrator_latency_budget_protection_evidence_role": "latency_budget_protection_context",
+          "orchestrator_latency_budget_protection_decision_owner": "lab",
+          "orchestrator_latency_budget_protection_scheduler_owner": "orchestrator",
+          "orchestrator_latency_budget_protection_regression_owner": "edgeenv",
+          "orchestrator_latency_budget_protection_not_a_deployment_decision": true,
+          "orchestrator_latency_budget_protection_protected_tasks": [
+            "safety_monitor_agent"
+          ],
+          "orchestrator_latency_budget_protection_risk_tasks": [
+            "vision_agent"
+          ],
+          "orchestrator_latency_budget_protection_risk_reasons": [
+            "deadline_missed",
+            "scheduler_delay_observed",
+            "queue_backlog_threshold_exceeded"
+          ],
+          "orchestrator_latency_budget_protection_per_task_budget_context": {
+            "safety_monitor_agent": {
+              "latency_budget_ms": 20.0,
+              "deadline_missed_count": 0,
+              "scheduler_delay_event_count": 0,
+              "protected_priority": true
+            },
+            "vision_agent": {
+              "latency_budget_ms": 33.0,
+              "deadline_missed_count": 1,
+              "scheduler_delay_event_count": 1,
+              "max_scheduler_delay_cycles": 3
+            }
+          },
           "orchestrator_runtime_task_event_summary": {
             "vision_agent": {
               "event_count": 9,
@@ -2051,7 +2918,8 @@
             ],
             "aiguard_evidence_candidates": [
               "runtime_queue_overload",
-              "runtime_thermal_instability"
+              "runtime_thermal_instability",
+              "edgeenv_orchestrator_latency_budget_protection"
             ]
           },
           "orchestrator_mapping_hint_copy_candidate_context_to": "runtime_telemetry_context.candidate",
@@ -2066,14 +2934,16 @@
           ],
           "orchestrator_mapping_hint_aiguard_evidence_candidates": [
             "runtime_queue_overload",
-            "runtime_thermal_instability"
+            "runtime_thermal_instability",
+            "edgeenv_orchestrator_latency_budget_protection"
           ],
           "orchestrator_downstream_guard_alignment": {
             "declared_by": "orchestrator",
             "producer_lineage_evidence_type": "edgeenv_orchestrator_producer_lineage",
             "operation_evidence_candidates": [
               "runtime_queue_overload",
-              "runtime_thermal_instability"
+              "runtime_thermal_instability",
+              "edgeenv_orchestrator_latency_budget_protection"
             ],
             "validated_by": [
               "edgeenv runs telemetry inspect-history",
@@ -2087,7 +2957,8 @@
           "orchestrator_guard_alignment_producer_lineage_evidence_type": "edgeenv_orchestrator_producer_lineage",
           "orchestrator_guard_alignment_operation_evidence_candidates": [
             "runtime_queue_overload",
-            "runtime_thermal_instability"
+            "runtime_thermal_instability",
+            "edgeenv_orchestrator_latency_budget_protection"
           ],
           "orchestrator_guard_alignment_orchestrator_is_final_decision_owner": false,
           "orchestrator_guard_alignment_lab_is_final_decision_owner": true,
@@ -2375,6 +3246,71 @@
           ],
           "orchestrator_operation_risk_summary_device_local_event_count": 2.0,
           "orchestrator_operation_risk_summary_producer_event_count": 4.0,
+          "orchestrator_latency_budget_protection": {
+            "schema_version": "inferedge-orchestrator-latency-budget-protection-v1",
+            "evidence_role": "latency_budget_protection_context",
+            "decision_owner": "lab",
+            "scheduler_owner": "orchestrator",
+            "regression_owner": "edgeenv",
+            "not_a_deployment_decision": true,
+            "protected_high_priority_task_candidates": [
+              "safety_monitor_agent"
+            ],
+            "tasks_with_latency_budget_risk": [
+              "vision_agent"
+            ],
+            "risk_reasons": [
+              "deadline_missed",
+              "scheduler_delay_observed",
+              "queue_backlog_threshold_exceeded"
+            ],
+            "per_task_budget_context": {
+              "safety_monitor_agent": {
+                "latency_budget_ms": 20.0,
+                "deadline_missed_count": 0,
+                "scheduler_delay_event_count": 0,
+                "protected_priority": true
+              },
+              "vision_agent": {
+                "latency_budget_ms": 33.0,
+                "deadline_missed_count": 1,
+                "scheduler_delay_event_count": 1,
+                "max_scheduler_delay_cycles": 3
+              }
+            }
+          },
+          "orchestrator_latency_budget_protection_present": true,
+          "orchestrator_latency_budget_protection_schema_version": "inferedge-orchestrator-latency-budget-protection-v1",
+          "orchestrator_latency_budget_protection_evidence_role": "latency_budget_protection_context",
+          "orchestrator_latency_budget_protection_decision_owner": "lab",
+          "orchestrator_latency_budget_protection_scheduler_owner": "orchestrator",
+          "orchestrator_latency_budget_protection_regression_owner": "edgeenv",
+          "orchestrator_latency_budget_protection_not_a_deployment_decision": true,
+          "orchestrator_latency_budget_protection_protected_tasks": [
+            "safety_monitor_agent"
+          ],
+          "orchestrator_latency_budget_protection_risk_tasks": [
+            "vision_agent"
+          ],
+          "orchestrator_latency_budget_protection_risk_reasons": [
+            "deadline_missed",
+            "scheduler_delay_observed",
+            "queue_backlog_threshold_exceeded"
+          ],
+          "orchestrator_latency_budget_protection_per_task_budget_context": {
+            "safety_monitor_agent": {
+              "latency_budget_ms": 20.0,
+              "deadline_missed_count": 0,
+              "scheduler_delay_event_count": 0,
+              "protected_priority": true
+            },
+            "vision_agent": {
+              "latency_budget_ms": 33.0,
+              "deadline_missed_count": 1,
+              "scheduler_delay_event_count": 1,
+              "max_scheduler_delay_cycles": 3
+            }
+          },
           "orchestrator_runtime_task_event_summary": {
             "vision_agent": {
               "event_count": 9,
@@ -2449,7 +3385,8 @@
             ],
             "aiguard_evidence_candidates": [
               "runtime_queue_overload",
-              "runtime_thermal_instability"
+              "runtime_thermal_instability",
+              "edgeenv_orchestrator_latency_budget_protection"
             ]
           },
           "orchestrator_mapping_hint_copy_candidate_context_to": "runtime_telemetry_context.candidate",
@@ -2464,14 +3401,16 @@
           ],
           "orchestrator_mapping_hint_aiguard_evidence_candidates": [
             "runtime_queue_overload",
-            "runtime_thermal_instability"
+            "runtime_thermal_instability",
+            "edgeenv_orchestrator_latency_budget_protection"
           ],
           "orchestrator_downstream_guard_alignment": {
             "declared_by": "orchestrator",
             "producer_lineage_evidence_type": "edgeenv_orchestrator_producer_lineage",
             "operation_evidence_candidates": [
               "runtime_queue_overload",
-              "runtime_thermal_instability"
+              "runtime_thermal_instability",
+              "edgeenv_orchestrator_latency_budget_protection"
             ],
             "validated_by": [
               "edgeenv runs telemetry inspect-history",
@@ -2485,7 +3424,8 @@
           "orchestrator_guard_alignment_producer_lineage_evidence_type": "edgeenv_orchestrator_producer_lineage",
           "orchestrator_guard_alignment_operation_evidence_candidates": [
             "runtime_queue_overload",
-            "runtime_thermal_instability"
+            "runtime_thermal_instability",
+            "edgeenv_orchestrator_latency_budget_protection"
           ],
           "orchestrator_guard_alignment_orchestrator_is_final_decision_owner": false,
           "orchestrator_guard_alignment_lab_is_final_decision_owner": true,
@@ -2758,6 +3698,71 @@
           ],
           "orchestrator_operation_risk_summary_device_local_event_count": 2.0,
           "orchestrator_operation_risk_summary_producer_event_count": 4.0,
+          "orchestrator_latency_budget_protection": {
+            "schema_version": "inferedge-orchestrator-latency-budget-protection-v1",
+            "evidence_role": "latency_budget_protection_context",
+            "decision_owner": "lab",
+            "scheduler_owner": "orchestrator",
+            "regression_owner": "edgeenv",
+            "not_a_deployment_decision": true,
+            "protected_high_priority_task_candidates": [
+              "safety_monitor_agent"
+            ],
+            "tasks_with_latency_budget_risk": [
+              "vision_agent"
+            ],
+            "risk_reasons": [
+              "deadline_missed",
+              "scheduler_delay_observed",
+              "queue_backlog_threshold_exceeded"
+            ],
+            "per_task_budget_context": {
+              "safety_monitor_agent": {
+                "latency_budget_ms": 20.0,
+                "deadline_missed_count": 0,
+                "scheduler_delay_event_count": 0,
+                "protected_priority": true
+              },
+              "vision_agent": {
+                "latency_budget_ms": 33.0,
+                "deadline_missed_count": 1,
+                "scheduler_delay_event_count": 1,
+                "max_scheduler_delay_cycles": 3
+              }
+            }
+          },
+          "orchestrator_latency_budget_protection_present": true,
+          "orchestrator_latency_budget_protection_schema_version": "inferedge-orchestrator-latency-budget-protection-v1",
+          "orchestrator_latency_budget_protection_evidence_role": "latency_budget_protection_context",
+          "orchestrator_latency_budget_protection_decision_owner": "lab",
+          "orchestrator_latency_budget_protection_scheduler_owner": "orchestrator",
+          "orchestrator_latency_budget_protection_regression_owner": "edgeenv",
+          "orchestrator_latency_budget_protection_not_a_deployment_decision": true,
+          "orchestrator_latency_budget_protection_protected_tasks": [
+            "safety_monitor_agent"
+          ],
+          "orchestrator_latency_budget_protection_risk_tasks": [
+            "vision_agent"
+          ],
+          "orchestrator_latency_budget_protection_risk_reasons": [
+            "deadline_missed",
+            "scheduler_delay_observed",
+            "queue_backlog_threshold_exceeded"
+          ],
+          "orchestrator_latency_budget_protection_per_task_budget_context": {
+            "safety_monitor_agent": {
+              "latency_budget_ms": 20.0,
+              "deadline_missed_count": 0,
+              "scheduler_delay_event_count": 0,
+              "protected_priority": true
+            },
+            "vision_agent": {
+              "latency_budget_ms": 33.0,
+              "deadline_missed_count": 1,
+              "scheduler_delay_event_count": 1,
+              "max_scheduler_delay_cycles": 3
+            }
+          },
           "orchestrator_runtime_task_event_summary": {
             "vision_agent": {
               "event_count": 9,
@@ -2832,7 +3837,8 @@
             ],
             "aiguard_evidence_candidates": [
               "runtime_queue_overload",
-              "runtime_thermal_instability"
+              "runtime_thermal_instability",
+              "edgeenv_orchestrator_latency_budget_protection"
             ]
           },
           "orchestrator_mapping_hint_copy_candidate_context_to": "runtime_telemetry_context.candidate",
@@ -2847,14 +3853,16 @@
           ],
           "orchestrator_mapping_hint_aiguard_evidence_candidates": [
             "runtime_queue_overload",
-            "runtime_thermal_instability"
+            "runtime_thermal_instability",
+            "edgeenv_orchestrator_latency_budget_protection"
           ],
           "orchestrator_downstream_guard_alignment": {
             "declared_by": "orchestrator",
             "producer_lineage_evidence_type": "edgeenv_orchestrator_producer_lineage",
             "operation_evidence_candidates": [
               "runtime_queue_overload",
-              "runtime_thermal_instability"
+              "runtime_thermal_instability",
+              "edgeenv_orchestrator_latency_budget_protection"
             ],
             "validated_by": [
               "edgeenv runs telemetry inspect-history",
@@ -2868,7 +3876,8 @@
           "orchestrator_guard_alignment_producer_lineage_evidence_type": "edgeenv_orchestrator_producer_lineage",
           "orchestrator_guard_alignment_operation_evidence_candidates": [
             "runtime_queue_overload",
-            "runtime_thermal_instability"
+            "runtime_thermal_instability",
+            "edgeenv_orchestrator_latency_budget_protection"
           ],
           "orchestrator_guard_alignment_orchestrator_is_final_decision_owner": false,
           "orchestrator_guard_alignment_lab_is_final_decision_owner": true,
@@ -2894,6 +3903,7 @@
     "scheduler_delay_context",
     "deadline_miss_context",
     "fallback_policy_context",
+    "latency_budget_pressure_context",
     "thermal_pressure",
     "thermal_throttling",
     "power_mode_or_cooling_constraint",
@@ -2906,6 +3916,7 @@
     "Device-local Orchestrator producer lineage is preserved in the EdgeEnv runtime telemetry context.",
     "Review the Orchestrator operation risk summary in Lab alongside queue, worker health, and device-local producer evidence; Lab remains the final deployment decision owner.",
     "Review Orchestrator task event rollup, queue policy, deadline budget, and fallback behavior in the Lab report before deployment.",
+    "Review protected tasks, latency-budget risk tasks, deadline/scheduler reasons, and per-task budget context in the Lab report before deployment.",
     "Runtime history seed run_config markers are preserved as traceability context for Lab review.",
     "Review EdgeEnv telemetry history, power mode, cooling, and sustained run conditions before treating runtime regression as stable.",
     "Inspect Orchestrator queue policy, target FPS, drop/fallback behavior, and runtime telemetry before deployment."
@@ -3188,6 +4199,71 @@
       ],
       "orchestrator_operation_risk_summary_device_local_event_count": 2.0,
       "orchestrator_operation_risk_summary_producer_event_count": 4.0,
+      "orchestrator_latency_budget_protection": {
+        "schema_version": "inferedge-orchestrator-latency-budget-protection-v1",
+        "evidence_role": "latency_budget_protection_context",
+        "decision_owner": "lab",
+        "scheduler_owner": "orchestrator",
+        "regression_owner": "edgeenv",
+        "not_a_deployment_decision": true,
+        "protected_high_priority_task_candidates": [
+          "safety_monitor_agent"
+        ],
+        "tasks_with_latency_budget_risk": [
+          "vision_agent"
+        ],
+        "risk_reasons": [
+          "deadline_missed",
+          "scheduler_delay_observed",
+          "queue_backlog_threshold_exceeded"
+        ],
+        "per_task_budget_context": {
+          "safety_monitor_agent": {
+            "latency_budget_ms": 20.0,
+            "deadline_missed_count": 0,
+            "scheduler_delay_event_count": 0,
+            "protected_priority": true
+          },
+          "vision_agent": {
+            "latency_budget_ms": 33.0,
+            "deadline_missed_count": 1,
+            "scheduler_delay_event_count": 1,
+            "max_scheduler_delay_cycles": 3
+          }
+        }
+      },
+      "orchestrator_latency_budget_protection_present": true,
+      "orchestrator_latency_budget_protection_schema_version": "inferedge-orchestrator-latency-budget-protection-v1",
+      "orchestrator_latency_budget_protection_evidence_role": "latency_budget_protection_context",
+      "orchestrator_latency_budget_protection_decision_owner": "lab",
+      "orchestrator_latency_budget_protection_scheduler_owner": "orchestrator",
+      "orchestrator_latency_budget_protection_regression_owner": "edgeenv",
+      "orchestrator_latency_budget_protection_not_a_deployment_decision": true,
+      "orchestrator_latency_budget_protection_protected_tasks": [
+        "safety_monitor_agent"
+      ],
+      "orchestrator_latency_budget_protection_risk_tasks": [
+        "vision_agent"
+      ],
+      "orchestrator_latency_budget_protection_risk_reasons": [
+        "deadline_missed",
+        "scheduler_delay_observed",
+        "queue_backlog_threshold_exceeded"
+      ],
+      "orchestrator_latency_budget_protection_per_task_budget_context": {
+        "safety_monitor_agent": {
+          "latency_budget_ms": 20.0,
+          "deadline_missed_count": 0,
+          "scheduler_delay_event_count": 0,
+          "protected_priority": true
+        },
+        "vision_agent": {
+          "latency_budget_ms": 33.0,
+          "deadline_missed_count": 1,
+          "scheduler_delay_event_count": 1,
+          "max_scheduler_delay_cycles": 3
+        }
+      },
       "orchestrator_runtime_task_event_summary": {
         "vision_agent": {
           "event_count": 9,
@@ -3262,7 +4338,8 @@
         ],
         "aiguard_evidence_candidates": [
           "runtime_queue_overload",
-          "runtime_thermal_instability"
+          "runtime_thermal_instability",
+          "edgeenv_orchestrator_latency_budget_protection"
         ]
       },
       "orchestrator_mapping_hint_copy_candidate_context_to": "runtime_telemetry_context.candidate",
@@ -3277,14 +4354,16 @@
       ],
       "orchestrator_mapping_hint_aiguard_evidence_candidates": [
         "runtime_queue_overload",
-        "runtime_thermal_instability"
+        "runtime_thermal_instability",
+        "edgeenv_orchestrator_latency_budget_protection"
       ],
       "orchestrator_downstream_guard_alignment": {
         "declared_by": "orchestrator",
         "producer_lineage_evidence_type": "edgeenv_orchestrator_producer_lineage",
         "operation_evidence_candidates": [
           "runtime_queue_overload",
-          "runtime_thermal_instability"
+          "runtime_thermal_instability",
+          "edgeenv_orchestrator_latency_budget_protection"
         ],
         "validated_by": [
           "edgeenv runs telemetry inspect-history",
@@ -3298,7 +4377,8 @@
       "orchestrator_guard_alignment_producer_lineage_evidence_type": "edgeenv_orchestrator_producer_lineage",
       "orchestrator_guard_alignment_operation_evidence_candidates": [
         "runtime_queue_overload",
-        "runtime_thermal_instability"
+        "runtime_thermal_instability",
+        "edgeenv_orchestrator_latency_budget_protection"
       ],
       "orchestrator_guard_alignment_orchestrator_is_final_decision_owner": false,
       "orchestrator_guard_alignment_lab_is_final_decision_owner": true,
@@ -3459,7 +4539,40 @@
               ],
               "tasks_with_scheduler_delay": [
                 "vision_agent"
-              ]
+              ],
+              "latency_budget_protection": {
+                "schema_version": "inferedge-orchestrator-latency-budget-protection-v1",
+                "evidence_role": "latency_budget_protection_context",
+                "decision_owner": "lab",
+                "scheduler_owner": "orchestrator",
+                "regression_owner": "edgeenv",
+                "not_a_deployment_decision": true,
+                "protected_high_priority_task_candidates": [
+                  "safety_monitor_agent"
+                ],
+                "tasks_with_latency_budget_risk": [
+                  "vision_agent"
+                ],
+                "risk_reasons": [
+                  "deadline_missed",
+                  "scheduler_delay_observed",
+                  "queue_backlog_threshold_exceeded"
+                ],
+                "per_task_budget_context": {
+                  "safety_monitor_agent": {
+                    "latency_budget_ms": 20.0,
+                    "deadline_missed_count": 0,
+                    "scheduler_delay_event_count": 0,
+                    "protected_priority": true
+                  },
+                  "vision_agent": {
+                    "latency_budget_ms": 33.0,
+                    "deadline_missed_count": 1,
+                    "scheduler_delay_event_count": 1,
+                    "max_scheduler_delay_cycles": 3
+                  }
+                }
+              }
             },
             "resource": {
               "source": "tegrastats_timeline",
@@ -3503,7 +4616,8 @@
             ],
             "aiguard_evidence_candidates": [
               "runtime_queue_overload",
-              "runtime_thermal_instability"
+              "runtime_thermal_instability",
+              "edgeenv_orchestrator_latency_budget_protection"
             ]
           },
           "downstream_guard_alignment": {
@@ -3511,7 +4625,8 @@
             "producer_lineage_evidence_type": "edgeenv_orchestrator_producer_lineage",
             "operation_evidence_candidates": [
               "runtime_queue_overload",
-              "runtime_thermal_instability"
+              "runtime_thermal_instability",
+              "edgeenv_orchestrator_latency_budget_protection"
             ],
             "validated_by": [
               "edgeenv runs telemetry inspect-history",
@@ -3728,5 +4843,5 @@
       "evidence_gaps": []
     }
   },
-  "created_at": "2026-06-01T03:42:21Z"
+  "created_at": "2026-06-02T06:28:22Z"
 }

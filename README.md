@@ -262,6 +262,12 @@ max-pressure task, worker health, degraded worker ID, device-local producer
 event count를 설명합니다. 이 evidence는 `decision_owner=lab`,
 `scheduler_owner=orchestrator`, `not_a_deployment_decision=true` 경계를 확인하는
 supplemental operation context이며 최종 deployment decision이 아닙니다.
+EdgeEnv가 Orchestrator `latency_budget_protection` block을 보존하면 AIGuard는
+`edgeenv_orchestrator_latency_budget_protection` evidence로 protected
+high-priority task, latency-budget risk task, deadline/scheduler/queue reason,
+per-task budget context를 설명합니다. 이 evidence는 operation warning
+context이며 AIGuard가 scheduler나 deployment decision owner가 된다는 뜻이
+아닙니다.
 EdgeEnv가 Orchestrator `runtime_task_event_summary`와
 `tasks_with_deadline_miss` / `tasks_with_fallback` /
 `tasks_with_scheduler_delay` rollup을 보존하면 AIGuard는
