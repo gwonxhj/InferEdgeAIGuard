@@ -465,6 +465,7 @@ AIGuard external and Lab as final decision owner. When EdgeEnv exposes
 `lab_bundle_alignment.expected_report_markers`, AIGuard preserves them as
 `lab_report_contract_context`: `Runtime Intelligence Risk Summary`,
 `Runtime replay duration scope`, `Orchestrator operation feed context`,
+`EdgeEnv fixture matrix coverage`, `Reviewer operation quick scan`,
 `Orchestrator task event rollup`, `Lab EdgeEnv preservation context`,
 `AIGuard task event rollup evidence`, `AIGuard runtime operation anomalies`,
 `AIGuard remote dispatch event summary`, `AIGuard remote event summary consistency`,
