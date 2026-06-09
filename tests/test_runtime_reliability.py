@@ -24,6 +24,8 @@ LAB_EXPECTED_REPORT_MARKERS = [
     "Runtime Intelligence Risk Summary",
     "Runtime replay duration scope",
     "Orchestrator operation feed context",
+    "EdgeEnv fixture matrix coverage",
+    "Reviewer operation quick scan",
     "Orchestrator task event rollup",
     "Lab EdgeEnv preservation context",
     "AIGuard task event rollup evidence",
@@ -3552,6 +3554,12 @@ def test_validate_edgeenv_handoff_guard_evidence_alignment_passes():
     assert alignment["lab_expected_report_marker_count"] == len(
         LAB_EXPECTED_REPORT_MARKERS
     )
+    assert "EdgeEnv fixture matrix coverage" in alignment[
+        "lab_expected_report_markers"
+    ]
+    assert "Reviewer operation quick scan" in alignment[
+        "lab_expected_report_markers"
+    ]
     assert alignment["lab_report_marker_owner"] == "lab"
     assert alignment["report_marker_context_role"] == "lab_report_contract_context"
     assert alignment["aiguard_validates_expected_report_markers"] is False
@@ -3685,6 +3693,9 @@ def test_check_edgeenv_handoff_alignment_cli_exports_gate_summary(tmp_path):
     assert saved["status"] == "passed"
     assert saved["recommendation"] == "alignment_satisfied"
     assert saved["lab_expected_report_markers"] == LAB_EXPECTED_REPORT_MARKERS
+    assert saved["lab_expected_report_marker_count"] == len(
+        LAB_EXPECTED_REPORT_MARKERS
+    )
     assert saved["aiguard_validates_expected_report_markers"] is False
     assert saved["handoff_duration_sources"] == ["entrypoint_requested_frames"]
     assert saved["handoff_duration_scope_labels"] == [
@@ -3693,6 +3704,8 @@ def test_check_edgeenv_handoff_alignment_cli_exports_gate_summary(tmp_path):
         "class=short_96_frame_class, frames=96",
     ]
     assert "handoff_duration_scope_labels" in result.stdout
+    assert "EdgeEnv fixture matrix coverage" in result.stdout
+    assert "Reviewer operation quick scan" in result.stdout
 
 
 def test_runtime_intelligence_docs_describe_lab_report_marker_context():

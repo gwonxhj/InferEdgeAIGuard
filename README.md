@@ -299,7 +299,8 @@ type set으로 충족되는지 확인합니다. 또한
 `lab_bundle_alignment.expected_report_markers`가 있으면 이를
 `lab_report_contract_context`로 alignment summary에 보존합니다:
 `Runtime Intelligence Risk Summary`, `Runtime replay duration scope`,
-`Orchestrator operation feed context`, `Orchestrator task event rollup`,
+`Orchestrator operation feed context`, `EdgeEnv fixture matrix coverage`,
+`Reviewer operation quick scan`, `Orchestrator task event rollup`,
 `Lab EdgeEnv preservation context`, `AIGuard task event rollup evidence`,
 `AIGuard runtime operation anomalies`, `AIGuard remote dispatch event summary`,
 `AIGuard remote event summary consistency`, `Remote fallback starter evidence`,
