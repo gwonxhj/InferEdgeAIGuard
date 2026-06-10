@@ -92,6 +92,7 @@ deployment decision owner.
 | `thermal_resource_pressure` | `max_temperature_c` | `>= 70.0` | `>= 85.0` | Tegrastats indicates thermal/resource pressure during sustained execution |
 | `worker_health_degradation` | `degraded_or_constrained_worker_count` | `>= 1` | `>= 3` degraded workers or any constrained worker | Worker health snapshot explains degraded/constrained runtime loops |
 | `scheduler_delay_pattern` | `scheduler_delay_event_count` | `>= 1` | `>= 3` | Runtime event timeline shows tasks delayed across scheduler cycles |
+| `operation_timeline_summary` | `operation_timeline_review_marker_count` | `>= 1` review marker | n/a | Orchestrator compact operation timeline links queue pressure, latency wait, policy decisions, and affected tasks |
 | `queue_pressure_context` | `queue_pressure_reason_count` | `>= 1` concerning reason | n/a | Queue pressure reason explains whether backlog was near or beyond the overload threshold |
 | `worker_operation_risk_summary` | `worker_operation_risk_count` | `>= 1` | `>= 3` | Worker operation risk summary identifies latency/fallback/drop/queue-pressure risk labels |
 | `device_local_operation_context` | `device_local_event_count` | `>= 1` when device-local tasks exist | n/a | Device-local starter records local producer sources and runtime event coverage |
@@ -109,6 +110,7 @@ deployment decision owner.
 | `edgeenv_orchestrator_producer_lineage` | `device_local_producer_context_count` | warning when preserved Orchestrator context lacks device-local producer metadata | n/a | EdgeEnv preserved device-local Orchestrator producer lineage as traceability evidence |
 | `edgeenv_orchestrator_operation_risk_summary` | `orchestrator_operation_risk_marker_count` | `>= 1` queue/worker/boundary marker | n/a | EdgeEnv preserved Orchestrator operation risk summary as supplemental operation context for Lab review |
 | `edgeenv_orchestrator_latency_budget_protection` | `orchestrator_latency_budget_protection_marker_count` | `>= 1` risk/boundary marker | n/a | EdgeEnv preserved Orchestrator latency-budget protection context for protected high-priority tasks and budget-risk tasks |
+| `edgeenv_orchestrator_operation_timeline_summary` | `orchestrator_operation_timeline_review_marker_count` | `>= 1` review/boundary marker | n/a | EdgeEnv preserved Orchestrator operation timeline summary as compact queue/latency/policy navigation evidence |
 | `runtime_thermal_instability` | `candidate_max_temperature_c` / `candidate_throttling_detected` | temperature `>= 70.0` or throttling `true` | temperature `>= 85.0` | EdgeEnv telemetry or attached Orchestrator feed indicates thermal/throttling pressure |
 | `runtime_queue_overload` | `candidate_queue_depth` | `>= 3.0` | `>= 8.0` | EdgeEnv telemetry or attached Orchestrator feed indicates queue backlog pressure |
 | `edgeenv_comparability_guardrail` | `edgeenv_comparable` | skipped when not comparable or not same-condition | n/a | AIGuard refuses to reinterpret non-comparable EdgeEnv reports as same-condition regression |
@@ -174,6 +176,11 @@ reasons over:
 - `runtime_event_summary.device_local_event_count`
 - `runtime_event_timeline[].scheduler_delay_cycles`
 - `runtime_event_timeline[].queue_wait_ms`
+- `multi_workload_sustained_summary.operation_timeline_summary.review_hints`
+- `multi_workload_sustained_summary.operation_timeline_summary.affected_tasks`
+- `multi_workload_sustained_summary.operation_timeline_summary.latency.max_queue_wait_ms`
+- `multi_workload_sustained_summary.operation_timeline_summary.policy.decision_reasons`
+- `multi_workload_sustained_summary.operation_timeline_summary.queue.pressure_reason`
 
 `worker_health_degradation` is emitted when Orchestrator marks one or more
 workers as degraded or constrained. Degraded workers are warning evidence;
@@ -419,6 +426,12 @@ emits `edgeenv_orchestrator_latency_budget_protection` to explain protected
 high-priority tasks, latency-budget risk tasks, deadline/scheduler/queue
 reasons, and per-task budget context. This remains operation warning context;
 AIGuard does not become the scheduler or final deployment decision owner.
+When EdgeEnv also preserves Orchestrator `operation_timeline_summary`, AIGuard
+emits `edgeenv_orchestrator_operation_timeline_summary` to explain compact
+review hints, queue pressure reason, max queue wait, policy decision reasons,
+and affected deadline/fallback/scheduler-delay tasks. This is deterministic
+navigation evidence for Lab review; it does not replace the full Orchestrator
+timelines or make AIGuard the deployment decision owner.
 When the preserved Orchestrator context includes
 `downstream_guard_alignment.producer_lineage_evidence_type=edgeenv_orchestrator_producer_lineage`,
 AIGuard validates that marker and keeps producer-lineage reasoning separate

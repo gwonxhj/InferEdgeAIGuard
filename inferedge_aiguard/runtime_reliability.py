@@ -38,6 +38,15 @@ EDGEENV_ORCHESTRATOR_LATENCY_BUDGET_PROTECTION_EVIDENCE_TYPE = (
 EDGEENV_ORCHESTRATOR_LATENCY_BUDGET_PROTECTION_SCHEMA_VERSION = (
     "inferedge-orchestrator-latency-budget-protection-v1"
 )
+ORCHESTRATOR_OPERATION_TIMELINE_SUMMARY_EVIDENCE_TYPE = (
+    "operation_timeline_summary"
+)
+EDGEENV_ORCHESTRATOR_OPERATION_TIMELINE_SUMMARY_EVIDENCE_TYPE = (
+    "edgeenv_orchestrator_operation_timeline_summary"
+)
+EDGEENV_ORCHESTRATOR_OPERATION_TIMELINE_SUMMARY_SCHEMA_VERSION = (
+    "inferedge-orchestrator-operation-timeline-summary-v1"
+)
 EDGEENV_ORCHESTRATOR_OPERATION_EVIDENCE_CANDIDATES = (
     "runtime_queue_overload",
     "runtime_thermal_instability",
@@ -380,6 +389,11 @@ def analyze_orchestration_summary(
     )
     if scheduler_delay_evidence is not None:
         evidence.append(scheduler_delay_evidence)
+    operation_timeline_evidence = _operation_timeline_summary_evidence(
+        metrics, totals, policy
+    )
+    if operation_timeline_evidence is not None:
+        evidence.append(operation_timeline_evidence)
     queue_pressure_evidence = _queue_pressure_context_evidence(
         metrics, totals, policy
     )
@@ -552,6 +566,46 @@ def compute_runtime_reliability_metrics(summary: dict[str, Any]) -> dict[str, An
     queue_state_summary = _queue_state_summary(summary)
     runtime_event_summary = _runtime_event_summary(summary)
     runtime_event_timeline = _runtime_event_timeline(summary)
+    operation_timeline_summary = _mapping(
+        multi_workload_summary.get("operation_timeline_summary")
+        or summary.get("operation_timeline_summary")
+    )
+    operation_timeline_queue = _mapping(operation_timeline_summary.get("queue"))
+    operation_timeline_latency = _mapping(operation_timeline_summary.get("latency"))
+    operation_timeline_policy = _mapping(operation_timeline_summary.get("policy"))
+    operation_timeline_affected_tasks = _mapping(
+        operation_timeline_summary.get("affected_tasks")
+    )
+    operation_timeline_review_hints = _string_list(
+        operation_timeline_summary.get("review_hints")
+    )
+    operation_timeline_deadline_missed_tasks = _string_list(
+        operation_timeline_affected_tasks.get("deadline_missed")
+    )
+    operation_timeline_fallback_tasks = _string_list(
+        operation_timeline_affected_tasks.get("fallback")
+    )
+    operation_timeline_scheduler_delay_tasks = _string_list(
+        operation_timeline_affected_tasks.get("scheduler_delay")
+    )
+    operation_timeline_degraded_tasks = _string_list(
+        operation_timeline_affected_tasks.get("degraded")
+    )
+    operation_timeline_constrained_tasks = _string_list(
+        operation_timeline_affected_tasks.get("constrained")
+    )
+    operation_timeline_policy_decision_count = _optional_non_negative_number(
+        operation_timeline_policy.get("decision_count")
+    )
+    operation_timeline_policy_decision_reasons = _string_list(
+        operation_timeline_policy.get("decision_reasons")
+    )
+    operation_timeline_max_queue_wait_ms = _optional_non_negative_number(
+        operation_timeline_latency.get("max_queue_wait_ms")
+    )
+    operation_timeline_max_latency_ms = _optional_non_negative_number(
+        operation_timeline_latency.get("max_latency_ms")
+    )
     totals = _totals(runtime_summary)
     latency_timeline = _list(summary.get("latency_timeline"))
     queue_depth_timeline = _list(summary.get("queue_depth_timeline"))
@@ -571,14 +625,17 @@ def compute_runtime_reliability_metrics(summary: dict[str, Any]) -> dict[str, An
         _non_negative_number(totals.get("deadline_missed_count")),
         _non_negative_number(observed_signals.get("deadline_missed_count")),
         float(timeline_deadline_missed_count),
+        float(len(operation_timeline_deadline_missed_tasks)),
     )
     fallback_count = max(
         _non_negative_number(totals.get("fallback_count")),
         _non_negative_number(observed_signals.get("fallback_count")),
+        float(len(operation_timeline_fallback_tasks)),
     )
     policy_decision_count = max(
         _non_negative_number(totals.get("policy_decision_count")),
         _non_negative_number(observed_signals.get("policy_decision_count")),
+        operation_timeline_policy_decision_count or 0.0,
     )
     overload_event_count = _non_negative_number(totals.get("overload_event_count"))
     if executed_count <= 0 and latency_timeline:
@@ -591,6 +648,10 @@ def compute_runtime_reliability_metrics(summary: dict[str, Any]) -> dict[str, An
     if not policy_decision_reasons:
         policy_decision_reasons = _policy_decision_reasons_from_values(
             observed_signals.get("policy_decision_reasons")
+        )
+    if not policy_decision_reasons:
+        policy_decision_reasons = _policy_decision_reasons_from_values(
+            operation_timeline_policy_decision_reasons
         )
     policy_decision_reason_counts = _count_mapping(
         runtime_event_summary.get("policy_decision_reason_counts")
@@ -634,6 +695,7 @@ def compute_runtime_reliability_metrics(summary: dict[str, Any]) -> dict[str, An
     scheduler_delay_event_count = max(
         _non_negative_number(runtime_event_summary.get("scheduler_delay_event_count")),
         float(_scheduler_delay_event_count(runtime_event_timeline)),
+        float(len(operation_timeline_scheduler_delay_tasks)),
     )
 
     total_task_events = executed_count + dropped_count
@@ -674,6 +736,44 @@ def compute_runtime_reliability_metrics(summary: dict[str, Any]) -> dict[str, An
         ),
         "latest_runtime_event_type": _first_string(
             runtime_event_summary.get("latest_event_type")
+        ),
+        "operation_timeline_summary": dict(operation_timeline_summary),
+        "operation_timeline_summary_present": bool(operation_timeline_summary),
+        "operation_timeline_summary_schema_version": (
+            operation_timeline_summary.get("schema_version")
+        ),
+        "operation_timeline_review_hints": operation_timeline_review_hints,
+        "operation_timeline_queue_pressure_state": (
+            operation_timeline_queue.get("pressure_state")
+        ),
+        "operation_timeline_queue_pressure_reason": (
+            operation_timeline_queue.get("pressure_reason")
+        ),
+        "operation_timeline_max_pressure_task": (
+            operation_timeline_queue.get("max_pressure_task")
+        ),
+        "operation_timeline_max_queue_wait_ms": operation_timeline_max_queue_wait_ms,
+        "operation_timeline_max_latency_ms": operation_timeline_max_latency_ms,
+        "operation_timeline_policy_decision_count": (
+            operation_timeline_policy_decision_count
+        ),
+        "operation_timeline_policy_decision_reasons": (
+            operation_timeline_policy_decision_reasons
+        ),
+        "operation_timeline_affected_deadline_missed_tasks": (
+            operation_timeline_deadline_missed_tasks
+        ),
+        "operation_timeline_affected_fallback_tasks": (
+            operation_timeline_fallback_tasks
+        ),
+        "operation_timeline_affected_scheduler_delay_tasks": (
+            operation_timeline_scheduler_delay_tasks
+        ),
+        "operation_timeline_affected_degraded_tasks": (
+            operation_timeline_degraded_tasks
+        ),
+        "operation_timeline_affected_constrained_tasks": (
+            operation_timeline_constrained_tasks
         ),
         "runtime_event_producer_sources": _string_list(
             runtime_event_summary.get("producer_sources")
@@ -822,6 +922,22 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
     candidate_latency_budget_protection = _mapping(
         candidate_orchestrator_operation.get("latency_budget_protection")
         or candidate_orchestrator_context.get("latency_budget_protection")
+    )
+    candidate_operation_timeline_summary = _mapping(
+        candidate_orchestrator_operation.get("operation_timeline_summary")
+        or candidate_orchestrator_context.get("operation_timeline_summary")
+    )
+    candidate_operation_timeline_queue = _mapping(
+        candidate_operation_timeline_summary.get("queue")
+    )
+    candidate_operation_timeline_latency = _mapping(
+        candidate_operation_timeline_summary.get("latency")
+    )
+    candidate_operation_timeline_policy = _mapping(
+        candidate_operation_timeline_summary.get("policy")
+    )
+    candidate_operation_timeline_affected_tasks = _mapping(
+        candidate_operation_timeline_summary.get("affected_tasks")
     )
     candidate_runtime_task_event_summary = _mapping(
         candidate_orchestrator_operation.get("runtime_task_event_summary")
@@ -1348,6 +1464,70 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
                 candidate_latency_budget_protection.get("per_task_budget_context")
                 or candidate_latency_budget_protection.get("task_budget_context")
                 or candidate_latency_budget_protection.get("budget_context_by_task")
+            )
+        ),
+        "orchestrator_operation_timeline_summary": dict(
+            candidate_operation_timeline_summary
+        ),
+        "orchestrator_operation_timeline_summary_present": bool(
+            candidate_operation_timeline_summary
+        ),
+        "orchestrator_operation_timeline_summary_schema_version": (
+            candidate_operation_timeline_summary.get("schema_version")
+        ),
+        "orchestrator_operation_timeline_review_hints": _string_list(
+            candidate_operation_timeline_summary.get("review_hints")
+        ),
+        "orchestrator_operation_timeline_queue_pressure_state": (
+            candidate_operation_timeline_queue.get("pressure_state")
+        ),
+        "orchestrator_operation_timeline_queue_pressure_reason": (
+            candidate_operation_timeline_queue.get("pressure_reason")
+        ),
+        "orchestrator_operation_timeline_max_pressure_task": (
+            candidate_operation_timeline_queue.get("max_pressure_task")
+        ),
+        "orchestrator_operation_timeline_max_queue_wait_ms": (
+            _optional_non_negative_number(
+                candidate_operation_timeline_latency.get("max_queue_wait_ms")
+            )
+        ),
+        "orchestrator_operation_timeline_max_latency_ms": (
+            _optional_non_negative_number(
+                candidate_operation_timeline_latency.get("max_latency_ms")
+            )
+        ),
+        "orchestrator_operation_timeline_policy_decision_count": (
+            _optional_non_negative_number(
+                candidate_operation_timeline_policy.get("decision_count")
+            )
+        ),
+        "orchestrator_operation_timeline_policy_decision_reasons": (
+            _string_list(candidate_operation_timeline_policy.get("decision_reasons"))
+        ),
+        "orchestrator_operation_timeline_affected_deadline_missed_tasks": (
+            _string_list(
+                candidate_operation_timeline_affected_tasks.get(
+                    "deadline_missed"
+                )
+            )
+        ),
+        "orchestrator_operation_timeline_affected_fallback_tasks": (
+            _string_list(candidate_operation_timeline_affected_tasks.get("fallback"))
+        ),
+        "orchestrator_operation_timeline_affected_scheduler_delay_tasks": (
+            _string_list(
+                candidate_operation_timeline_affected_tasks.get(
+                    "scheduler_delay"
+                )
+            )
+        ),
+        "orchestrator_operation_timeline_affected_degraded_tasks": (
+            _string_list(candidate_operation_timeline_affected_tasks.get("degraded"))
+        ),
+        "orchestrator_operation_timeline_affected_constrained_tasks": (
+            _string_list(
+                candidate_operation_timeline_affected_tasks.get("constrained")
             )
         ),
         "orchestrator_runtime_task_event_summary": dict(
@@ -2184,6 +2364,116 @@ def _scheduler_delay_pattern_evidence(
     )
 
 
+def _operation_timeline_summary_evidence(
+    metrics: dict[str, Any],
+    totals: dict[str, Any],
+    thresholds: dict[str, float],
+) -> dict[str, Any] | None:
+    if not metrics.get("operation_timeline_summary_present"):
+        return None
+
+    review_hints = _string_list(metrics.get("operation_timeline_review_hints"))
+    actionable_hints = [
+        hint for hint in review_hints if hint != "operation_timeline_nominal"
+    ]
+    affected_tasks = _operation_timeline_affected_tasks(metrics)
+    queue_pressure_reason = _first_string(
+        metrics.get("operation_timeline_queue_pressure_reason")
+    )
+    policy_reasons = _string_list(
+        metrics.get("operation_timeline_policy_decision_reasons")
+    )
+
+    review_markers = list(actionable_hints)
+    if affected_tasks:
+        review_markers.append("affected_task_context")
+    if (
+        _queue_pressure_reason_is_concerning(queue_pressure_reason)
+        and "review_queue_pressure" not in review_markers
+    ):
+        review_markers.append("queue_pressure_reason")
+    if any("backlog" in reason for reason in policy_reasons):
+        review_markers.append("backlog_policy_reason")
+
+    review_markers = _unique_string_values(review_markers)
+    observed_value = len(review_markers)
+    status = "warning" if observed_value else "passed"
+    severity = "medium" if status != "passed" else "low"
+    suspected_causes: list[str] = []
+    if (
+        "review_scheduler_delay" in review_markers
+        or metrics.get("operation_timeline_affected_scheduler_delay_tasks")
+    ):
+        suspected_causes.append("scheduler_delay_context")
+    if (
+        "review_deadline_miss" in review_markers
+        or metrics.get("operation_timeline_affected_deadline_missed_tasks")
+    ):
+        suspected_causes.append("deadline_miss_context")
+    if (
+        "review_fallback_use" in review_markers
+        or metrics.get("operation_timeline_affected_fallback_tasks")
+    ):
+        suspected_causes.append("fallback_policy_context")
+    if (
+        "review_queue_pressure" in review_markers
+        or "queue_pressure_reason" in review_markers
+        or "backlog_policy_reason" in review_markers
+    ):
+        suspected_causes.append("queue_pressure_context")
+    if "review_load_shedding" in review_markers:
+        suspected_causes.append("load_shedding_context")
+
+    return build_evidence_item(
+        evidence_type=ORCHESTRATOR_OPERATION_TIMELINE_SUMMARY_EVIDENCE_TYPE,
+        metric_name="operation_timeline_review_marker_count",
+        observed_value=observed_value,
+        baseline_value=0,
+        threshold=1,
+        delta=None,
+        delta_pct=None,
+        increase_factor=None,
+        severity=severity,
+        status=status,
+        explanation=(
+            "Orchestrator operation_timeline_summary contains "
+            f"{observed_value} deterministic review marker(s)."
+        ),
+        why_it_matters=(
+            "The compact operation timeline links queue pressure, latency wait, "
+            "policy decisions, and affected tasks so Lab can navigate runtime "
+            "operation risk without treating AIGuard as the final decision owner."
+        ),
+        suspected_causes=suspected_causes,
+        recommendation=(
+            "Review operation_timeline_summary alongside queue_depth_timeline, "
+            "latency_timeline, runtime_event_summary, and policy decisions before "
+            "treating the operation profile as stable."
+            if status != "passed"
+            else "Operation timeline summary is present without deterministic "
+            "review markers."
+        ),
+        raw_context={
+            "totals": totals,
+            "operation_timeline_summary": metrics.get("operation_timeline_summary"),
+            "review_hints": review_hints,
+            "affected_tasks": affected_tasks,
+            "queue_pressure_state": metrics.get(
+                "operation_timeline_queue_pressure_state"
+            ),
+            "queue_pressure_reason": queue_pressure_reason,
+            "max_pressure_task": metrics.get("operation_timeline_max_pressure_task"),
+            "max_queue_wait_ms": metrics.get("operation_timeline_max_queue_wait_ms"),
+            "max_latency_ms": metrics.get("operation_timeline_max_latency_ms"),
+            "policy_decision_count": metrics.get(
+                "operation_timeline_policy_decision_count"
+            ),
+            "policy_decision_reasons": policy_reasons,
+            "review_markers": review_markers,
+        },
+    )
+
+
 def _queue_pressure_context_evidence(
     metrics: dict[str, Any],
     totals: dict[str, Any],
@@ -2505,6 +2795,11 @@ def _edgeenv_regression_evidence(
     )
     if latency_budget_protection_evidence is not None:
         evidence.append(latency_budget_protection_evidence)
+    operation_timeline_evidence = (
+        _edgeenv_orchestrator_operation_timeline_summary_evidence(metrics)
+    )
+    if operation_timeline_evidence is not None:
+        evidence.append(operation_timeline_evidence)
     seed_run_config_evidence = _edgeenv_history_seed_run_config_evidence(metrics)
     if seed_run_config_evidence is not None:
         evidence.append(seed_run_config_evidence)
@@ -3411,6 +3706,144 @@ def _edgeenv_orchestrator_latency_budget_protection_evidence(
                 "decision_owner": "lab",
                 "scheduler_owner": "orchestrator",
                 "regression_owner": "edgeenv",
+                "not_a_deployment_decision": True,
+            },
+        },
+    )
+
+
+def _edgeenv_orchestrator_operation_timeline_summary_evidence(
+    metrics: dict[str, Any],
+) -> dict[str, Any] | None:
+    if not metrics.get("runtime_telemetry_context_present"):
+        return None
+    if not metrics.get("orchestrator_operation_timeline_summary_present"):
+        return None
+
+    review_hints = _string_list(
+        metrics.get("orchestrator_operation_timeline_review_hints")
+    )
+    actionable_hints = [
+        hint for hint in review_hints if hint != "operation_timeline_nominal"
+    ]
+    affected_tasks = _edgeenv_operation_timeline_affected_tasks(metrics)
+    queue_pressure_reason = _first_string(
+        metrics.get("orchestrator_operation_timeline_queue_pressure_reason")
+    )
+    policy_reasons = _string_list(
+        metrics.get("orchestrator_operation_timeline_policy_decision_reasons")
+    )
+    boundary_ok = (
+        metrics.get("orchestrator_operation_timeline_summary_schema_version")
+        == EDGEENV_ORCHESTRATOR_OPERATION_TIMELINE_SUMMARY_SCHEMA_VERSION
+        and metrics.get(
+            "orchestrator_guard_alignment_orchestrator_is_final_decision_owner"
+        )
+        is False
+        and metrics.get("orchestrator_guard_alignment_lab_is_final_decision_owner")
+        is True
+    )
+
+    review_markers = list(actionable_hints)
+    if affected_tasks:
+        review_markers.append("affected_task_context")
+    if (
+        _queue_pressure_reason_is_concerning(queue_pressure_reason)
+        and "review_queue_pressure" not in review_markers
+    ):
+        review_markers.append("queue_pressure_reason")
+    if any("backlog" in reason for reason in policy_reasons):
+        review_markers.append("backlog_policy_reason")
+    if not boundary_ok:
+        review_markers.append("operation_boundary_marker_gap")
+    review_markers = _unique_string_values(review_markers)
+
+    observed_value = len(review_markers)
+    status = "warning" if observed_value else "passed"
+    severity = "medium" if status != "passed" else "low"
+    suspected_causes: list[str] = []
+    if (
+        "review_scheduler_delay" in review_markers
+        or metrics.get("orchestrator_operation_timeline_affected_scheduler_delay_tasks")
+    ):
+        suspected_causes.append("scheduler_delay_context")
+    if (
+        "review_deadline_miss" in review_markers
+        or metrics.get("orchestrator_operation_timeline_affected_deadline_missed_tasks")
+    ):
+        suspected_causes.append("deadline_miss_context")
+    if (
+        "review_fallback_use" in review_markers
+        or metrics.get("orchestrator_operation_timeline_affected_fallback_tasks")
+    ):
+        suspected_causes.append("fallback_policy_context")
+    if (
+        "review_queue_pressure" in review_markers
+        or "queue_pressure_reason" in review_markers
+        or "backlog_policy_reason" in review_markers
+    ):
+        suspected_causes.append("queue_pressure_context")
+    if "review_load_shedding" in review_markers:
+        suspected_causes.append("load_shedding_context")
+    if "operation_boundary_marker_gap" in review_markers:
+        suspected_causes.append("operation_timeline_boundary_marker_gap")
+
+    return build_evidence_item(
+        evidence_type=EDGEENV_ORCHESTRATOR_OPERATION_TIMELINE_SUMMARY_EVIDENCE_TYPE,
+        metric_name="orchestrator_operation_timeline_review_marker_count",
+        observed_value=observed_value,
+        baseline_value=0,
+        threshold=1,
+        delta=None,
+        delta_pct=None,
+        increase_factor=None,
+        severity=severity,
+        status=status,
+        explanation=(
+            "EdgeEnv preserved Orchestrator operation_timeline_summary with "
+            f"{observed_value} deterministic review marker(s)."
+        ),
+        why_it_matters=(
+            "The preserved operation timeline compactly links queue pressure, "
+            "latency wait, policy decisions, and affected tasks for Lab review "
+            "without making AIGuard or Orchestrator the final deployment owner."
+        ),
+        suspected_causes=suspected_causes,
+        recommendation=(
+            "Review the preserved operation_timeline_summary in Lab alongside "
+            "queue, latency, runtime event, and policy evidence; Lab remains the "
+            "final deployment decision owner."
+            if status != "passed"
+            else "Preserved operation timeline summary is present without "
+            "deterministic review markers."
+        ),
+        raw_context={
+            "edgeenv_regression": metrics,
+            "operation_timeline_summary": {
+                "summary": metrics.get("orchestrator_operation_timeline_summary"),
+                "boundary_markers_valid": boundary_ok,
+                "review_hints": review_hints,
+                "affected_tasks": affected_tasks,
+                "queue_pressure_state": metrics.get(
+                    "orchestrator_operation_timeline_queue_pressure_state"
+                ),
+                "queue_pressure_reason": queue_pressure_reason,
+                "max_pressure_task": metrics.get(
+                    "orchestrator_operation_timeline_max_pressure_task"
+                ),
+                "max_queue_wait_ms": metrics.get(
+                    "orchestrator_operation_timeline_max_queue_wait_ms"
+                ),
+                "max_latency_ms": metrics.get(
+                    "orchestrator_operation_timeline_max_latency_ms"
+                ),
+                "policy_decision_count": metrics.get(
+                    "orchestrator_operation_timeline_policy_decision_count"
+                ),
+                "policy_decision_reasons": policy_reasons,
+                "review_markers": review_markers,
+                "decision_owner": "lab",
+                "scheduler_owner": "orchestrator",
                 "not_a_deployment_decision": True,
             },
         },
@@ -4642,6 +5075,36 @@ def _task_event_rollup_reason_counts(
                     _optional_number(count) or 0.0
                 )
     return {reason: count for reason, count in reason_counts.items() if count > 0}
+
+
+def _operation_timeline_affected_tasks(metrics: dict[str, Any]) -> list[str]:
+    tasks: list[str] = []
+    for key in (
+        "operation_timeline_affected_deadline_missed_tasks",
+        "operation_timeline_affected_fallback_tasks",
+        "operation_timeline_affected_scheduler_delay_tasks",
+        "operation_timeline_affected_degraded_tasks",
+        "operation_timeline_affected_constrained_tasks",
+    ):
+        for task in _string_list(metrics.get(key)):
+            if task not in tasks:
+                tasks.append(task)
+    return tasks
+
+
+def _edgeenv_operation_timeline_affected_tasks(metrics: dict[str, Any]) -> list[str]:
+    tasks: list[str] = []
+    for key in (
+        "orchestrator_operation_timeline_affected_deadline_missed_tasks",
+        "orchestrator_operation_timeline_affected_fallback_tasks",
+        "orchestrator_operation_timeline_affected_scheduler_delay_tasks",
+        "orchestrator_operation_timeline_affected_degraded_tasks",
+        "orchestrator_operation_timeline_affected_constrained_tasks",
+    ):
+        for task in _string_list(metrics.get(key)):
+            if task not in tasks:
+                tasks.append(task)
+    return tasks
 
 
 def _history_seed_run_config_shape_label(run_config: dict[str, Any]) -> str:

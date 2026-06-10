@@ -188,6 +188,74 @@
                   "max_scheduler_delay_cycles": 3
                 }
               }
+            },
+            "operation_timeline_summary": {
+              "schema_version": "inferedge-orchestrator-operation-timeline-summary-v1",
+              "source": "queue_depth_timeline+latency_timeline+policy_decision_log+runtime_event_summary",
+              "sample_counts": {
+                "queue_depth": 2,
+                "latency": 2,
+                "policy_decision": 2,
+                "runtime_event": 15
+              },
+              "queue": {
+                "max_total_queue_depth": 7,
+                "average_total_queue_depth": 5.5,
+                "overload_backlog_threshold": 3,
+                "pressure_state": "overloaded",
+                "pressure_reason": "queue_backlog_threshold_exceeded",
+                "max_pressure_task": "vision_agent",
+                "max_queue_depth_by_task": {
+                  "vision_agent": 5,
+                  "voice_command_agent": 2
+                }
+              },
+              "latency": {
+                "sample_count": 2,
+                "max_latency_ms": 72.0,
+                "max_queue_wait_ms": 15.0,
+                "max_queue_wait_ms_by_task": {
+                  "vision_agent": 15.0
+                },
+                "tasks_with_deadline_miss": [
+                  "vision_agent"
+                ]
+              },
+              "policy": {
+                "decision_count": 2,
+                "decision_reasons": [
+                  "queue_backlog_threshold_exceeded"
+                ],
+                "first_decision": {
+                  "task": "vision_agent",
+                  "decision_reason": "queue_backlog_threshold_exceeded"
+                },
+                "latest_decision": {
+                  "task": "voice_command_agent",
+                  "decision_reason": "queue_backlog_threshold_exceeded"
+                }
+              },
+              "affected_tasks": {
+                "deadline_missed": [
+                  "vision_agent"
+                ],
+                "fallback": [
+                  "voice_command_agent"
+                ],
+                "scheduler_delay": [
+                  "vision_agent"
+                ],
+                "degraded": [
+                  "vision_agent"
+                ],
+                "constrained": []
+              },
+              "review_hints": [
+                "review_queue_pressure",
+                "review_scheduler_delay",
+                "review_deadline_miss",
+                "review_fallback_use"
+              ]
             }
           },
           "resource": {

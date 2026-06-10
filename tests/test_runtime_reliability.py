@@ -225,6 +225,67 @@ def multi_workload_sustained_summary() -> dict:
                 "voice_command_burst",
             ],
         },
+        "operation_timeline_summary": {
+            "schema_version": (
+                "inferedge-orchestrator-operation-timeline-summary-v1"
+            ),
+            "source": (
+                "queue_depth_timeline+latency_timeline+policy_decision_log+"
+                "runtime_event_summary"
+            ),
+            "sample_counts": {
+                "queue_depth": 1,
+                "latency": 1,
+                "policy_decision": 1,
+                "runtime_event": 2,
+            },
+            "queue": {
+                "max_total_queue_depth": 11,
+                "average_total_queue_depth": 7.5,
+                "overload_backlog_threshold": 3,
+                "pressure_state": "overloaded",
+                "pressure_reason": "queue_backlog_threshold_exceeded",
+                "max_pressure_task": "vision_agent",
+                "max_queue_depth_by_task": {
+                    "vision_agent": 8,
+                    "voice_command_agent": 3,
+                },
+            },
+            "latency": {
+                "sample_count": 1,
+                "max_latency_ms": 180.0,
+                "max_queue_wait_ms": 32.5,
+                "max_queue_wait_ms_by_task": {
+                    "vision_agent": 32.5,
+                },
+                "tasks_with_deadline_miss": ["vision_agent"],
+            },
+            "policy": {
+                "decision_count": 1,
+                "decision_reasons": ["queue_backlog_threshold_exceeded"],
+                "first_decision": {
+                    "task": "voice_command_agent",
+                    "decision_reason": "queue_backlog_threshold_exceeded",
+                },
+                "latest_decision": {
+                    "task": "voice_command_agent",
+                    "decision_reason": "queue_backlog_threshold_exceeded",
+                },
+            },
+            "affected_tasks": {
+                "deadline_missed": ["vision_agent"],
+                "fallback": ["voice_command_agent"],
+                "scheduler_delay": ["voice_command_agent"],
+                "degraded": ["vision_agent", "voice_command_agent"],
+                "constrained": [],
+            },
+            "review_hints": [
+                "review_queue_pressure",
+                "review_scheduler_delay",
+                "review_deadline_miss",
+                "review_fallback_use",
+            ],
+        },
     }
     summary["tegrastats_timeline"] = {
         "source": "sample",
@@ -910,6 +971,73 @@ def edgeenv_regression_report_with_orchestrator_feed_context() -> dict:
                         },
                     },
                 },
+                "operation_timeline_summary": {
+                    "schema_version": (
+                        "inferedge-orchestrator-operation-timeline-summary-v1"
+                    ),
+                    "source": (
+                        "queue_depth_timeline+latency_timeline+"
+                        "policy_decision_log+runtime_event_summary"
+                    ),
+                    "sample_counts": {
+                        "queue_depth": 2,
+                        "latency": 2,
+                        "policy_decision": 2,
+                        "runtime_event": 15,
+                    },
+                    "queue": {
+                        "max_total_queue_depth": 7,
+                        "average_total_queue_depth": 5.5,
+                        "overload_backlog_threshold": 3,
+                        "pressure_state": "overloaded",
+                        "pressure_reason": "queue_backlog_threshold_exceeded",
+                        "max_pressure_task": "vision_agent",
+                        "max_queue_depth_by_task": {
+                            "vision_agent": 5,
+                            "voice_command_agent": 2,
+                        },
+                    },
+                    "latency": {
+                        "sample_count": 2,
+                        "max_latency_ms": 72.0,
+                        "max_queue_wait_ms": 15.0,
+                        "max_queue_wait_ms_by_task": {
+                            "vision_agent": 15.0,
+                        },
+                        "tasks_with_deadline_miss": ["vision_agent"],
+                    },
+                    "policy": {
+                        "decision_count": 2,
+                        "decision_reasons": [
+                            "queue_backlog_threshold_exceeded"
+                        ],
+                        "first_decision": {
+                            "task": "vision_agent",
+                            "decision_reason": (
+                                "queue_backlog_threshold_exceeded"
+                            ),
+                        },
+                        "latest_decision": {
+                            "task": "voice_command_agent",
+                            "decision_reason": (
+                                "queue_backlog_threshold_exceeded"
+                            ),
+                        },
+                    },
+                    "affected_tasks": {
+                        "deadline_missed": ["vision_agent"],
+                        "fallback": ["voice_command_agent"],
+                        "scheduler_delay": ["vision_agent"],
+                        "degraded": ["vision_agent"],
+                        "constrained": [],
+                    },
+                    "review_hints": [
+                        "review_queue_pressure",
+                        "review_scheduler_delay",
+                        "review_deadline_miss",
+                        "review_fallback_use",
+                    ],
+                },
             },
             "resource": {
                 "source": "tegrastats_timeline",
@@ -1417,6 +1545,24 @@ def test_multi_workload_sustained_summary_adds_profile_and_thermal_metrics():
         "vision_frame_loop",
         "voice_command_burst",
     ]
+    assert metrics["operation_timeline_summary_present"] is True
+    assert metrics["operation_timeline_summary_schema_version"] == (
+        "inferedge-orchestrator-operation-timeline-summary-v1"
+    )
+    assert metrics["operation_timeline_review_hints"] == [
+        "review_queue_pressure",
+        "review_scheduler_delay",
+        "review_deadline_miss",
+        "review_fallback_use",
+    ]
+    assert metrics["operation_timeline_max_queue_wait_ms"] == 32.5
+    assert metrics["operation_timeline_policy_decision_count"] == 1.0
+    assert metrics["operation_timeline_policy_decision_reasons"] == [
+        "queue_backlog_threshold_exceeded"
+    ]
+    assert metrics["operation_timeline_affected_scheduler_delay_tasks"] == [
+        "voice_command_agent"
+    ]
     assert metrics["tegrastats_sample_count"] == 2
     assert metrics["max_temperature_c"] == 76.2
     assert metrics["max_gpu_percent"] == 91
@@ -1776,6 +1922,33 @@ def test_compute_edgeenv_regression_metrics_extracts_orchestrator_feed_context()
             "orchestrator_latency_budget_protection_per_task_budget_context"
         ]
     ) == {"safety_monitor_agent", "vision_agent"}
+    assert metrics["orchestrator_operation_timeline_summary_present"] is True
+    assert metrics["orchestrator_operation_timeline_summary_schema_version"] == (
+        "inferedge-orchestrator-operation-timeline-summary-v1"
+    )
+    assert metrics["orchestrator_operation_timeline_review_hints"] == [
+        "review_queue_pressure",
+        "review_scheduler_delay",
+        "review_deadline_miss",
+        "review_fallback_use",
+    ]
+    assert metrics["orchestrator_operation_timeline_queue_pressure_state"] == (
+        "overloaded"
+    )
+    assert metrics["orchestrator_operation_timeline_queue_pressure_reason"] == (
+        "queue_backlog_threshold_exceeded"
+    )
+    assert metrics["orchestrator_operation_timeline_max_queue_wait_ms"] == 15.0
+    assert metrics["orchestrator_operation_timeline_policy_decision_count"] == 2.0
+    assert metrics["orchestrator_operation_timeline_policy_decision_reasons"] == [
+        "queue_backlog_threshold_exceeded"
+    ]
+    assert metrics[
+        "orchestrator_operation_timeline_affected_scheduler_delay_tasks"
+    ] == ["vision_agent"]
+    assert metrics["orchestrator_operation_timeline_affected_fallback_tasks"] == [
+        "voice_command_agent"
+    ]
     assert metrics["orchestrator_runtime_task_event_summary_present"] is True
     assert set(metrics["orchestrator_runtime_task_event_summary"]) == {
         "vision_agent",
@@ -2072,6 +2245,7 @@ def test_analyze_edgeenv_regression_report_warns_on_orchestrator_feed_context():
     assert "edgeenv_orchestrator_operation_risk_summary" in evidence_types
     assert "edgeenv_orchestrator_task_event_rollup" in evidence_types
     assert "edgeenv_orchestrator_latency_budget_protection" in evidence_types
+    assert "edgeenv_orchestrator_operation_timeline_summary" in evidence_types
     assert "runtime_thermal_instability" in evidence_types
     assert "runtime_queue_overload" in evidence_types
     queue_evidence = next(
@@ -2244,6 +2418,34 @@ def test_analyze_edgeenv_regression_report_warns_on_orchestrator_feed_context():
         "scheduler_delay_observed",
         "queue_backlog_threshold_exceeded",
     ]
+    operation_timeline = next(
+        item
+        for item in report["evidence"]
+        if item["type"] == "edgeenv_orchestrator_operation_timeline_summary"
+    )
+    assert operation_timeline["status"] == "warning"
+    assert operation_timeline["observed_value"] == 6
+    assert operation_timeline["threshold"] == 1
+    assert "scheduler_delay_context" in operation_timeline["suspected_causes"]
+    assert "deadline_miss_context" in operation_timeline["suspected_causes"]
+    assert "fallback_policy_context" in operation_timeline["suspected_causes"]
+    assert "queue_pressure_context" in operation_timeline["suspected_causes"]
+    timeline_context = operation_timeline["raw_context"][
+        "operation_timeline_summary"
+    ]
+    assert timeline_context["boundary_markers_valid"] is True
+    assert timeline_context["affected_tasks"] == [
+        "vision_agent",
+        "voice_command_agent",
+    ]
+    assert timeline_context["max_queue_wait_ms"] == 15.0
+    assert timeline_context["policy_decision_count"] == 2.0
+    assert timeline_context["policy_decision_reasons"] == [
+        "queue_backlog_threshold_exceeded"
+    ]
+    assert timeline_context["decision_owner"] == "lab"
+    assert timeline_context["scheduler_owner"] == "orchestrator"
+    assert timeline_context["not_a_deployment_decision"] is True
     assert latency_budget_context["per_task_budget_context"]["vision_agent"][
         "max_scheduler_delay_cycles"
     ] == 3
@@ -2561,6 +2763,7 @@ def test_analyze_multi_workload_sustained_summary_adds_runtime_evidence():
     evidence_types = {item["type"] for item in report["evidence"]}
     assert "profiled_workload_pressure" in evidence_types
     assert "thermal_resource_pressure" in evidence_types
+    assert "operation_timeline_summary" in evidence_types
     profile_evidence = next(
         item for item in report["evidence"] if item["type"] == "profiled_workload_pressure"
     )
@@ -2587,6 +2790,25 @@ def test_analyze_multi_workload_sustained_summary_adds_runtime_evidence():
         report["candidate_summary"]["runtime_reliability"]["max_temperature_c"]
         == 76.2
     )
+    timeline_evidence = next(
+        item
+        for item in report["evidence"]
+        if item["type"] == "operation_timeline_summary"
+    )
+    assert timeline_evidence["status"] == "warning"
+    assert timeline_evidence["observed_value"] == 6
+    assert "scheduler_delay_context" in timeline_evidence["suspected_causes"]
+    assert "deadline_miss_context" in timeline_evidence["suspected_causes"]
+    assert "fallback_policy_context" in timeline_evidence["suspected_causes"]
+    assert "queue_pressure_context" in timeline_evidence["suspected_causes"]
+    assert timeline_evidence["raw_context"]["affected_tasks"] == [
+        "vision_agent",
+        "voice_command_agent",
+    ]
+    assert timeline_evidence["raw_context"]["max_queue_wait_ms"] == 32.5
+    assert timeline_evidence["raw_context"]["policy_decision_reasons"] == [
+        "queue_backlog_threshold_exceeded"
+    ]
 
 
 def test_analyze_operation_telemetry_adds_worker_and_scheduler_warnings():
@@ -3401,6 +3623,7 @@ def test_runtime_intelligence_example_exports_lab_ready_guard_analysis(tmp_path)
         "edgeenv_orchestrator_operation_risk_summary",
         "edgeenv_orchestrator_task_event_rollup",
         "edgeenv_orchestrator_latency_budget_protection",
+        "edgeenv_orchestrator_operation_timeline_summary",
         "runtime_history_seed_run_config_traceability",
         "runtime_thermal_instability",
         "runtime_queue_overload",
@@ -3526,6 +3749,19 @@ def test_runtime_intelligence_example_exports_lab_ready_guard_analysis(tmp_path)
     assert latency_budget_protection["raw_context"]["latency_budget_protection"][
         "risk_tasks"
     ] == ["vision_agent"]
+    operation_timeline = next(
+        item
+        for item in saved["evidence"]
+        if item["type"] == "edgeenv_orchestrator_operation_timeline_summary"
+    )
+    assert operation_timeline["status"] == "warning"
+    assert operation_timeline["observed_value"] == 6
+    assert operation_timeline["raw_context"]["operation_timeline_summary"][
+        "affected_tasks"
+    ] == ["vision_agent", "voice_command_agent"]
+    assert operation_timeline["raw_context"]["operation_timeline_summary"][
+        "max_queue_wait_ms"
+    ] == 15.0
     assert forbidden_decision_keys.isdisjoint(saved)
     assert forbidden_decision_keys.isdisjoint(expected)
 
