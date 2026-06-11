@@ -85,6 +85,7 @@ deployment decision owner.
 |---|---|---:|---:|---|
 | `repeated_deadline_miss` | `deadline_miss_rate` | `>= 0.05` | `>= 0.20` | Agent tasks miss latency budgets under load |
 | `excessive_drop_rate` | `drop_rate` | `>= 0.20` | `>= 0.50` | Work is being dropped to protect the system |
+| `stale_frame_risk` | `stale_drop_rate` | `>= 0.20` or any stale drop | `>= 0.50` | Orchestrator reported stale/backlog drops from sustained queue pressure |
 | `fallback_overuse` | `fallback_rate` | `>= 0.20` | `>= 0.50` | Fallback path is used too often |
 | `queue_backlog_risk` | `queue_backlog_policy_decision_count` | `>= 1` | n/a | Scheduler had to intervene because backlog grew |
 | `sustained_overload_risk` | `max_total_queue_depth` | `>= 3` | `>= 8` | Sustained queue depth indicates multi-agent overload pressure |
@@ -112,6 +113,7 @@ deployment decision owner.
 | `edgeenv_orchestrator_operation_risk_rollup` | `orchestrator_operation_risk_rollup_marker_count` | `>= 1` risk/queue/task/boundary marker | n/a | EdgeEnv preserved Orchestrator operation risk rollup as compact deterministic operation warning context |
 | `edgeenv_orchestrator_latency_budget_protection` | `orchestrator_latency_budget_protection_marker_count` | `>= 1` risk/boundary marker | n/a | EdgeEnv preserved Orchestrator latency-budget protection context for protected high-priority tasks and budget-risk tasks |
 | `edgeenv_orchestrator_operation_timeline_summary` | `orchestrator_operation_timeline_review_marker_count` | `>= 1` review/boundary marker | n/a | EdgeEnv preserved Orchestrator operation timeline summary as compact queue/latency/policy navigation evidence |
+| `edgeenv_orchestrator_stale_drop_summary` | `orchestrator_stale_drop_rate` | `>= 0.20` or any stale drop | `>= 0.50` | EdgeEnv preserved Orchestrator stale-drop summary as affected-agent stale/backlog context |
 | `runtime_thermal_instability` | `candidate_max_temperature_c` / `candidate_throttling_detected` | temperature `>= 70.0` or throttling `true` | temperature `>= 85.0` | EdgeEnv telemetry or attached Orchestrator feed indicates thermal/throttling pressure |
 | `runtime_queue_overload` | `candidate_queue_depth` | `>= 3.0` | `>= 8.0` | EdgeEnv telemetry or attached Orchestrator feed indicates queue backlog pressure |
 | `edgeenv_comparability_guardrail` | `edgeenv_comparable` | skipped when not comparable or not same-condition | n/a | AIGuard refuses to reinterpret non-comparable EdgeEnv reports as same-condition regression |
@@ -179,6 +181,7 @@ reasons over:
 - `runtime_event_timeline[].queue_wait_ms`
 - `multi_workload_sustained_summary.operation_timeline_summary.review_hints`
 - `multi_workload_sustained_summary.operation_timeline_summary.affected_tasks`
+- `multi_workload_sustained_summary.operation_timeline_summary.stale_drop`
 - `multi_workload_sustained_summary.operation_timeline_summary.latency.max_queue_wait_ms`
 - `multi_workload_sustained_summary.operation_timeline_summary.policy.decision_reasons`
 - `multi_workload_sustained_summary.operation_timeline_summary.queue.pressure_reason`
@@ -198,6 +201,12 @@ fallback, or another scheduler reason.
 queue pressure reason, such as threshold exceeded or elevated pressure. AIGuard
 preserves the pressure reason, max pressure task, policy reason counts, and drop
 reason counts as review evidence without inferring a root cause.
+
+`stale_frame_risk` is emitted when Orchestrator reports stale/backlog drops in
+`operation_timeline_summary.stale_drop`. AIGuard preserves stale drop rate,
+reason counts, reason classes, latest stale drop event, and
+`tasks_with_stale_drop` as deterministic scheduler evidence. This explains
+affected agents under sustained overload; it is not a deployment decision.
 
 `worker_operation_risk_summary` is emitted when Orchestrator records non-healthy
 operation risk labels such as `latency_or_fallback_risk` or
@@ -446,6 +455,11 @@ review hints, queue pressure reason, max queue wait, policy decision reasons,
 and affected deadline/fallback/scheduler-delay tasks. This is deterministic
 navigation evidence for Lab review; it does not replace the full Orchestrator
 timelines or make AIGuard the deployment decision owner.
+When EdgeEnv also preserves Orchestrator `stale_drop_summary`, AIGuard emits
+`edgeenv_orchestrator_stale_drop_summary` to explain stale/backlog drop rate,
+reason counts, reason classes, latest stale drop event, and affected tasks while
+checking the `scheduler_owner=orchestrator`, `decision_owner=lab`, and
+`not_a_deployment_decision=true` boundary markers.
 When the preserved Orchestrator context includes
 `downstream_guard_alignment.producer_lineage_evidence_type=edgeenv_orchestrator_producer_lineage`,
 AIGuard validates that marker and keeps producer-lineage reasoning separate

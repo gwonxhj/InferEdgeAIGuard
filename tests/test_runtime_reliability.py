@@ -276,14 +276,54 @@ def multi_workload_sustained_summary() -> dict:
                 "deadline_missed": ["vision_agent"],
                 "fallback": ["voice_command_agent"],
                 "scheduler_delay": ["voice_command_agent"],
+                "stale_drop": ["vision_agent", "voice_command_agent"],
                 "degraded": ["vision_agent", "voice_command_agent"],
                 "constrained": [],
+            },
+            "stale_drop": {
+                "schema_version": "inferedge-orchestrator-stale-drop-summary-v1",
+                "operation_context_role": "supplemental",
+                "scheduler_owner": "orchestrator",
+                "decision_owner": "lab",
+                "not_a_deployment_decision": True,
+                "source": "drop_events",
+                "first_read": "review_stale_drop_context",
+                "stale_drop_count": 5,
+                "total_drop_count": 7,
+                "stale_drop_rate": 0.714,
+                "stale_drop_reasons": {
+                    "load_shedding_backlog_threshold_exceeded": 3,
+                    "queue_overflow_drop_oldest": 2,
+                },
+                "stale_drop_reason_classes": [
+                    "load_shedding_stale_backlog",
+                    "stale_queue_overflow",
+                ],
+                "tasks_with_stale_drop": [
+                    "vision_agent",
+                    "voice_command_agent",
+                ],
+                "task_counts": {
+                    "vision_agent": 3,
+                    "voice_command_agent": 2,
+                },
+                "latest_stale_drop_event": {
+                    "task": "voice_command_agent",
+                    "agent_id": "voice_command_agent",
+                    "reason": "queue_overflow_drop_oldest",
+                    "stale_drop_class": "stale_queue_overflow",
+                },
+                "interpretation": (
+                    "Queued stale/backlog work was dropped as scheduler evidence "
+                    "only; Lab remains the final deployment decision owner."
+                ),
             },
             "review_hints": [
                 "review_queue_pressure",
                 "review_scheduler_delay",
                 "review_deadline_miss",
                 "review_fallback_use",
+                "review_stale_drop",
             ],
         },
     }
@@ -1062,15 +1102,79 @@ def edgeenv_regression_report_with_orchestrator_feed_context() -> dict:
                         "deadline_missed": ["vision_agent"],
                         "fallback": ["voice_command_agent"],
                         "scheduler_delay": ["vision_agent"],
+                        "stale_drop": ["voice_command_agent"],
                         "degraded": ["vision_agent"],
                         "constrained": [],
+                    },
+                    "stale_drop": {
+                        "schema_version": (
+                            "inferedge-orchestrator-stale-drop-summary-v1"
+                        ),
+                        "operation_context_role": "supplemental",
+                        "scheduler_owner": "orchestrator",
+                        "decision_owner": "lab",
+                        "not_a_deployment_decision": True,
+                        "source": "drop_events",
+                        "first_read": "review_stale_drop_context",
+                        "stale_drop_count": 1,
+                        "total_drop_count": 4,
+                        "stale_drop_rate": 0.25,
+                        "stale_drop_reasons": {
+                            "queue_overflow_drop_oldest": 1,
+                        },
+                        "stale_drop_reason_classes": [
+                            "stale_queue_overflow",
+                        ],
+                        "tasks_with_stale_drop": [
+                            "voice_command_agent",
+                        ],
+                        "task_counts": {
+                            "voice_command_agent": 1,
+                        },
+                        "latest_stale_drop_event": {
+                            "task": "voice_command_agent",
+                            "agent_id": "voice_command_agent",
+                            "reason": "queue_overflow_drop_oldest",
+                            "stale_drop_class": "stale_queue_overflow",
+                        },
                     },
                     "review_hints": [
                         "review_queue_pressure",
                         "review_scheduler_delay",
                         "review_deadline_miss",
                         "review_fallback_use",
+                        "review_stale_drop",
                     ],
+                },
+                "stale_drop_summary": {
+                    "schema_version": "inferedge-orchestrator-stale-drop-summary-v1",
+                    "operation_context_role": "supplemental",
+                    "scheduler_owner": "orchestrator",
+                    "decision_owner": "lab",
+                    "not_a_deployment_decision": True,
+                    "source": "drop_events",
+                    "first_read": "review_stale_drop_context",
+                    "stale_drop_count": 1,
+                    "total_drop_count": 4,
+                    "stale_drop_rate": 0.25,
+                    "stale_drop_reasons": {
+                        "queue_overflow_drop_oldest": 1,
+                    },
+                    "stale_drop_reason_classes": [
+                        "stale_queue_overflow",
+                    ],
+                    "tasks_with_stale_drop": [
+                        "voice_command_agent",
+                    ],
+                    "task_counts": {
+                        "voice_command_agent": 1,
+                    },
+                    "latest_stale_drop_event": {
+                        "task": "voice_command_agent",
+                        "agent_id": "voice_command_agent",
+                        "reason": "queue_overflow_drop_oldest",
+                        "stale_drop_class": "stale_queue_overflow",
+                    },
                 },
             },
             "resource": {
@@ -1588,6 +1692,7 @@ def test_multi_workload_sustained_summary_adds_profile_and_thermal_metrics():
         "review_scheduler_delay",
         "review_deadline_miss",
         "review_fallback_use",
+        "review_stale_drop",
     ]
     assert metrics["operation_timeline_max_queue_wait_ms"] == 32.5
     assert metrics["operation_timeline_policy_decision_count"] == 1.0
@@ -1597,6 +1702,27 @@ def test_multi_workload_sustained_summary_adds_profile_and_thermal_metrics():
     assert metrics["operation_timeline_affected_scheduler_delay_tasks"] == [
         "voice_command_agent"
     ]
+    assert metrics["operation_timeline_affected_stale_drop_tasks"] == [
+        "vision_agent",
+        "voice_command_agent",
+    ]
+    assert metrics["operation_timeline_stale_drop_count"] == 5
+    assert metrics["operation_timeline_stale_drop_total_count"] == 7
+    assert metrics["operation_timeline_stale_drop_rate"] == 0.714
+    assert metrics["operation_timeline_stale_drop_reasons"] == {
+        "load_shedding_backlog_threshold_exceeded": 3,
+        "queue_overflow_drop_oldest": 2,
+    }
+    assert metrics["operation_timeline_stale_drop_reason_classes"] == [
+        "load_shedding_stale_backlog",
+        "stale_queue_overflow",
+    ]
+    assert (
+        metrics["operation_timeline_latest_stale_drop_event"][
+            "stale_drop_class"
+        ]
+        == "stale_queue_overflow"
+    )
     assert metrics["tegrastats_sample_count"] == 2
     assert metrics["max_temperature_c"] == 76.2
     assert metrics["max_gpu_percent"] == 91
@@ -2006,6 +2132,7 @@ def test_compute_edgeenv_regression_metrics_extracts_orchestrator_feed_context()
         "review_scheduler_delay",
         "review_deadline_miss",
         "review_fallback_use",
+        "review_stale_drop",
     ]
     assert metrics["orchestrator_operation_timeline_queue_pressure_state"] == (
         "overloaded"
@@ -2024,6 +2151,22 @@ def test_compute_edgeenv_regression_metrics_extracts_orchestrator_feed_context()
     assert metrics["orchestrator_operation_timeline_affected_fallback_tasks"] == [
         "voice_command_agent"
     ]
+    assert metrics["orchestrator_operation_timeline_affected_stale_drop_tasks"] == [
+        "voice_command_agent",
+    ]
+    assert metrics["orchestrator_stale_drop_summary_present"] is True
+    assert metrics["orchestrator_stale_drop_count"] == 1
+    assert metrics["orchestrator_stale_drop_total_count"] == 4
+    assert metrics["orchestrator_stale_drop_rate"] == 0.25
+    assert metrics["orchestrator_stale_drop_reasons"] == {
+        "queue_overflow_drop_oldest": 1,
+    }
+    assert metrics["orchestrator_tasks_with_stale_drop"] == [
+        "voice_command_agent",
+    ]
+    assert metrics["orchestrator_stale_drop_decision_owner"] == "lab"
+    assert metrics["orchestrator_stale_drop_scheduler_owner"] == "orchestrator"
+    assert metrics["orchestrator_stale_drop_not_a_deployment_decision"] is True
     assert metrics["orchestrator_runtime_task_event_summary_present"] is True
     assert set(metrics["orchestrator_runtime_task_event_summary"]) == {
         "vision_agent",
@@ -2322,6 +2465,7 @@ def test_analyze_edgeenv_regression_report_warns_on_orchestrator_feed_context():
     assert "edgeenv_orchestrator_task_event_rollup" in evidence_types
     assert "edgeenv_orchestrator_latency_budget_protection" in evidence_types
     assert "edgeenv_orchestrator_operation_timeline_summary" in evidence_types
+    assert "edgeenv_orchestrator_stale_drop_summary" in evidence_types
     assert "runtime_thermal_instability" in evidence_types
     assert "runtime_queue_overload" in evidence_types
     queue_evidence = next(
@@ -2559,12 +2703,13 @@ def test_analyze_edgeenv_regression_report_warns_on_orchestrator_feed_context():
         if item["type"] == "edgeenv_orchestrator_operation_timeline_summary"
     )
     assert operation_timeline["status"] == "warning"
-    assert operation_timeline["observed_value"] == 6
+    assert operation_timeline["observed_value"] == 7
     assert operation_timeline["threshold"] == 1
     assert "scheduler_delay_context" in operation_timeline["suspected_causes"]
     assert "deadline_miss_context" in operation_timeline["suspected_causes"]
     assert "fallback_policy_context" in operation_timeline["suspected_causes"]
     assert "queue_pressure_context" in operation_timeline["suspected_causes"]
+    assert "stale_drop_context" in operation_timeline["suspected_causes"]
     timeline_context = operation_timeline["raw_context"][
         "operation_timeline_summary"
     ]
@@ -2579,6 +2724,22 @@ def test_analyze_edgeenv_regression_report_warns_on_orchestrator_feed_context():
         "queue_backlog_threshold_exceeded"
     ]
     assert timeline_context["decision_owner"] == "lab"
+    stale_drop = next(
+        item
+        for item in report["evidence"]
+        if item["type"] == "edgeenv_orchestrator_stale_drop_summary"
+    )
+    assert stale_drop["status"] == "warning"
+    assert stale_drop["observed_value"] == 0.25
+    assert stale_drop["raw_context"]["stale_drop_summary"][
+        "boundary_markers_valid"
+    ] is True
+    assert stale_drop["raw_context"]["stale_drop_summary"][
+        "tasks_with_stale_drop"
+    ] == ["voice_command_agent"]
+    assert stale_drop["raw_context"]["stale_drop_summary"][
+        "decision_owner"
+    ] == "lab"
     assert timeline_context["scheduler_owner"] == "orchestrator"
     assert timeline_context["not_a_deployment_decision"] is True
     assert latency_budget_context["per_task_budget_context"]["vision_agent"][
@@ -2899,6 +3060,7 @@ def test_analyze_multi_workload_sustained_summary_adds_runtime_evidence():
     assert "profiled_workload_pressure" in evidence_types
     assert "thermal_resource_pressure" in evidence_types
     assert "operation_timeline_summary" in evidence_types
+    assert "stale_frame_risk" in evidence_types
     profile_evidence = next(
         item for item in report["evidence"] if item["type"] == "profiled_workload_pressure"
     )
@@ -2931,11 +3093,12 @@ def test_analyze_multi_workload_sustained_summary_adds_runtime_evidence():
         if item["type"] == "operation_timeline_summary"
     )
     assert timeline_evidence["status"] == "warning"
-    assert timeline_evidence["observed_value"] == 6
+    assert timeline_evidence["observed_value"] == 7
     assert "scheduler_delay_context" in timeline_evidence["suspected_causes"]
     assert "deadline_miss_context" in timeline_evidence["suspected_causes"]
     assert "fallback_policy_context" in timeline_evidence["suspected_causes"]
     assert "queue_pressure_context" in timeline_evidence["suspected_causes"]
+    assert "stale_drop_context" in timeline_evidence["suspected_causes"]
     assert timeline_evidence["raw_context"]["affected_tasks"] == [
         "vision_agent",
         "voice_command_agent",
@@ -2944,6 +3107,20 @@ def test_analyze_multi_workload_sustained_summary_adds_runtime_evidence():
     assert timeline_evidence["raw_context"]["policy_decision_reasons"] == [
         "queue_backlog_threshold_exceeded"
     ]
+    stale_evidence = next(
+        item for item in report["evidence"] if item["type"] == "stale_frame_risk"
+    )
+    assert stale_evidence["status"] == "failed"
+    assert stale_evidence["observed_value"] == 0.714
+    assert stale_evidence["raw_context"]["tasks_with_stale_drop"] == [
+        "vision_agent",
+        "voice_command_agent",
+    ]
+    assert stale_evidence["raw_context"]["decision_owner"] == "lab"
+    assert stale_evidence["raw_context"]["scheduler_owner"] == "orchestrator"
+    assert stale_evidence["raw_context"]["not_a_deployment_decision"] is True
+    assert "load_shedding_context" in stale_evidence["suspected_causes"]
+    assert "stale_queue_overflow" in stale_evidence["suspected_causes"]
 
 
 def test_analyze_operation_telemetry_adds_worker_and_scheduler_warnings():
