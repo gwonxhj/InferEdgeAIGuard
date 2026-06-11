@@ -320,6 +320,12 @@ type set으로 충족되는지 확인합니다. 또한
 EdgeEnv handoff가 `duration_source` / `duration_scope_label`을 제공하면
 AIGuard alignment summary는 `source=entrypoint_requested_frames` 같은 값을
 Lab report contract context로 보존만 합니다.
+EdgeEnv handoff가 `lab_bundle_alignment.optional_aiguard_evidence_types`를
+제공하면 AIGuard는 이를 `read_only_optional_guard_context`로 보존하고,
+현재 `guard_analysis.evidence`에 이미 있는 optional type과 아직 없는
+optional type을 나눠 보여줍니다.
+AIGuard does not validate optional evidence as required; optional 항목 누락은
+required evidence failure가 아닙니다.
 AIGuard does not validate or own those Lab report markers; Lab's bundle/report
 gate remains responsible for enforcing the final report contract. 이어서
 `edgeenv_report_summary.producer_lineage_guard_alignment_run_ids`를

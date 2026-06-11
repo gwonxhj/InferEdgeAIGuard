@@ -26,6 +26,9 @@ REMOTE_RUNTIME_EVENT_SUMMARY_EVIDENCE_ROLE = (
 EDGEENV_HANDOFF_GUARD_ALIGNMENT_SCHEMA_VERSION = (
     "inferedge-aiguard-edgeenv-handoff-alignment-v1"
 )
+EDGEENV_HANDOFF_OPTIONAL_EVIDENCE_CONTEXT_ROLE = (
+    "read_only_optional_guard_context"
+)
 EDGEENV_ORCHESTRATOR_PRODUCER_LINEAGE_EVIDENCE_TYPE = (
     "edgeenv_orchestrator_producer_lineage"
 )
@@ -138,6 +141,13 @@ def validate_edgeenv_handoff_guard_evidence_alignment(
     invalid_required_evidence_types = _invalid_string_values(
         raw_required_evidence_types
     )
+    raw_optional_evidence_types = lab_bundle_alignment.get(
+        "optional_aiguard_evidence_types"
+    )
+    optional_evidence_types = _unique_string_values(raw_optional_evidence_types)
+    invalid_optional_evidence_types = _invalid_string_values(
+        raw_optional_evidence_types
+    )
     raw_expected_report_markers = lab_bundle_alignment.get("expected_report_markers")
     expected_report_markers = _unique_string_values(raw_expected_report_markers)
 
@@ -163,8 +173,11 @@ def validate_edgeenv_handoff_guard_evidence_alignment(
         )
 
     required_set = set(required_evidence_types)
+    optional_set = set(optional_evidence_types)
     guard_set = set(guard_evidence_types)
     missing_required_evidence_types = sorted(required_set - guard_set)
+    optional_guard_evidence_types_present = sorted(optional_set & guard_set)
+    missing_optional_evidence_types = sorted(optional_set - guard_set)
     supplemental_guard_evidence_types = sorted(guard_set - required_set)
 
     boundary_flags = _mapping(lab_bundle_alignment.get("boundary_flags"))
@@ -218,6 +231,13 @@ def validate_edgeenv_handoff_guard_evidence_alignment(
         errors.append("missing_external_aiguard_required_evidence_types")
     if invalid_required_evidence_types:
         errors.append("invalid_required_evidence_type")
+    if raw_optional_evidence_types is not None and not isinstance(
+        raw_optional_evidence_types,
+        list,
+    ):
+        errors.append("invalid_optional_aiguard_evidence_types")
+    if invalid_optional_evidence_types:
+        errors.append("invalid_optional_evidence_type")
     if not isinstance(raw_evidence, list):
         errors.append("guard_analysis_evidence_not_list")
     if invalid_guard_evidence_items:
@@ -245,12 +265,17 @@ def validate_edgeenv_handoff_guard_evidence_alignment(
         "handoff_schema_version": edgeenv_handoff.get("schema_version"),
         "guard_analysis_schema_version": guard_analysis.get("schema_version"),
         "required_evidence_type_count": len(required_evidence_types),
+        "optional_evidence_type_count": len(optional_evidence_types),
         "guard_evidence_type_count": len(guard_evidence_types),
         "lab_expected_report_marker_count": len(expected_report_markers),
         "lab_expected_report_markers": expected_report_markers,
         "lab_report_marker_owner": "lab",
         "report_marker_context_role": "lab_report_contract_context",
         "aiguard_validates_expected_report_markers": False,
+        "optional_evidence_context_role": (
+            EDGEENV_HANDOFF_OPTIONAL_EVIDENCE_CONTEXT_ROLE
+        ),
+        "aiguard_validates_optional_evidence_as_required": False,
         "handoff_duration_traceability_present": bool(
             handoff_duration_traceability_run_ids
         ),
@@ -260,10 +285,16 @@ def validate_edgeenv_handoff_guard_evidence_alignment(
         "handoff_duration_sources": handoff_duration_sources,
         "handoff_duration_scope_labels": handoff_duration_scope_labels,
         "required_evidence_types": required_evidence_types,
+        "optional_aiguard_evidence_types": optional_evidence_types,
         "guard_analysis_evidence_types": guard_evidence_types,
         "missing_required_evidence_types": missing_required_evidence_types,
+        "optional_guard_evidence_types_present": (
+            optional_guard_evidence_types_present
+        ),
+        "missing_optional_evidence_types": missing_optional_evidence_types,
         "supplemental_guard_evidence_types": supplemental_guard_evidence_types,
         "invalid_required_evidence_types": invalid_required_evidence_types,
+        "invalid_optional_evidence_types": invalid_optional_evidence_types,
         "invalid_guard_evidence_items": invalid_guard_evidence_items,
         "boundary_flags": {
             field: boundary_flags.get(field)

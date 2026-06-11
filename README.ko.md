@@ -177,6 +177,11 @@ decision은 만들지 않습니다.
 `check-edgeenv-handoff-alignment`는 EdgeEnv handoff의
 `external_aiguard_required_evidence_types`가 실제 `guard_analysis.evidence`
 type set으로 충족되는지 확인합니다. 또한
+`lab_bundle_alignment.optional_aiguard_evidence_types`가 있으면 이를
+`read_only_optional_guard_context`로 보존하고, 현재 guard analysis에 이미
+포함된 optional evidence와 아직 없는 optional evidence를 나눠 표시합니다.
+AIGuard does not validate optional evidence as required; optional 항목 누락은
+required evidence failure가 아닙니다. 이어서
 `edgeenv_report_summary.producer_lineage_guard_alignment_run_ids`를
 AIGuard의 `edgeenv_orchestrator_producer_lineage` raw context와 대조해
 EdgeEnv producer summary와 AIGuard deterministic evidence가 같은

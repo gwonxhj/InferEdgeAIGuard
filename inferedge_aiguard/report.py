@@ -335,6 +335,14 @@ def _format_edgeenv_handoff_alignment_summary(summary: dict[str, Any]) -> str:
             f"{summary.get('aiguard_validates_expected_report_markers', False)}"
         ),
         (
+            "- optional_evidence_context_role: "
+            f"{summary.get('optional_evidence_context_role', 'unknown')}"
+        ),
+        (
+            "- aiguard_validates_optional_evidence_as_required: "
+            f"{summary.get('aiguard_validates_optional_evidence_as_required', False)}"
+        ),
+        (
             "- handoff_duration_sources: "
             f"{_format_list(summary.get('handoff_duration_sources', []))}"
         ),
@@ -347,12 +355,24 @@ def _format_edgeenv_handoff_alignment_summary(summary: dict[str, Any]) -> str:
             f"{_format_list(summary.get('required_evidence_types', []))}"
         ),
         (
+            "- optional_aiguard_evidence_types: "
+            f"{_format_list(summary.get('optional_aiguard_evidence_types', []))}"
+        ),
+        (
             "- guard_analysis_evidence_types: "
             f"{_format_list(summary.get('guard_analysis_evidence_types', []))}"
         ),
         (
             "- missing_required_evidence_types: "
             f"{_format_list(summary.get('missing_required_evidence_types', []))}"
+        ),
+        (
+            "- optional_guard_evidence_types_present: "
+            f"{_format_list(summary.get('optional_guard_evidence_types_present', []))}"
+        ),
+        (
+            "- missing_optional_evidence_types: "
+            f"{_format_list(summary.get('missing_optional_evidence_types', []))}"
         ),
         (
             "- supplemental_guard_evidence_types: "
@@ -412,6 +432,10 @@ def _markdown_edgeenv_handoff_alignment_report(summary: dict[str, Any]) -> str:
                     summary.get("required_evidence_type_count", 0),
                 ],
                 [
+                    "optional_evidence_type_count",
+                    summary.get("optional_evidence_type_count", 0),
+                ],
+                [
                     "guard_evidence_type_count",
                     summary.get("guard_evidence_type_count", 0),
                 ],
@@ -432,6 +456,17 @@ def _markdown_edgeenv_handoff_alignment_report(summary: dict[str, Any]) -> str:
                     summary.get("aiguard_validates_expected_report_markers", False),
                 ],
                 [
+                    "optional_evidence_context_role",
+                    summary.get("optional_evidence_context_role", "unknown"),
+                ],
+                [
+                    "aiguard_validates_optional_evidence_as_required",
+                    summary.get(
+                        "aiguard_validates_optional_evidence_as_required",
+                        False,
+                    ),
+                ],
+                [
                     "handoff_duration_traceability_present",
                     summary.get("handoff_duration_traceability_present", False),
                 ],
@@ -446,6 +481,12 @@ def _markdown_edgeenv_handoff_alignment_report(summary: dict[str, Any]) -> str:
                     _format_markdown_list(summary.get("required_evidence_types", [])),
                 ],
                 [
+                    "optional_aiguard_evidence_types",
+                    _format_markdown_list(
+                        summary.get("optional_aiguard_evidence_types", [])
+                    ),
+                ],
+                [
                     "guard_analysis_evidence_types",
                     _format_markdown_list(
                         summary.get("guard_analysis_evidence_types", [])
@@ -455,6 +496,18 @@ def _markdown_edgeenv_handoff_alignment_report(summary: dict[str, Any]) -> str:
                     "missing_required_evidence_types",
                     _format_markdown_list(
                         summary.get("missing_required_evidence_types", [])
+                    ),
+                ],
+                [
+                    "optional_guard_evidence_types_present",
+                    _format_markdown_list(
+                        summary.get("optional_guard_evidence_types_present", [])
+                    ),
+                ],
+                [
+                    "missing_optional_evidence_types",
+                    _format_markdown_list(
+                        summary.get("missing_optional_evidence_types", [])
                     ),
                 ],
                 [

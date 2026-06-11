@@ -516,6 +516,12 @@ AIGuard external and Lab as final decision owner. When EdgeEnv exposes
 When EdgeEnv exposes `duration_source` / `duration_scope_label`, AIGuard keeps
 values such as `source=entrypoint_requested_frames` in the alignment summary as
 Lab report contract context.
+When EdgeEnv exposes `lab_bundle_alignment.optional_aiguard_evidence_types`,
+AIGuard keeps those values as `read_only_optional_guard_context` and reports
+which optional evidence types are already present in `guard_analysis.evidence`
+versus still absent.
+AIGuard does not validate optional evidence as required; missing optional
+entries do not fail the required evidence alignment gate.
 AIGuard does not validate or own those Lab report markers; Lab's bundle/report
 gate remains responsible for enforcing the final report contract. If EdgeEnv exposes
 `edgeenv_report_summary.producer_lineage_guard_alignment_run_ids`, the same
