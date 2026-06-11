@@ -499,6 +499,11 @@ fixtures as small CLI smoke inputs.
 is the precomputed `guard_analysis` artifact example aligned with Lab bundle
 naming. AIGuard provides runtime anomaly evidence there; it does not produce a
 Lab-owned deployment decision.
+`examples/runtime_intelligence/aiguard_runtime_operation_guard_analysis_optional_stale_drop.json`
+is the companion example where optional stale-drop evidence is present. It keeps
+full `edgeenv_orchestrator_stale_drop_summary` and `stale_frame_risk` evidence
+items in `guard_analysis.evidence` while leaving those optional labels out of
+the required deployment-decision contract.
 `check-edgeenv-handoff-alignment` verifies that EdgeEnv's
 `external_aiguard_required_evidence_types` are present in
 `guard_analysis.evidence`. It also checks the handoff boundary flags that keep

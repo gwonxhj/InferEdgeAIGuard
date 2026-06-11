@@ -3,6 +3,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+from inferedge_aiguard.diagnosis import build_diagnosis_report
 from inferedge_aiguard.runtime_reliability import (
     analyze_edgeenv_regression_report,
     analyze_orchestration_summary,
@@ -816,6 +817,53 @@ def edgeenv_handoff_guard_analysis_with_remote_fallback() -> dict:
     )
     guard_analysis["evidence"].append(remote_recovery)
     return guard_analysis
+
+
+def edgeenv_handoff_guard_analysis_with_optional_stale_drop() -> dict:
+    guard_analysis = edgeenv_handoff_guard_analysis_with_remote_fallback()
+    orchestrator_guard_analysis = analyze_orchestration_summary(
+        multi_workload_sustained_summary()
+    )
+    stale_frame = next(
+        item
+        for item in orchestrator_guard_analysis["evidence"]
+        if item["type"] == "stale_frame_risk"
+    )
+    evidence = list(guard_analysis["evidence"]) + [stale_frame]
+    source = dict(guard_analysis["source"])
+    source.update(
+        {
+            "optional_stale_drop_present_example": True,
+            "edgeenv_optional_evidence_type": (
+                "edgeenv_orchestrator_stale_drop_summary"
+            ),
+            "orchestrator_optional_evidence_type": "stale_frame_risk",
+        }
+    )
+    candidate_summary = dict(guard_analysis["candidate_summary"])
+    candidate_summary["orchestrator_sustained_runtime_reliability"] = dict(
+        orchestrator_guard_analysis["candidate_summary"].get(
+            "runtime_reliability",
+            {},
+        )
+    )
+    return build_diagnosis_report(
+        evidence=evidence,
+        source=source,
+        confidence=max(
+            float(guard_analysis.get("confidence", 0.0)),
+            float(orchestrator_guard_analysis.get("confidence", 0.0)),
+        ),
+        primary_reason=(
+            "Optional stale-drop evidence is present from both "
+            "EdgeEnv-preserved Orchestrator context and direct Orchestrator "
+            "stale-frame analysis."
+        ),
+        thresholds=guard_analysis.get("thresholds", {}),
+        baseline_summary=guard_analysis.get("baseline_summary", {}),
+        candidate_summary=candidate_summary,
+        created_at="2026-06-10T00:56:55Z",
+    )
 
 
 def _edgeenv_history_coverage_summary() -> dict:
@@ -4082,6 +4130,68 @@ def test_runtime_intelligence_example_exports_lab_ready_guard_analysis(tmp_path)
     assert forbidden_decision_keys.isdisjoint(expected)
 
 
+def test_runtime_intelligence_optional_stale_drop_example_preserves_full_evidence_shape():
+    expected_path = (
+        RUNTIME_INTELLIGENCE_EXAMPLES
+        / "aiguard_runtime_operation_guard_analysis_optional_stale_drop.json"
+    )
+
+    expected = json.loads(expected_path.read_text(encoding="utf-8"))
+    generated = edgeenv_handoff_guard_analysis_with_optional_stale_drop()
+
+    validate_diagnosis_report(expected)
+    validate_diagnosis_report(generated)
+    assert generated == expected
+    assert expected["guard_verdict"] == "blocked"
+    assert expected["severity"] == "high"
+
+    evidence_by_type = {item["type"]: item for item in expected["evidence"]}
+    stale_frame = evidence_by_type["stale_frame_risk"]
+    edgeenv_stale_drop = evidence_by_type[
+        "edgeenv_orchestrator_stale_drop_summary"
+    ]
+
+    assert stale_frame["status"] == "failed"
+    assert stale_frame["severity"] == "high"
+    assert stale_frame["metric_name"] == "stale_drop_rate"
+    assert stale_frame["observed_value"] == 0.714
+    assert stale_frame["raw_context"]["decision_owner"] == "lab"
+    assert stale_frame["raw_context"]["scheduler_owner"] == "orchestrator"
+    assert stale_frame["raw_context"]["not_a_deployment_decision"] is True
+    assert stale_frame["raw_context"]["tasks_with_stale_drop"] == [
+        "vision_agent",
+        "voice_command_agent",
+    ]
+
+    assert edgeenv_stale_drop["status"] == "warning"
+    assert edgeenv_stale_drop["severity"] == "medium"
+    assert edgeenv_stale_drop["metric_name"] == "orchestrator_stale_drop_rate"
+    assert edgeenv_stale_drop["observed_value"] == 0.25
+    assert edgeenv_stale_drop["raw_context"]["stale_drop_summary"][
+        "decision_owner"
+    ] == "lab"
+    assert edgeenv_stale_drop["raw_context"]["stale_drop_summary"][
+        "scheduler_owner"
+    ] == "orchestrator"
+    assert edgeenv_stale_drop["raw_context"]["stale_drop_summary"][
+        "not_a_deployment_decision"
+    ] is True
+
+    alignment = validate_edgeenv_handoff_guard_evidence_alignment(
+        edgeenv_runtime_intelligence_lab_handoff(),
+        expected,
+    )
+
+    assert alignment["status"] == "passed"
+    assert alignment["missing_required_evidence_types"] == []
+    assert alignment["optional_guard_evidence_types_present"] == [
+        "edgeenv_orchestrator_stale_drop_summary",
+        "stale_frame_risk",
+    ]
+    assert alignment["missing_optional_evidence_types"] == []
+    assert alignment["aiguard_validates_optional_evidence_as_required"] is False
+
+
 def test_validate_edgeenv_handoff_guard_evidence_alignment_passes():
     guard_analysis = edgeenv_handoff_guard_analysis_with_remote_fallback()
     alignment = validate_edgeenv_handoff_guard_evidence_alignment(
@@ -4346,6 +4456,10 @@ def test_runtime_intelligence_docs_describe_lab_report_marker_context():
         assert "expected_report_markers" in doc
         assert "lab_report_contract_context" in doc
         assert "optional_aiguard_evidence_types" in doc
+        assert (
+            "aiguard_runtime_operation_guard_analysis_optional_stale_drop.json"
+            in doc
+        )
         assert "read_only_optional_guard_context" in doc
         assert "AIGuard does not validate or own those Lab report markers" in doc
         assert "AIGuard does not validate optional evidence as required" in doc

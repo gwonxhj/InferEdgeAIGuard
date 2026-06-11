@@ -422,6 +422,11 @@ mirror한 작은 CLI smoke 입력이 있습니다.
 Lab bundle naming에 맞춘 precomputed `guard_analysis` artifact 예시입니다.
 AIGuard는 이 artifact에서 runtime anomaly evidence만 제공하고, Lab-owned
 deployment decision을 생성하지 않습니다.
+`examples/runtime_intelligence/aiguard_runtime_operation_guard_analysis_optional_stale_drop.json`는
+optional stale-drop evidence가 실제로 present인 동반 예시입니다. 이 artifact는
+`edgeenv_orchestrator_stale_drop_summary`와 `stale_frame_risk` full evidence
+item을 모두 `guard_analysis.evidence`에 보존하지만, optional label을 required
+deployment-decision contract로 승격하지 않습니다.
 `check-edgeenv-handoff-alignment`는 EdgeEnv의
 `external_aiguard_required_evidence_types`가 `guard_analysis.evidence`에
 존재하는지 검증합니다. 또한 AIGuard가 external evidence provider이고 Lab이

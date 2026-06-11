@@ -174,6 +174,11 @@ Lab Runtime Intelligence bundle에 넣을 수 있는 precomputed
 `guard_analysis` artifact 예시입니다. 파일명은 Lab bundle의 AIGuard artifact
 role과 맞추며, AIGuard는 deterministic evidence만 생성하고 deployment
 decision은 만들지 않습니다.
+`examples/runtime_intelligence/aiguard_runtime_operation_guard_analysis_optional_stale_drop.json`는
+optional stale-drop evidence가 실제로 present인 동반 예시입니다. 이 artifact는
+`edgeenv_orchestrator_stale_drop_summary`와 `stale_frame_risk` full evidence
+item을 모두 보존하지만, optional evidence를 required deployment decision
+evidence로 승격하지 않습니다.
 `check-edgeenv-handoff-alignment`는 EdgeEnv handoff의
 `external_aiguard_required_evidence_types`가 실제 `guard_analysis.evidence`
 type set으로 충족되는지 확인합니다. 또한
