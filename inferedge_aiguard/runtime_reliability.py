@@ -47,8 +47,12 @@ EDGEENV_ORCHESTRATOR_LATENCY_BUDGET_PROTECTION_SCHEMA_VERSION = (
 ORCHESTRATOR_OPERATION_TIMELINE_SUMMARY_EVIDENCE_TYPE = (
     "operation_timeline_summary"
 )
+ORCHESTRATOR_STALE_FRAME_RISK_EVIDENCE_TYPE = "stale_frame_risk"
 EDGEENV_ORCHESTRATOR_OPERATION_TIMELINE_SUMMARY_EVIDENCE_TYPE = (
     "edgeenv_orchestrator_operation_timeline_summary"
+)
+EDGEENV_ORCHESTRATOR_STALE_DROP_SUMMARY_EVIDENCE_TYPE = (
+    "edgeenv_orchestrator_stale_drop_summary"
 )
 EDGEENV_ORCHESTRATOR_OPERATION_TIMELINE_SUMMARY_SCHEMA_VERSION = (
     "inferedge-orchestrator-operation-timeline-summary-v1"
@@ -76,6 +80,9 @@ DEFAULT_RUNTIME_RELIABILITY_THRESHOLDS = {
     "deadline_miss_rate_blocked": 0.20,
     "drop_rate_review": 0.20,
     "drop_rate_blocked": 0.50,
+    "stale_drop_count_review": 1,
+    "stale_drop_rate_review": 0.20,
+    "stale_drop_rate_blocked": 0.50,
     "fallback_rate_review": 0.20,
     "fallback_rate_blocked": 0.50,
     "queue_backlog_policy_decision_count_review": 1,
@@ -404,6 +411,9 @@ def analyze_orchestration_summary(
     )
     if operation_timeline_evidence is not None:
         evidence.append(operation_timeline_evidence)
+    stale_drop_evidence = _stale_frame_risk_evidence(metrics, totals, policy)
+    if stale_drop_evidence is not None:
+        evidence.append(stale_drop_evidence)
     queue_pressure_evidence = _queue_pressure_context_evidence(
         metrics, totals, policy
     )
@@ -586,6 +596,9 @@ def compute_runtime_reliability_metrics(summary: dict[str, Any]) -> dict[str, An
     operation_timeline_affected_tasks = _mapping(
         operation_timeline_summary.get("affected_tasks")
     )
+    operation_timeline_stale_drop = _mapping(
+        operation_timeline_summary.get("stale_drop")
+    )
     operation_timeline_review_hints = _string_list(
         operation_timeline_summary.get("review_hints")
     )
@@ -604,6 +617,23 @@ def compute_runtime_reliability_metrics(summary: dict[str, Any]) -> dict[str, An
     operation_timeline_constrained_tasks = _string_list(
         operation_timeline_affected_tasks.get("constrained")
     )
+    operation_timeline_stale_drop_tasks = _string_list(
+        operation_timeline_stale_drop.get("tasks_with_stale_drop")
+    ) or _string_list(operation_timeline_affected_tasks.get("stale_drop"))
+    operation_timeline_stale_drop_count = _non_negative_number(
+        operation_timeline_stale_drop.get("stale_drop_count")
+    )
+    operation_timeline_stale_drop_total_count = _non_negative_number(
+        operation_timeline_stale_drop.get("total_drop_count")
+    )
+    operation_timeline_stale_drop_rate = _optional_non_negative_number(
+        operation_timeline_stale_drop.get("stale_drop_rate")
+    )
+    if operation_timeline_stale_drop_rate is None:
+        operation_timeline_stale_drop_rate = _ratio(
+            operation_timeline_stale_drop_count,
+            operation_timeline_stale_drop_total_count,
+        )
     operation_timeline_policy_decision_count = _optional_non_negative_number(
         operation_timeline_policy.get("decision_count")
     )
@@ -627,6 +657,8 @@ def compute_runtime_reliability_metrics(summary: dict[str, Any]) -> dict[str, An
     dropped_count = max(
         _non_negative_number(totals.get("dropped_count")),
         _non_negative_number(observed_signals.get("dropped_count")),
+        operation_timeline_stale_drop_total_count,
+        operation_timeline_stale_drop_count,
     )
     timeline_deadline_missed_count = sum(
         1 for item in latency_timeline if bool(item.get("deadline_missed"))
@@ -784,6 +816,39 @@ def compute_runtime_reliability_metrics(summary: dict[str, Any]) -> dict[str, An
         ),
         "operation_timeline_affected_constrained_tasks": (
             operation_timeline_constrained_tasks
+        ),
+        "operation_timeline_stale_drop_summary": dict(
+            operation_timeline_stale_drop
+        ),
+        "operation_timeline_stale_drop_count": (
+            operation_timeline_stale_drop_count
+        ),
+        "operation_timeline_stale_drop_total_count": (
+            operation_timeline_stale_drop_total_count
+        ),
+        "operation_timeline_stale_drop_rate": (
+            operation_timeline_stale_drop_rate
+        ),
+        "operation_timeline_stale_drop_reasons": _count_mapping(
+            operation_timeline_stale_drop.get("stale_drop_reasons")
+        ),
+        "operation_timeline_stale_drop_reason_classes": _string_list(
+            operation_timeline_stale_drop.get("stale_drop_reason_classes")
+        ),
+        "operation_timeline_affected_stale_drop_tasks": (
+            operation_timeline_stale_drop_tasks
+        ),
+        "operation_timeline_latest_stale_drop_event": _mapping(
+            operation_timeline_stale_drop.get("latest_stale_drop_event")
+        ),
+        "operation_timeline_stale_drop_decision_owner": (
+            operation_timeline_stale_drop.get("decision_owner")
+        ),
+        "operation_timeline_stale_drop_scheduler_owner": (
+            operation_timeline_stale_drop.get("scheduler_owner")
+        ),
+        "operation_timeline_stale_drop_not_a_deployment_decision": (
+            operation_timeline_stale_drop.get("not_a_deployment_decision")
         ),
         "runtime_event_producer_sources": _string_list(
             runtime_event_summary.get("producer_sources")
@@ -956,6 +1021,28 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
     candidate_operation_timeline_affected_tasks = _mapping(
         candidate_operation_timeline_summary.get("affected_tasks")
     )
+    candidate_stale_drop_summary = _mapping(
+        candidate_orchestrator_operation.get("stale_drop_summary")
+        or candidate_operation_timeline_summary.get("stale_drop")
+        or candidate_orchestrator_context.get("stale_drop_summary")
+    )
+    candidate_stale_drop_tasks = _string_list(
+        candidate_stale_drop_summary.get("tasks_with_stale_drop")
+    ) or _string_list(candidate_operation_timeline_affected_tasks.get("stale_drop"))
+    candidate_stale_drop_count = _non_negative_number(
+        candidate_stale_drop_summary.get("stale_drop_count")
+    )
+    candidate_stale_total_drop_count = _non_negative_number(
+        candidate_stale_drop_summary.get("total_drop_count")
+    )
+    candidate_stale_drop_rate = _optional_non_negative_number(
+        candidate_stale_drop_summary.get("stale_drop_rate")
+    )
+    if candidate_stale_drop_rate is None:
+        candidate_stale_drop_rate = _ratio(
+            candidate_stale_drop_count,
+            candidate_stale_total_drop_count,
+        )
     candidate_runtime_task_event_summary = _mapping(
         candidate_orchestrator_operation.get("runtime_task_event_summary")
         or candidate_orchestrator_context.get("runtime_task_event_summary")
@@ -1652,6 +1739,38 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
             _string_list(
                 candidate_operation_timeline_affected_tasks.get("constrained")
             )
+        ),
+        "orchestrator_operation_timeline_affected_stale_drop_tasks": (
+            candidate_stale_drop_tasks
+        ),
+        "orchestrator_stale_drop_summary": dict(candidate_stale_drop_summary),
+        "orchestrator_stale_drop_summary_present": bool(
+            candidate_stale_drop_summary
+        ),
+        "orchestrator_stale_drop_summary_schema_version": (
+            candidate_stale_drop_summary.get("schema_version")
+        ),
+        "orchestrator_stale_drop_count": candidate_stale_drop_count,
+        "orchestrator_stale_drop_total_count": candidate_stale_total_drop_count,
+        "orchestrator_stale_drop_rate": candidate_stale_drop_rate,
+        "orchestrator_stale_drop_reasons": _count_mapping(
+            candidate_stale_drop_summary.get("stale_drop_reasons")
+        ),
+        "orchestrator_stale_drop_reason_classes": _string_list(
+            candidate_stale_drop_summary.get("stale_drop_reason_classes")
+        ),
+        "orchestrator_tasks_with_stale_drop": candidate_stale_drop_tasks,
+        "orchestrator_latest_stale_drop_event": _mapping(
+            candidate_stale_drop_summary.get("latest_stale_drop_event")
+        ),
+        "orchestrator_stale_drop_decision_owner": (
+            candidate_stale_drop_summary.get("decision_owner")
+        ),
+        "orchestrator_stale_drop_scheduler_owner": (
+            candidate_stale_drop_summary.get("scheduler_owner")
+        ),
+        "orchestrator_stale_drop_not_a_deployment_decision": (
+            candidate_stale_drop_summary.get("not_a_deployment_decision")
         ),
         "orchestrator_runtime_task_event_summary": dict(
             candidate_runtime_task_event_summary
@@ -2546,6 +2665,12 @@ def _operation_timeline_summary_evidence(
         suspected_causes.append("queue_pressure_context")
     if "review_load_shedding" in review_markers:
         suspected_causes.append("load_shedding_context")
+    if (
+        "review_stale_drop" in review_markers
+        or metrics.get("operation_timeline_affected_stale_drop_tasks")
+        or metrics.get("operation_timeline_stale_drop_count", 0.0) > 0
+    ):
+        suspected_causes.append("stale_drop_context")
 
     return build_evidence_item(
         evidence_type=ORCHESTRATOR_OPERATION_TIMELINE_SUMMARY_EVIDENCE_TYPE,
@@ -2592,7 +2717,106 @@ def _operation_timeline_summary_evidence(
                 "operation_timeline_policy_decision_count"
             ),
             "policy_decision_reasons": policy_reasons,
+            "stale_drop_summary": metrics.get(
+                "operation_timeline_stale_drop_summary"
+            ),
+            "stale_drop_count": metrics.get("operation_timeline_stale_drop_count"),
+            "stale_drop_rate": metrics.get("operation_timeline_stale_drop_rate"),
+            "tasks_with_stale_drop": metrics.get(
+                "operation_timeline_affected_stale_drop_tasks"
+            ),
             "review_markers": review_markers,
+        },
+    )
+
+
+def _stale_frame_risk_evidence(
+    metrics: dict[str, Any],
+    totals: dict[str, Any],
+    thresholds: dict[str, float],
+) -> dict[str, Any] | None:
+    stale_drop_count = _non_negative_number(
+        metrics.get("operation_timeline_stale_drop_count")
+    )
+    if stale_drop_count < thresholds["stale_drop_count_review"]:
+        return None
+
+    stale_drop_rate = _non_negative_number(
+        metrics.get("operation_timeline_stale_drop_rate")
+    )
+    severity = _rate_severity(
+        value=stale_drop_rate,
+        review=thresholds["stale_drop_rate_review"],
+        blocked=thresholds["stale_drop_rate_blocked"],
+    )
+    if severity == "low":
+        severity = "medium"
+    status = "failed" if severity == "high" else "warning"
+    stale_drop_reasons = _count_mapping(
+        metrics.get("operation_timeline_stale_drop_reasons")
+    )
+    reason_classes = _string_list(
+        metrics.get("operation_timeline_stale_drop_reason_classes")
+    )
+    suspected_causes = _stale_drop_suspected_causes(
+        stale_drop_reasons,
+        reason_classes,
+    )
+
+    return build_evidence_item(
+        evidence_type=ORCHESTRATOR_STALE_FRAME_RISK_EVIDENCE_TYPE,
+        metric_name="stale_drop_rate",
+        observed_value=stale_drop_rate,
+        baseline_value=0,
+        threshold=thresholds["stale_drop_rate_review"],
+        delta=None,
+        delta_pct=None,
+        increase_factor=None,
+        severity=severity,
+        status=status,
+        explanation=(
+            "Orchestrator reported "
+            f"{int(stale_drop_count)} stale/backlog drop event(s)."
+        ),
+        why_it_matters=(
+            "Stale frame or backlog drops can protect high-priority work, but they "
+            "also show that lower-priority Vision or command workloads may lose "
+            "fresh inputs under sustained multi-agent load."
+        ),
+        suspected_causes=suspected_causes,
+        recommendation=(
+            "Review tasks_with_stale_drop, stale_drop_reasons, queue depth, "
+            "producer rate, and fallback policy in Lab before treating the "
+            "operation profile as stable. Lab remains the final deployment "
+            "decision owner."
+        ),
+        raw_context={
+            "totals": totals,
+            "stale_drop_summary": metrics.get(
+                "operation_timeline_stale_drop_summary"
+            ),
+            "stale_drop_count": stale_drop_count,
+            "total_drop_count": metrics.get(
+                "operation_timeline_stale_drop_total_count"
+            ),
+            "stale_drop_rate": stale_drop_rate,
+            "stale_drop_reasons": stale_drop_reasons,
+            "stale_drop_reason_classes": reason_classes,
+            "tasks_with_stale_drop": metrics.get(
+                "operation_timeline_affected_stale_drop_tasks"
+            ),
+            "latest_stale_drop_event": metrics.get(
+                "operation_timeline_latest_stale_drop_event"
+            ),
+            "decision_owner": metrics.get(
+                "operation_timeline_stale_drop_decision_owner"
+            ),
+            "scheduler_owner": metrics.get(
+                "operation_timeline_stale_drop_scheduler_owner"
+            ),
+            "not_a_deployment_decision": metrics.get(
+                "operation_timeline_stale_drop_not_a_deployment_decision"
+            ),
         },
     )
 
@@ -2928,6 +3152,12 @@ def _edgeenv_regression_evidence(
     )
     if operation_timeline_evidence is not None:
         evidence.append(operation_timeline_evidence)
+    stale_drop_evidence = _edgeenv_orchestrator_stale_drop_summary_evidence(
+        metrics,
+        thresholds,
+    )
+    if stale_drop_evidence is not None:
+        evidence.append(stale_drop_evidence)
     seed_run_config_evidence = _edgeenv_history_seed_run_config_evidence(metrics)
     if seed_run_config_evidence is not None:
         evidence.append(seed_run_config_evidence)
@@ -4086,6 +4316,12 @@ def _edgeenv_orchestrator_operation_timeline_summary_evidence(
         suspected_causes.append("queue_pressure_context")
     if "review_load_shedding" in review_markers:
         suspected_causes.append("load_shedding_context")
+    if (
+        "review_stale_drop" in review_markers
+        or metrics.get("orchestrator_operation_timeline_affected_stale_drop_tasks")
+        or metrics.get("orchestrator_stale_drop_count", 0.0) > 0
+    ):
+        suspected_causes.append("stale_drop_context")
     if "operation_boundary_marker_gap" in review_markers:
         suspected_causes.append("operation_timeline_boundary_marker_gap")
 
@@ -4142,10 +4378,109 @@ def _edgeenv_orchestrator_operation_timeline_summary_evidence(
                     "orchestrator_operation_timeline_policy_decision_count"
                 ),
                 "policy_decision_reasons": policy_reasons,
+                "stale_drop_summary": metrics.get("orchestrator_stale_drop_summary"),
+                "stale_drop_count": metrics.get("orchestrator_stale_drop_count"),
+                "stale_drop_rate": metrics.get("orchestrator_stale_drop_rate"),
+                "tasks_with_stale_drop": metrics.get(
+                    "orchestrator_tasks_with_stale_drop"
+                ),
                 "review_markers": review_markers,
                 "decision_owner": "lab",
                 "scheduler_owner": "orchestrator",
                 "not_a_deployment_decision": True,
+            },
+        },
+    )
+
+
+def _edgeenv_orchestrator_stale_drop_summary_evidence(
+    metrics: dict[str, Any],
+    thresholds: dict[str, float],
+) -> dict[str, Any] | None:
+    if not metrics.get("runtime_telemetry_context_present"):
+        return None
+    if not metrics.get("orchestrator_stale_drop_summary_present"):
+        return None
+
+    stale_drop_count = _non_negative_number(
+        metrics.get("orchestrator_stale_drop_count")
+    )
+    if stale_drop_count < thresholds["stale_drop_count_review"]:
+        return None
+    stale_drop_rate = _non_negative_number(
+        metrics.get("orchestrator_stale_drop_rate")
+    )
+    severity = _rate_severity(
+        value=stale_drop_rate,
+        review=thresholds["stale_drop_rate_review"],
+        blocked=thresholds["stale_drop_rate_blocked"],
+    )
+    if severity == "low":
+        severity = "medium"
+    status = "failed" if severity == "high" else "warning"
+    stale_drop_reasons = _count_mapping(metrics.get("orchestrator_stale_drop_reasons"))
+    reason_classes = _string_list(metrics.get("orchestrator_stale_drop_reason_classes"))
+    boundary_ok = (
+        metrics.get("orchestrator_stale_drop_scheduler_owner") == "orchestrator"
+        and metrics.get("orchestrator_stale_drop_decision_owner") == "lab"
+        and metrics.get("orchestrator_stale_drop_not_a_deployment_decision") is True
+    )
+    suspected_causes = _stale_drop_suspected_causes(
+        stale_drop_reasons,
+        reason_classes,
+    )
+    if not boundary_ok:
+        suspected_causes.append("stale_drop_boundary_marker_gap")
+
+    return build_evidence_item(
+        evidence_type=EDGEENV_ORCHESTRATOR_STALE_DROP_SUMMARY_EVIDENCE_TYPE,
+        metric_name="orchestrator_stale_drop_rate",
+        observed_value=stale_drop_rate,
+        baseline_value=0,
+        threshold=thresholds["stale_drop_rate_review"],
+        delta=None,
+        delta_pct=None,
+        increase_factor=None,
+        severity=severity,
+        status=status,
+        explanation=(
+            "EdgeEnv preserved Orchestrator stale_drop_summary with "
+            f"{int(stale_drop_count)} stale/backlog drop event(s)."
+        ),
+        why_it_matters=(
+            "Preserved stale drop context identifies which agent workloads lost "
+            "queued or stale work under sustained overload while keeping "
+            "Orchestrator as scheduler owner and Lab as final decision owner."
+        ),
+        suspected_causes=suspected_causes,
+        recommendation=(
+            "Review stale_drop_summary with Orchestrator queue, latency, drop, "
+            "and fallback evidence before treating the preserved operation feed "
+            "as stable. Lab remains the final deployment decision owner."
+        ),
+        raw_context={
+            "edgeenv_regression": metrics,
+            "stale_drop_summary": {
+                "summary": metrics.get("orchestrator_stale_drop_summary"),
+                "boundary_markers_valid": boundary_ok,
+                "stale_drop_count": stale_drop_count,
+                "total_drop_count": metrics.get("orchestrator_stale_drop_total_count"),
+                "stale_drop_rate": stale_drop_rate,
+                "stale_drop_reasons": stale_drop_reasons,
+                "stale_drop_reason_classes": reason_classes,
+                "tasks_with_stale_drop": metrics.get(
+                    "orchestrator_tasks_with_stale_drop"
+                ),
+                "latest_stale_drop_event": metrics.get(
+                    "orchestrator_latest_stale_drop_event"
+                ),
+                "decision_owner": metrics.get("orchestrator_stale_drop_decision_owner"),
+                "scheduler_owner": metrics.get(
+                    "orchestrator_stale_drop_scheduler_owner"
+                ),
+                "not_a_deployment_decision": metrics.get(
+                    "orchestrator_stale_drop_not_a_deployment_decision"
+                ),
             },
         },
     )
@@ -5384,6 +5719,7 @@ def _operation_timeline_affected_tasks(metrics: dict[str, Any]) -> list[str]:
         "operation_timeline_affected_deadline_missed_tasks",
         "operation_timeline_affected_fallback_tasks",
         "operation_timeline_affected_scheduler_delay_tasks",
+        "operation_timeline_affected_stale_drop_tasks",
         "operation_timeline_affected_degraded_tasks",
         "operation_timeline_affected_constrained_tasks",
     ):
@@ -5399,6 +5735,7 @@ def _edgeenv_operation_timeline_affected_tasks(metrics: dict[str, Any]) -> list[
         "orchestrator_operation_timeline_affected_deadline_missed_tasks",
         "orchestrator_operation_timeline_affected_fallback_tasks",
         "orchestrator_operation_timeline_affected_scheduler_delay_tasks",
+        "orchestrator_operation_timeline_affected_stale_drop_tasks",
         "orchestrator_operation_timeline_affected_degraded_tasks",
         "orchestrator_operation_timeline_affected_constrained_tasks",
     ):
@@ -5644,6 +5981,21 @@ def _producer_sources_by_task(queue_state_summary: dict[str, Any]) -> dict[str, 
             continue
         result[task_name] = _string_list(sources)
     return result
+
+
+def _stale_drop_suspected_causes(
+    stale_drop_reasons: dict[str, int],
+    reason_classes: list[str],
+) -> list[str]:
+    suspected: list[str] = []
+    for reason in list(stale_drop_reasons) + list(reason_classes):
+        if "queue_overflow" in reason and "stale_queue_overflow" not in suspected:
+            suspected.append("stale_queue_overflow")
+        if "load_shedding" in reason and "load_shedding_context" not in suspected:
+            suspected.append("load_shedding_context")
+        if "backlog" in reason and "queue_backlog_context" not in suspected:
+            suspected.append("queue_backlog_context")
+    return suspected or ["stale_drop_context"]
 
 
 def _queue_pressure_reason_is_concerning(reason: Any) -> bool:
