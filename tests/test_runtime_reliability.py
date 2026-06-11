@@ -938,6 +938,40 @@ def edgeenv_regression_report_with_orchestrator_feed_context() -> dict:
                 "tasks_with_deadline_miss": ["vision_agent"],
                 "tasks_with_fallback": ["voice_command_agent"],
                 "tasks_with_scheduler_delay": ["vision_agent"],
+                "operation_risk_rollup": {
+                    "schema_version": (
+                        "inferedge-orchestrator-operation-risk-rollup-v1"
+                    ),
+                    "operation_context_role": "supplemental",
+                    "decision_owner": "lab",
+                    "scheduler_owner": "orchestrator",
+                    "not_a_deployment_decision": True,
+                    "risk_level": "review",
+                    "first_read": "review_operation_risk_context",
+                    "primary_reasons": [
+                        "queue_pressure_overloaded",
+                        "scheduler_delay_present",
+                        "deadline_missed_present",
+                        "fallback_used",
+                    ],
+                    "affected_tasks": {
+                        "deadline_missed": ["vision_agent"],
+                        "fallback": ["voice_command_agent"],
+                        "scheduler_delay": ["vision_agent"],
+                        "degraded": ["vision_agent"],
+                        "constrained": [],
+                    },
+                    "max_total_queue_depth": 7,
+                    "overload_backlog_threshold": 3,
+                    "queue_pressure_state": "overloaded",
+                    "queue_pressure_reason": "queue_backlog_threshold_exceeded",
+                    "deadline_missed_count": 2,
+                    "fallback_count": 1,
+                    "dropped_count": 1,
+                    "policy_decision_count": 2,
+                    "scheduler_delay_event_count": 1,
+                    "resource_snapshot_count": 0,
+                },
                 "latency_budget_protection": {
                     "schema_version": (
                         "inferedge-orchestrator-latency-budget-protection-v1"
@@ -1887,6 +1921,47 @@ def test_compute_edgeenv_regression_metrics_extracts_orchestrator_feed_context()
         2.0
     )
     assert metrics["orchestrator_operation_risk_summary_producer_event_count"] == 4.0
+    assert metrics["orchestrator_operation_risk_rollup_present"] is True
+    assert metrics["orchestrator_operation_risk_rollup_schema_version"] == (
+        "inferedge-orchestrator-operation-risk-rollup-v1"
+    )
+    assert (
+        metrics["orchestrator_operation_risk_rollup_operation_context_role"]
+        == "supplemental"
+    )
+    assert metrics["orchestrator_operation_risk_rollup_decision_owner"] == "lab"
+    assert (
+        metrics["orchestrator_operation_risk_rollup_scheduler_owner"]
+        == "orchestrator"
+    )
+    assert (
+        metrics["orchestrator_operation_risk_rollup_not_a_deployment_decision"]
+        is True
+    )
+    assert metrics["orchestrator_operation_risk_rollup_risk_level"] == "review"
+    assert metrics["orchestrator_operation_risk_rollup_primary_reasons"] == [
+        "queue_pressure_overloaded",
+        "scheduler_delay_present",
+        "deadline_missed_present",
+        "fallback_used",
+    ]
+    assert metrics[
+        "orchestrator_operation_risk_rollup_affected_scheduler_delay_tasks"
+    ] == ["vision_agent"]
+    assert metrics["orchestrator_operation_risk_rollup_affected_fallback_tasks"] == [
+        "voice_command_agent"
+    ]
+    assert metrics["orchestrator_operation_risk_rollup_max_total_queue_depth"] == 7.0
+    assert metrics["orchestrator_operation_risk_rollup_queue_pressure_reason"] == (
+        "queue_backlog_threshold_exceeded"
+    )
+    assert metrics["orchestrator_operation_risk_rollup_deadline_missed_count"] == 2.0
+    assert metrics["orchestrator_operation_risk_rollup_fallback_count"] == 1.0
+    assert metrics["orchestrator_operation_risk_rollup_drop_count"] == 1.0
+    assert (
+        metrics["orchestrator_operation_risk_rollup_scheduler_delay_event_count"]
+        == 1.0
+    )
     assert metrics["orchestrator_latency_budget_protection_present"] is True
     assert metrics["orchestrator_latency_budget_protection_schema_version"] == (
         "inferedge-orchestrator-latency-budget-protection-v1"
@@ -2243,6 +2318,7 @@ def test_analyze_edgeenv_regression_report_warns_on_orchestrator_feed_context():
     evidence_types = {item["type"] for item in report["evidence"]}
     assert "edgeenv_orchestrator_producer_lineage" in evidence_types
     assert "edgeenv_orchestrator_operation_risk_summary" in evidence_types
+    assert "edgeenv_orchestrator_operation_risk_rollup" in evidence_types
     assert "edgeenv_orchestrator_task_event_rollup" in evidence_types
     assert "edgeenv_orchestrator_latency_budget_protection" in evidence_types
     assert "edgeenv_orchestrator_operation_timeline_summary" in evidence_types
@@ -2346,6 +2422,33 @@ def test_analyze_edgeenv_regression_report_warns_on_orchestrator_feed_context():
     assert producer_lineage["raw_context"]["producer_lineage"][
         "candidate_remote_runtime_event_summary_evidence_role"
     ] == "remote_dispatch_runtime_event_compact_summary"
+
+    core_alignment_report = edgeenv_regression_report_with_orchestrator_feed_context()
+    core_alignment_report["runtime_telemetry_context"]["candidate"][
+        "orchestrator_operation_context"
+    ]["downstream_guard_alignment"]["operation_evidence_candidates"] = [
+        "runtime_queue_overload",
+        "runtime_thermal_instability",
+    ]
+    core_report = analyze_edgeenv_regression_report(core_alignment_report)
+    core_producer_lineage = next(
+        item
+        for item in core_report["evidence"]
+        if item["type"] == "edgeenv_orchestrator_producer_lineage"
+    )
+    assert core_producer_lineage["status"] == "passed"
+    assert core_producer_lineage["observed_value"] == 1
+    assert core_producer_lineage["baseline_value"] == 1
+    assert core_producer_lineage["raw_context"]["producer_lineage"][
+        "candidate_guard_alignment_valid"
+    ] is True
+    assert core_producer_lineage["raw_context"]["producer_lineage"][
+        "candidate_guard_alignment_operation_evidence_candidates"
+    ] == [
+        "runtime_queue_overload",
+        "runtime_thermal_instability",
+    ]
+
     operation_risk = next(
         item
         for item in report["evidence"]
@@ -2369,6 +2472,38 @@ def test_analyze_edgeenv_regression_report_warns_on_orchestrator_feed_context():
     assert operation_risk["raw_context"]["operation_risk_summary"][
         "device_local_event_count"
     ] == 2.0
+    operation_risk_rollup = next(
+        item
+        for item in report["evidence"]
+        if item["type"] == "edgeenv_orchestrator_operation_risk_rollup"
+    )
+    assert operation_risk_rollup["status"] == "warning"
+    assert operation_risk_rollup["threshold"] == 1
+    assert operation_risk_rollup["observed_value"] >= 5
+    assert "queue_pressure_context" in operation_risk_rollup["suspected_causes"]
+    assert "deadline_miss_context" in operation_risk_rollup["suspected_causes"]
+    assert "scheduler_delay_context" in operation_risk_rollup["suspected_causes"]
+    assert "fallback_policy_context" in operation_risk_rollup["suspected_causes"]
+    assert "operation_risk_rollup_context" in (
+        operation_risk_rollup["suspected_causes"]
+    )
+    rollup_context = operation_risk_rollup["raw_context"]["operation_risk_rollup"]
+    assert rollup_context["boundary_markers_valid"] is True
+    assert rollup_context["risk_level"] == "review"
+    assert rollup_context["affected_tasks"] == [
+        "vision_agent",
+        "voice_command_agent",
+    ]
+    assert rollup_context["queue_pressure_reason"] == (
+        "queue_backlog_threshold_exceeded"
+    )
+    assert rollup_context["deadline_missed_count"] == 2.0
+    assert rollup_context["fallback_count"] == 1.0
+    assert rollup_context["drop_count"] == 1.0
+    assert rollup_context["scheduler_delay_event_count"] == 1.0
+    assert rollup_context["decision_owner"] == "lab"
+    assert rollup_context["scheduler_owner"] == "orchestrator"
+    assert rollup_context["not_a_deployment_decision"] is True
     task_event_rollup = next(
         item
         for item in report["evidence"]

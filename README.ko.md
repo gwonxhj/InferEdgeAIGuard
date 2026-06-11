@@ -150,6 +150,11 @@ AIGuard는 EdgeEnv가 보존한 Orchestrator `edgeenv_mapping_hint`도 raw conte
 `coverage_summary_path=runtime_telemetry_context.history.telemetry_coverage`,
 `operation_context_role=supplemental`은 ownership marker이며, AIGuard가
 coverage/regression 또는 Lab deployment policy를 소유한다는 의미가 아닙니다.
+EdgeEnv가 Orchestrator `operation_risk_rollup`을 보존하면 AIGuard는
+`edgeenv_orchestrator_operation_risk_rollup` evidence로 compact risk level,
+primary reason, affected task group, queue/deadline/fallback/drop/scheduler-delay
+marker를 설명합니다. 이는 Lab review용 deterministic warning context이며
+final deployment decision이 아닙니다.
 EdgeEnv가 Orchestrator `latency_budget_protection` block을 보존하면 AIGuard는
 `edgeenv_orchestrator_latency_budget_protection` evidence로 protected
 high-priority task, latency-budget risk task, deadline/scheduler/queue reason,

@@ -225,6 +225,12 @@ python -m inferedge_aiguard.cli check-edgeenv-handoff-alignment \
   --guard-analysis examples/runtime_intelligence/aiguard_runtime_operation_guard_analysis.json
 ```
 
+`reason-edgeenv-regression`은 EdgeEnv regression report에서 나온 deterministic
+evidence만 생성합니다. Lab handoff가 별도 remote dispatch starter evidence
+(`remote_execution_recovered_by_fallback`)를 요구하는 경우에는 remote dispatch
+분석 evidence까지 포함된 combined `guard_analysis` artifact를 alignment 입력으로
+사용해야 합니다.
+
 이 경로는 EdgeEnv의 comparability-first 결과를 존중하면서
 `runtime_latency_regression`, `runtime_throughput_regression`,
 `runtime_memory_regression`, `runtime_telemetry_context_coverage`,
@@ -262,6 +268,11 @@ max-pressure task, worker health, degraded worker ID, device-local producer
 event count를 설명합니다. 이 evidence는 `decision_owner=lab`,
 `scheduler_owner=orchestrator`, `not_a_deployment_decision=true` 경계를 확인하는
 supplemental operation context이며 최종 deployment decision이 아닙니다.
+EdgeEnv가 Orchestrator `operation_risk_rollup`을 함께 보존하면 AIGuard는
+`edgeenv_orchestrator_operation_risk_rollup` evidence로 compact risk level,
+primary reason, affected task group, queue/deadline/fallback/drop/scheduler-delay
+marker를 설명합니다. 이 evidence도 Lab review용 deterministic warning
+context이며 최종 deployment decision이 아닙니다.
 EdgeEnv가 Orchestrator `latency_budget_protection` block을 보존하면 AIGuard는
 `edgeenv_orchestrator_latency_budget_protection` evidence로 protected
 high-priority task, latency-budget risk task, deadline/scheduler/queue reason,

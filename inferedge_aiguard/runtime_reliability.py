@@ -32,6 +32,12 @@ EDGEENV_ORCHESTRATOR_PRODUCER_LINEAGE_EVIDENCE_TYPE = (
 EDGEENV_ORCHESTRATOR_TASK_EVENT_ROLLUP_EVIDENCE_TYPE = (
     "edgeenv_orchestrator_task_event_rollup"
 )
+EDGEENV_ORCHESTRATOR_OPERATION_RISK_ROLLUP_EVIDENCE_TYPE = (
+    "edgeenv_orchestrator_operation_risk_rollup"
+)
+EDGEENV_ORCHESTRATOR_OPERATION_RISK_ROLLUP_SCHEMA_VERSION = (
+    "inferedge-orchestrator-operation-risk-rollup-v1"
+)
 EDGEENV_ORCHESTRATOR_LATENCY_BUDGET_PROTECTION_EVIDENCE_TYPE = (
     "edgeenv_orchestrator_latency_budget_protection"
 )
@@ -51,6 +57,10 @@ EDGEENV_ORCHESTRATOR_OPERATION_EVIDENCE_CANDIDATES = (
     "runtime_queue_overload",
     "runtime_thermal_instability",
     EDGEENV_ORCHESTRATOR_LATENCY_BUDGET_PROTECTION_EVIDENCE_TYPE,
+)
+EDGEENV_ORCHESTRATOR_CORE_OPERATION_EVIDENCE_CANDIDATES = (
+    "runtime_queue_overload",
+    "runtime_thermal_instability",
 )
 RUN_CONFIG_MARKER_FIELDS = (
     "input_mode",
@@ -919,6 +929,13 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
     candidate_operation_risk_summary = _mapping(
         candidate_orchestrator_context.get("operation_risk_summary")
     )
+    candidate_operation_risk_rollup = _mapping(
+        candidate_orchestrator_operation.get("operation_risk_rollup")
+        or candidate_orchestrator_context.get("operation_risk_rollup")
+    )
+    candidate_operation_risk_rollup_affected_tasks = _mapping(
+        candidate_operation_risk_rollup.get("affected_tasks")
+    )
     candidate_latency_budget_protection = _mapping(
         candidate_orchestrator_operation.get("latency_budget_protection")
         or candidate_orchestrator_context.get("latency_budget_protection")
@@ -1403,6 +1420,112 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
         "orchestrator_operation_risk_summary_producer_event_count": (
             _optional_number(
                 candidate_operation_risk_summary.get("producer_event_count")
+            )
+        ),
+        "orchestrator_operation_risk_rollup": dict(candidate_operation_risk_rollup),
+        "orchestrator_operation_risk_rollup_present": bool(
+            candidate_operation_risk_rollup
+        ),
+        "orchestrator_operation_risk_rollup_schema_version": (
+            candidate_operation_risk_rollup.get("schema_version")
+        ),
+        "orchestrator_operation_risk_rollup_operation_context_role": (
+            candidate_operation_risk_rollup.get("operation_context_role")
+        ),
+        "orchestrator_operation_risk_rollup_decision_owner": (
+            candidate_operation_risk_rollup.get("decision_owner")
+        ),
+        "orchestrator_operation_risk_rollup_scheduler_owner": (
+            candidate_operation_risk_rollup.get("scheduler_owner")
+        ),
+        "orchestrator_operation_risk_rollup_not_a_deployment_decision": (
+            _optional_bool(
+                candidate_operation_risk_rollup.get("not_a_deployment_decision")
+            )
+        ),
+        "orchestrator_operation_risk_rollup_risk_level": (
+            candidate_operation_risk_rollup.get("risk_level")
+        ),
+        "orchestrator_operation_risk_rollup_first_read": (
+            candidate_operation_risk_rollup.get("first_read")
+        ),
+        "orchestrator_operation_risk_rollup_primary_reasons": _string_list(
+            candidate_operation_risk_rollup.get("primary_reasons")
+        ),
+        "orchestrator_operation_risk_rollup_affected_tasks": dict(
+            candidate_operation_risk_rollup_affected_tasks
+        ),
+        "orchestrator_operation_risk_rollup_affected_deadline_missed_tasks": (
+            _string_list(
+                candidate_operation_risk_rollup_affected_tasks.get(
+                    "deadline_missed"
+                )
+            )
+        ),
+        "orchestrator_operation_risk_rollup_affected_fallback_tasks": (
+            _string_list(
+                candidate_operation_risk_rollup_affected_tasks.get("fallback")
+            )
+        ),
+        "orchestrator_operation_risk_rollup_affected_scheduler_delay_tasks": (
+            _string_list(
+                candidate_operation_risk_rollup_affected_tasks.get(
+                    "scheduler_delay"
+                )
+            )
+        ),
+        "orchestrator_operation_risk_rollup_affected_degraded_tasks": (
+            _string_list(
+                candidate_operation_risk_rollup_affected_tasks.get("degraded")
+            )
+        ),
+        "orchestrator_operation_risk_rollup_affected_constrained_tasks": (
+            _string_list(
+                candidate_operation_risk_rollup_affected_tasks.get("constrained")
+            )
+        ),
+        "orchestrator_operation_risk_rollup_queue_pressure_state": (
+            candidate_operation_risk_rollup.get("queue_pressure_state")
+        ),
+        "orchestrator_operation_risk_rollup_queue_pressure_reason": (
+            candidate_operation_risk_rollup.get("queue_pressure_reason")
+        ),
+        "orchestrator_operation_risk_rollup_max_total_queue_depth": (
+            _optional_non_negative_number(
+                candidate_operation_risk_rollup.get("max_total_queue_depth")
+            )
+        ),
+        "orchestrator_operation_risk_rollup_deadline_missed_count": (
+            _optional_non_negative_number(
+                candidate_operation_risk_rollup.get("deadline_missed_count")
+            )
+        ),
+        "orchestrator_operation_risk_rollup_fallback_count": (
+            _optional_non_negative_number(
+                candidate_operation_risk_rollup.get("fallback_count")
+            )
+        ),
+        "orchestrator_operation_risk_rollup_drop_count": (
+            _optional_non_negative_number(
+                _first_number(
+                    candidate_operation_risk_rollup.get("dropped_count"),
+                    candidate_operation_risk_rollup.get("drop_count"),
+                )
+            )
+        ),
+        "orchestrator_operation_risk_rollup_scheduler_delay_event_count": (
+            _optional_non_negative_number(
+                candidate_operation_risk_rollup.get("scheduler_delay_event_count")
+            )
+        ),
+        "orchestrator_operation_risk_rollup_policy_decision_count": (
+            _optional_non_negative_number(
+                candidate_operation_risk_rollup.get("policy_decision_count")
+            )
+        ),
+        "orchestrator_operation_risk_rollup_resource_snapshot_count": (
+            _optional_non_negative_number(
+                candidate_operation_risk_rollup.get("resource_snapshot_count")
             )
         ),
         "orchestrator_latency_budget_protection": dict(
@@ -2785,6 +2908,11 @@ def _edgeenv_regression_evidence(
     operation_risk_evidence = _edgeenv_orchestrator_operation_risk_evidence(metrics)
     if operation_risk_evidence is not None:
         evidence.append(operation_risk_evidence)
+    operation_risk_rollup_evidence = (
+        _edgeenv_orchestrator_operation_risk_rollup_evidence(metrics)
+    )
+    if operation_risk_rollup_evidence is not None:
+        evidence.append(operation_risk_rollup_evidence)
     task_event_rollup_evidence = _edgeenv_orchestrator_task_event_rollup_evidence(
         metrics
     )
@@ -3497,6 +3625,179 @@ def _edgeenv_orchestrator_operation_risk_evidence(
     )
 
 
+def _edgeenv_orchestrator_operation_risk_rollup_evidence(
+    metrics: dict[str, Any],
+) -> dict[str, Any] | None:
+    if not metrics.get("runtime_telemetry_context_present"):
+        return None
+    if not metrics.get("orchestrator_operation_risk_rollup_present"):
+        return None
+
+    risk_level = _first_string(
+        metrics.get("orchestrator_operation_risk_rollup_risk_level")
+    )
+    primary_reasons = _string_list(
+        metrics.get("orchestrator_operation_risk_rollup_primary_reasons")
+    )
+    affected_tasks = _edgeenv_operation_risk_rollup_affected_tasks(metrics)
+    affected_task_groups = _mapping(
+        metrics.get("orchestrator_operation_risk_rollup_affected_tasks")
+    )
+    queue_pressure_reason = _first_string(
+        metrics.get("orchestrator_operation_risk_rollup_queue_pressure_reason")
+    )
+    deadline_missed_count = _non_negative_number(
+        metrics.get("orchestrator_operation_risk_rollup_deadline_missed_count")
+    )
+    fallback_count = _non_negative_number(
+        metrics.get("orchestrator_operation_risk_rollup_fallback_count")
+    )
+    drop_count = _non_negative_number(
+        metrics.get("orchestrator_operation_risk_rollup_drop_count")
+    )
+    scheduler_delay_count = _non_negative_number(
+        metrics.get("orchestrator_operation_risk_rollup_scheduler_delay_event_count")
+    )
+    boundary_ok = (
+        metrics.get("orchestrator_operation_risk_rollup_schema_version")
+        == EDGEENV_ORCHESTRATOR_OPERATION_RISK_ROLLUP_SCHEMA_VERSION
+        and metrics.get("orchestrator_operation_risk_rollup_operation_context_role")
+        == "supplemental"
+        and metrics.get("orchestrator_operation_risk_rollup_decision_owner") == "lab"
+        and metrics.get("orchestrator_operation_risk_rollup_scheduler_owner")
+        == "orchestrator"
+        and metrics.get(
+            "orchestrator_operation_risk_rollup_not_a_deployment_decision"
+        )
+        is True
+    )
+
+    review_markers: list[str] = []
+    if risk_level and risk_level not in {"nominal", "none", "healthy", "passed"}:
+        review_markers.append("risk_level")
+    if primary_reasons:
+        review_markers.append("primary_reason")
+    if affected_tasks:
+        review_markers.append("affected_task_context")
+    if _queue_pressure_reason_is_concerning(queue_pressure_reason):
+        review_markers.append("queue_pressure_context")
+    if deadline_missed_count > 0:
+        review_markers.append("deadline_miss_context")
+    if fallback_count > 0:
+        review_markers.append("fallback_context")
+    if drop_count > 0:
+        review_markers.append("drop_context")
+    if scheduler_delay_count > 0:
+        review_markers.append("scheduler_delay_context")
+    if not boundary_ok:
+        review_markers.append("operation_boundary_marker_gap")
+    review_markers = _unique_string_values(review_markers)
+
+    observed_value = len(review_markers)
+    status = "warning" if observed_value else "passed"
+    severity = (
+        "high"
+        if risk_level in {"blocked", "critical"}
+        else "medium"
+        if status != "passed"
+        else "low"
+    )
+    suspected_causes: list[str] = []
+    if (
+        "queue_pressure_context" in review_markers
+        or any("queue" in reason or "backlog" in reason for reason in primary_reasons)
+    ):
+        suspected_causes.append("queue_pressure_context")
+    if "deadline_miss_context" in review_markers or any(
+        "deadline" in reason for reason in primary_reasons
+    ):
+        suspected_causes.append("deadline_miss_context")
+    if "fallback_context" in review_markers or any(
+        "fallback" in reason for reason in primary_reasons
+    ):
+        suspected_causes.append("fallback_policy_context")
+    if "drop_context" in review_markers or any(
+        "drop" in reason or "load_shedding" in reason for reason in primary_reasons
+    ):
+        suspected_causes.append("load_shedding_context")
+    if "scheduler_delay_context" in review_markers or any(
+        "scheduler" in reason for reason in primary_reasons
+    ):
+        suspected_causes.append("scheduler_delay_context")
+    if primary_reasons or affected_tasks:
+        suspected_causes.append("operation_risk_rollup_context")
+    if "operation_boundary_marker_gap" in review_markers:
+        suspected_causes.append("operation_risk_boundary_marker_gap")
+    suspected_causes = _unique_string_values(suspected_causes)
+
+    return build_evidence_item(
+        evidence_type=EDGEENV_ORCHESTRATOR_OPERATION_RISK_ROLLUP_EVIDENCE_TYPE,
+        metric_name="orchestrator_operation_risk_rollup_marker_count",
+        observed_value=observed_value,
+        baseline_value=0,
+        threshold=1,
+        delta=None,
+        delta_pct=None,
+        increase_factor=None,
+        severity=severity,
+        status=status,
+        explanation=(
+            "EdgeEnv preserved Orchestrator operation_risk_rollup with "
+            f"{observed_value} deterministic review marker(s)."
+        ),
+        why_it_matters=(
+            "Operation risk rollup condenses queue pressure, deadline, fallback, "
+            "drop, and scheduler-delay signals into supplemental review evidence. "
+            "AIGuard keeps it deterministic while Lab remains the final "
+            "deployment decision owner."
+        ),
+        suspected_causes=suspected_causes,
+        recommendation=(
+            "Review operation_risk_rollup in Lab alongside operation timeline, "
+            "task-event rollup, and worker health evidence; keep Orchestrator as "
+            "scheduler owner and Lab as final decision owner."
+            if status != "passed"
+            else "Operation risk rollup is present without deterministic review "
+            "markers."
+        ),
+        raw_context={
+            "edgeenv_regression": metrics,
+            "operation_risk_rollup": {
+                "summary": metrics.get("orchestrator_operation_risk_rollup"),
+                "boundary_markers_valid": boundary_ok,
+                "risk_level": risk_level,
+                "first_read": metrics.get(
+                    "orchestrator_operation_risk_rollup_first_read"
+                ),
+                "primary_reasons": primary_reasons,
+                "affected_task_groups": affected_task_groups,
+                "affected_tasks": affected_tasks,
+                "queue_pressure_state": metrics.get(
+                    "orchestrator_operation_risk_rollup_queue_pressure_state"
+                ),
+                "queue_pressure_reason": queue_pressure_reason,
+                "max_total_queue_depth": metrics.get(
+                    "orchestrator_operation_risk_rollup_max_total_queue_depth"
+                ),
+                "deadline_missed_count": deadline_missed_count,
+                "fallback_count": fallback_count,
+                "drop_count": drop_count,
+                "scheduler_delay_event_count": scheduler_delay_count,
+                "policy_decision_count": metrics.get(
+                    "orchestrator_operation_risk_rollup_policy_decision_count"
+                ),
+                "resource_snapshot_count": metrics.get(
+                    "orchestrator_operation_risk_rollup_resource_snapshot_count"
+                ),
+                "review_markers": review_markers,
+                "decision_owner": "lab",
+                "scheduler_owner": "orchestrator",
+                "not_a_deployment_decision": True,
+            },
+        },
+    )
+
+
 def _edgeenv_orchestrator_task_event_rollup_evidence(
     metrics: dict[str, Any],
 ) -> dict[str, Any] | None:
@@ -4103,7 +4404,7 @@ def _producer_lineage_guard_alignment_valid(
 ) -> bool:
     operation_candidates = set(_string_list(operation_evidence_candidates))
     required_operation_candidates = set(
-        EDGEENV_ORCHESTRATOR_OPERATION_EVIDENCE_CANDIDATES
+        EDGEENV_ORCHESTRATOR_CORE_OPERATION_EVIDENCE_CANDIDATES
     )
     producer_lineage_type_matches = (
         producer_lineage_evidence_type
@@ -5100,6 +5401,21 @@ def _edgeenv_operation_timeline_affected_tasks(metrics: dict[str, Any]) -> list[
         "orchestrator_operation_timeline_affected_scheduler_delay_tasks",
         "orchestrator_operation_timeline_affected_degraded_tasks",
         "orchestrator_operation_timeline_affected_constrained_tasks",
+    ):
+        for task in _string_list(metrics.get(key)):
+            if task not in tasks:
+                tasks.append(task)
+    return tasks
+
+
+def _edgeenv_operation_risk_rollup_affected_tasks(metrics: dict[str, Any]) -> list[str]:
+    tasks: list[str] = []
+    for key in (
+        "orchestrator_operation_risk_rollup_affected_deadline_missed_tasks",
+        "orchestrator_operation_risk_rollup_affected_fallback_tasks",
+        "orchestrator_operation_risk_rollup_affected_scheduler_delay_tasks",
+        "orchestrator_operation_risk_rollup_affected_degraded_tasks",
+        "orchestrator_operation_risk_rollup_affected_constrained_tasks",
     ):
         for task in _string_list(metrics.get(key)):
             if task not in tasks:

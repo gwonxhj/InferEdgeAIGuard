@@ -109,6 +109,7 @@ deployment decision owner.
 | `runtime_history_seed_run_config_traceability` | `runtime_history_seed_run_config_count` | warning when preserved Runtime history seeds lack run_config markers | n/a | EdgeEnv preserved Runtime history seed run_config markers as replay/comparability traceability evidence |
 | `edgeenv_orchestrator_producer_lineage` | `device_local_producer_context_count` | warning when preserved Orchestrator context lacks device-local producer metadata | n/a | EdgeEnv preserved device-local Orchestrator producer lineage as traceability evidence |
 | `edgeenv_orchestrator_operation_risk_summary` | `orchestrator_operation_risk_marker_count` | `>= 1` queue/worker/boundary marker | n/a | EdgeEnv preserved Orchestrator operation risk summary as supplemental operation context for Lab review |
+| `edgeenv_orchestrator_operation_risk_rollup` | `orchestrator_operation_risk_rollup_marker_count` | `>= 1` risk/queue/task/boundary marker | n/a | EdgeEnv preserved Orchestrator operation risk rollup as compact deterministic operation warning context |
 | `edgeenv_orchestrator_latency_budget_protection` | `orchestrator_latency_budget_protection_marker_count` | `>= 1` risk/boundary marker | n/a | EdgeEnv preserved Orchestrator latency-budget protection context for protected high-priority tasks and budget-risk tasks |
 | `edgeenv_orchestrator_operation_timeline_summary` | `orchestrator_operation_timeline_review_marker_count` | `>= 1` review/boundary marker | n/a | EdgeEnv preserved Orchestrator operation timeline summary as compact queue/latency/policy navigation evidence |
 | `runtime_thermal_instability` | `candidate_max_temperature_c` / `candidate_throttling_detected` | temperature `>= 70.0` or throttling `true` | temperature `>= 85.0` | EdgeEnv telemetry or attached Orchestrator feed indicates thermal/throttling pressure |
@@ -384,6 +385,12 @@ python -m inferedge_aiguard.cli check-edgeenv-handoff-alignment \
   --guard-analysis examples/runtime_intelligence/aiguard_runtime_operation_guard_analysis.json
 ```
 
+`reason-edgeenv-regression` only emits deterministic evidence derived from the
+EdgeEnv regression report. If the Lab handoff also requires remote dispatch
+starter evidence such as `remote_execution_recovered_by_fallback`, pass a
+combined `guard_analysis` artifact that includes the remote dispatch analysis
+evidence to the alignment gate.
+
 This path emits deterministic runtime anomaly evidence such as
 `runtime_latency_regression`, `runtime_throughput_regression`,
 `runtime_memory_regression`, `runtime_telemetry_context_coverage`, and
@@ -421,6 +428,13 @@ degraded worker IDs, and device-local producer event counts. The evidence keeps
 `decision_owner=lab`, `scheduler_owner=orchestrator`, and
 `not_a_deployment_decision=true` as boundary checks. It is supplemental runtime
 operation context for Lab review, not a final deployment decision.
+When EdgeEnv preserves Orchestrator `operation_risk_rollup`, AIGuard emits
+`edgeenv_orchestrator_operation_risk_rollup` to explain compact risk level,
+primary reasons, affected task groups, queue pressure, deadline miss, fallback,
+drop, and scheduler-delay markers. The rollup remains deterministic warning
+context for Lab review and keeps `decision_owner=lab`,
+`scheduler_owner=orchestrator`, and `not_a_deployment_decision=true` as boundary
+checks.
 When EdgeEnv also preserves Orchestrator `latency_budget_protection`, AIGuard
 emits `edgeenv_orchestrator_latency_budget_protection` to explain protected
 high-priority tasks, latency-budget risk tasks, deadline/scheduler/queue
