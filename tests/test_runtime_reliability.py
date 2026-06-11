@@ -786,6 +786,10 @@ def edgeenv_runtime_intelligence_lab_handoff() -> dict:
                 "runtime_thermal_instability",
                 "remote_execution_recovered_by_fallback",
             ],
+            "optional_aiguard_evidence_types": [
+                "stale_frame_risk",
+                "edgeenv_orchestrator_stale_drop_summary",
+            ],
             "expected_report_markers": LAB_EXPECTED_REPORT_MARKERS,
             "boundary_flags": {
                 "aiguard_guard_analysis_is_external": True,
@@ -4111,6 +4115,22 @@ def test_validate_edgeenv_handoff_guard_evidence_alignment_passes():
     assert alignment["lab_report_marker_owner"] == "lab"
     assert alignment["report_marker_context_role"] == "lab_report_contract_context"
     assert alignment["aiguard_validates_expected_report_markers"] is False
+    assert alignment["optional_evidence_context_role"] == (
+        "read_only_optional_guard_context"
+    )
+    assert alignment["aiguard_validates_optional_evidence_as_required"] is False
+    assert alignment["optional_evidence_type_count"] == 2
+    assert alignment["optional_aiguard_evidence_types"] == [
+        "stale_frame_risk",
+        "edgeenv_orchestrator_stale_drop_summary",
+    ]
+    assert alignment["optional_guard_evidence_types_present"] == [
+        "edgeenv_orchestrator_stale_drop_summary",
+    ]
+    assert alignment["missing_optional_evidence_types"] == [
+        "stale_frame_risk",
+    ]
+    assert alignment["invalid_optional_evidence_types"] == []
     assert alignment["handoff_duration_traceability_present"] is True
     assert alignment["handoff_duration_traceability_run_ids"] == [
         "edgeenv-smoke-candidate"
@@ -4157,6 +4177,47 @@ def test_validate_edgeenv_handoff_guard_evidence_alignment_fails_on_missing_type
         alignment["recommendation"]
         == "regenerate_guard_analysis_or_update_handoff_contract"
     )
+
+
+def test_validate_edgeenv_handoff_guard_evidence_alignment_keeps_optional_read_only():
+    guard_analysis = edgeenv_handoff_guard_analysis_with_remote_fallback()
+    guard_analysis["evidence"] = [
+        item
+        for item in guard_analysis["evidence"]
+        if item["type"] != "edgeenv_orchestrator_stale_drop_summary"
+    ]
+
+    alignment = validate_edgeenv_handoff_guard_evidence_alignment(
+        edgeenv_runtime_intelligence_lab_handoff(),
+        guard_analysis,
+    )
+
+    assert alignment["status"] == "passed"
+    assert alignment["optional_guard_evidence_types_present"] == []
+    assert alignment["missing_optional_evidence_types"] == [
+        "edgeenv_orchestrator_stale_drop_summary",
+        "stale_frame_risk",
+    ]
+    assert alignment["aiguard_validates_optional_evidence_as_required"] is False
+    assert "missing_required_guard_evidence" not in alignment["errors"]
+
+
+def test_validate_edgeenv_handoff_guard_evidence_alignment_fails_invalid_optional_types():
+    guard_analysis = edgeenv_handoff_guard_analysis_with_remote_fallback()
+    handoff = edgeenv_runtime_intelligence_lab_handoff()
+    handoff["lab_bundle_alignment"]["optional_aiguard_evidence_types"] = [
+        "",
+        7,
+    ]
+
+    alignment = validate_edgeenv_handoff_guard_evidence_alignment(
+        handoff,
+        guard_analysis,
+    )
+
+    assert alignment["status"] == "failed"
+    assert alignment["invalid_optional_evidence_types"] == ["", "7"]
+    assert "invalid_optional_evidence_type" in alignment["errors"]
 
 
 def test_validate_edgeenv_handoff_guard_evidence_alignment_fails_boundary_mismatch():
@@ -4245,6 +4306,18 @@ def test_check_edgeenv_handoff_alignment_cli_exports_gate_summary(tmp_path):
         LAB_EXPECTED_REPORT_MARKERS
     )
     assert saved["aiguard_validates_expected_report_markers"] is False
+    assert saved["optional_evidence_context_role"] == (
+        "read_only_optional_guard_context"
+    )
+    assert saved["aiguard_validates_optional_evidence_as_required"] is False
+    assert saved["optional_aiguard_evidence_types"] == [
+        "stale_frame_risk",
+        "edgeenv_orchestrator_stale_drop_summary",
+    ]
+    assert saved["optional_guard_evidence_types_present"] == [
+        "edgeenv_orchestrator_stale_drop_summary",
+    ]
+    assert saved["missing_optional_evidence_types"] == ["stale_frame_risk"]
     assert saved["handoff_duration_sources"] == ["entrypoint_requested_frames"]
     assert saved["handoff_duration_scope_labels"] == [
         "source=entrypoint_requested_frames, "
@@ -4252,6 +4325,8 @@ def test_check_edgeenv_handoff_alignment_cli_exports_gate_summary(tmp_path):
         "class=short_96_frame_class, frames=96",
     ]
     assert "handoff_duration_scope_labels" in result.stdout
+    assert "optional_aiguard_evidence_types" in result.stdout
+    assert "read_only_optional_guard_context" in result.stdout
     assert "EdgeEnv fixture matrix coverage" in result.stdout
     assert "Reviewer operation quick scan" in result.stdout
 
@@ -4270,6 +4345,9 @@ def test_runtime_intelligence_docs_describe_lab_report_marker_context():
     for doc in docs:
         assert "expected_report_markers" in doc
         assert "lab_report_contract_context" in doc
+        assert "optional_aiguard_evidence_types" in doc
+        assert "read_only_optional_guard_context" in doc
         assert "AIGuard does not validate or own those Lab report markers" in doc
+        assert "AIGuard does not validate optional evidence as required" in doc
         for marker in LAB_EXPECTED_REPORT_MARKERS:
             assert marker in doc
