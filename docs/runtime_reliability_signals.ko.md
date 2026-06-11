@@ -88,6 +88,7 @@ deployment decision owner는 Lab입니다.
 | `runtime_history_seed_run_config_traceability` | `runtime_history_seed_run_config_count` | Runtime history seed는 보존됐지만 run_config marker가 부족하면 warning | n/a | EdgeEnv가 보존한 Runtime history seed run_config marker를 replay/comparability traceability evidence로 설명함 |
 | `edgeenv_orchestrator_producer_lineage` | `device_local_producer_context_count` | 보존된 Orchestrator context에 device-local producer metadata가 없으면 warning | n/a | EdgeEnv가 보존한 device-local Orchestrator producer lineage를 traceability evidence로 설명함 |
 | `edgeenv_orchestrator_operation_risk_summary` | `orchestrator_operation_risk_marker_count` | queue/worker/boundary marker `>= 1` | n/a | EdgeEnv가 보존한 Orchestrator operation risk summary를 Lab review용 supplemental operation context로 설명함 |
+| `edgeenv_orchestrator_operation_risk_rollup` | `orchestrator_operation_risk_rollup_marker_count` | risk/queue/task/boundary marker `>= 1` | n/a | EdgeEnv가 보존한 Orchestrator operation risk rollup을 compact deterministic operation warning context로 설명함 |
 | `edgeenv_orchestrator_latency_budget_protection` | `orchestrator_latency_budget_protection_marker_count` | risk/boundary marker `>= 1` | n/a | EdgeEnv가 보존한 Orchestrator latency-budget protection context로 protected high-priority task와 budget-risk task를 설명함 |
 | `edgeenv_orchestrator_operation_timeline_summary` | `orchestrator_operation_timeline_review_marker_count` | review/boundary marker `>= 1` | n/a | EdgeEnv가 보존한 Orchestrator operation timeline summary를 compact queue/latency/policy navigation evidence로 설명함 |
 | `remote_execution_plan_only` | `execution_requested` | `false` | n/a | remote dispatch가 worker를 선택했지만 plan-only starter boundary 안에 머무름 |
@@ -303,6 +304,12 @@ python -m inferedge_aiguard.cli check-edgeenv-handoff-alignment \
   --guard-analysis examples/runtime_intelligence/aiguard_runtime_operation_guard_analysis.json
 ```
 
+`reason-edgeenv-regression`은 EdgeEnv regression report에서 파생되는
+deterministic evidence만 생성합니다. Lab handoff가
+`remote_execution_recovered_by_fallback` 같은 별도 remote dispatch starter
+evidence도 요구하는 경우에는 remote dispatch 분석 evidence까지 포함된 combined
+`guard_analysis` artifact를 alignment gate 입력으로 사용해야 합니다.
+
 이 경로는 EdgeEnv가 이미 계산한 same-condition regression과
 `runtime_telemetry_context` coverage를 `runtime_latency_regression`,
 `runtime_throughput_regression`, `runtime_memory_regression`,
@@ -334,6 +341,13 @@ device-local producer event count 같은 deterministic review marker를
 `scheduler_owner=orchestrator`, `not_a_deployment_decision=true` boundary를
 확인하며, Lab review를 위한 supplemental runtime operation context일 뿐
 final deployment decision이 아닙니다.
+EdgeEnv가 Orchestrator `operation_risk_rollup`도 보존한 경우 AIGuard는
+`edgeenv_orchestrator_operation_risk_rollup` evidence로 compact risk level,
+primary reason, affected task group, queue pressure, deadline miss, fallback,
+drop, scheduler-delay marker를 설명합니다. 이 rollup은 Lab review를 위한
+deterministic warning context이며 `decision_owner=lab`,
+`scheduler_owner=orchestrator`, `not_a_deployment_decision=true` boundary를
+유지합니다.
 EdgeEnv가 Orchestrator `latency_budget_protection`도 보존한 경우 AIGuard는
 `edgeenv_orchestrator_latency_budget_protection` evidence로 protected
 high-priority task, latency-budget risk task, deadline/scheduler/queue reason,
