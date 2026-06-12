@@ -196,6 +196,27 @@ def _format_list(values: list[Any]) -> str:
     return "[" + ", ".join(str(value) for value in values) + "]"
 
 
+def _optional_source_artifact_marker(summary: dict[str, Any]) -> str:
+    artifact = summary.get("optional_present_source_artifact")
+    if not isinstance(artifact, dict):
+        return ""
+    repository = artifact.get("repository")
+    path = artifact.get("path")
+    if not repository or not path:
+        return ""
+    return f"{repository}/{path}"
+
+
+def _optional_source_reproduction_command(summary: dict[str, Any]) -> str:
+    artifact = summary.get("optional_present_source_artifact")
+    if not isinstance(artifact, dict):
+        return ""
+    command = artifact.get("reproduction_command")
+    if not isinstance(command, list):
+        return ""
+    return " ".join(str(part) for part in command)
+
+
 def _metadata_lines(summary: dict[str, Any]) -> list[str]:
     lines: list[str] = []
     if "guard_version" in summary:
@@ -316,6 +337,8 @@ def _format_edgeenv_handoff_alignment_summary(summary: dict[str, Any]) -> str:
     guard_alignment_run_ids = _format_list(
         summary.get("guard_analysis_producer_lineage_guard_alignment_run_ids", [])
     )
+    optional_source_artifact = _optional_source_artifact_marker(summary)
+    optional_reproduction_command = _optional_source_reproduction_command(summary)
     lines = [
         "InferEdgeAIGuard EdgeEnv handoff alignment summary",
         f"- status: {summary.get('status', 'unknown')}",
@@ -387,6 +410,13 @@ def _format_edgeenv_handoff_alignment_summary(summary: dict[str, Any]) -> str:
             f"{guard_alignment_run_ids}"
         ),
     ]
+    if optional_source_artifact:
+        lines.append(f"- optional_present_source_artifact: {optional_source_artifact}")
+    if optional_reproduction_command:
+        lines.append(
+            "- optional_present_reproduction_command: "
+            f"{optional_reproduction_command}"
+        )
     guard_alignment_summary_errors = summary.get(
         "guard_alignment_summary_errors",
         [],
@@ -417,6 +447,8 @@ def _format_edgeenv_handoff_alignment_summary(summary: dict[str, Any]) -> str:
 
 
 def _markdown_edgeenv_handoff_alignment_report(summary: dict[str, Any]) -> str:
+    optional_source_artifact = _optional_source_artifact_marker(summary)
+    optional_reproduction_command = _optional_source_reproduction_command(summary)
     sections = [
         _markdown_title(summary),
         "## Summary",
@@ -510,6 +542,21 @@ def _markdown_edgeenv_handoff_alignment_report(summary: dict[str, Any]) -> str:
                         summary.get("missing_optional_evidence_types", [])
                     ),
                 ],
+                *(
+                    [["optional_present_source_artifact", optional_source_artifact]]
+                    if optional_source_artifact
+                    else []
+                ),
+                *(
+                    [
+                        [
+                            "optional_present_reproduction_command",
+                            optional_reproduction_command,
+                        ]
+                    ]
+                    if optional_reproduction_command
+                    else []
+                ),
                 [
                     "supplemental_guard_evidence_types",
                     _format_markdown_list(

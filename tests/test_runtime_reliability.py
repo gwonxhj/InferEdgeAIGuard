@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 
 from inferedge_aiguard.runtime_reliability import (
+    OPTIONAL_PRESENT_SOURCE_ARTIFACT,
     analyze_edgeenv_regression_report,
     analyze_orchestration_summary,
     analyze_remote_dispatch_result,
@@ -40,6 +41,9 @@ RUNTIME_INTELLIGENCE_ORCHESTRATOR_SUSTAINED_EXAMPLE = (
 RUNTIME_INTELLIGENCE_OPTIONAL_STALE_DROP_EXAMPLE = (
     RUNTIME_INTELLIGENCE_EXAMPLES
     / "aiguard_runtime_operation_guard_analysis_optional_stale_drop.json"
+)
+RUNTIME_INTELLIGENCE_OPTIONAL_STALE_DROP_SMOKE = (
+    ROOT / "scripts" / "smoke_runtime_intelligence_optional_stale_drop.sh"
 )
 LAB_EXPECTED_REPORT_MARKERS = [
     "Runtime Intelligence Risk Summary",
@@ -4165,6 +4169,9 @@ def test_runtime_intelligence_optional_stale_drop_example_preserves_full_evidenc
     ]
     assert alignment["missing_optional_evidence_types"] == []
     assert alignment["aiguard_validates_optional_evidence_as_required"] is False
+    assert alignment["optional_present_source_artifact"] == (
+        OPTIONAL_PRESENT_SOURCE_ARTIFACT
+    )
 
 
 def test_cli_rebuild_runtime_intelligence_optional_stale_drop_example(tmp_path):
@@ -4210,6 +4217,79 @@ def test_cli_rebuild_runtime_intelligence_optional_stale_drop_example(tmp_path):
         "remote_execution_recovered_by_fallback",
         "stale_frame_risk",
     }
+
+
+def test_runtime_intelligence_optional_stale_drop_producer_smoke(tmp_path):
+    output_dir = tmp_path / "optional_stale_drop_smoke"
+
+    result = subprocess.run(
+        [
+            "bash",
+            str(RUNTIME_INTELLIGENCE_OPTIONAL_STALE_DROP_SMOKE),
+            "--output-dir",
+            str(output_dir),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert "AIGuard optional stale-drop producer smoke passed." in result.stdout
+
+    generated = json.loads(
+        (
+            output_dir
+            / "aiguard_runtime_operation_guard_analysis_optional_stale_drop.generated.json"
+        ).read_text(encoding="utf-8")
+    )
+    expected = json.loads(
+        RUNTIME_INTELLIGENCE_OPTIONAL_STALE_DROP_EXAMPLE.read_text(
+            encoding="utf-8"
+        )
+    )
+    assert generated == expected
+
+    alignment = json.loads(
+        (
+            output_dir
+            / "aiguard_edgeenv_handoff_alignment_optional_present.generated.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert alignment["status"] == "passed"
+    assert alignment["optional_present_source_artifact"] == (
+        OPTIONAL_PRESENT_SOURCE_ARTIFACT
+    )
+    assert alignment["optional_guard_evidence_types_present"] == [
+        "edgeenv_orchestrator_stale_drop_summary",
+        "stale_frame_risk",
+    ]
+
+    summary = (
+        output_dir / "aiguard_optional_stale_drop_producer_smoke_summary.md"
+    ).read_text(encoding="utf-8")
+    assert "- Status: passed" in summary
+    assert "generated_guard_analysis_matches_committed_fixture: true" in summary
+    assert "generated_alignment_status: passed" in summary
+    assert (
+        "optional_present_source_artifact: "
+        "InferEdgeAIGuard/examples/runtime_intelligence/"
+        "aiguard_runtime_operation_guard_analysis_optional_stale_drop.json"
+    ) in summary
+    assert (
+        "optional_present_reproduction_command: "
+        "python -m inferedge_aiguard.cli build-runtime-intelligence-optional-stale-drop"
+    ) in summary
+    assert (
+        "lab_source_traceability_gate: passed" in summary
+        or "lab_source_traceability_gate: skipped" in summary
+    )
+
+    lab_summary = output_dir / "lab_source_traceability_summary.md"
+    if lab_summary.exists():
+        lab_summary_text = lab_summary.read_text(encoding="utf-8")
+        assert "- Status: passed" in lab_summary_text
+        assert "## Validated Source Traceability" in lab_summary_text
 
 
 def test_validate_edgeenv_handoff_guard_evidence_alignment_passes():
@@ -4487,6 +4567,9 @@ def test_runtime_intelligence_docs_describe_lab_report_marker_context():
         )
         assert "remote_dispatch_fallback_recovered_result.json" in doc
         assert "orchestrator_multi_workload_sustained_summary.json" in doc
+        assert "smoke_runtime_intelligence_optional_stale_drop.sh" in doc
+        assert "optional_present_source_artifact" in doc
+        assert "read_only_cross_repo_traceability" in doc
         assert "read_only_optional_guard_context" in doc
         assert "AIGuard does not validate or own those Lab report markers" in doc
         assert "AIGuard does not validate optional evidence as required" in doc
