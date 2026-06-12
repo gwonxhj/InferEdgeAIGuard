@@ -1,0 +1,91 @@
+{
+  "schema_version": "inferedge-remote-dispatch-result-v1",
+  "dispatch_status": "accepted",
+  "selected_worker_id": "jetson-nano-01",
+  "decision_reason": "selected online worker matching backend/device requirements",
+  "remote_execution": {
+    "mode": "file_contract_starter",
+    "production_remote_execution": false,
+    "execution_requested": true
+  },
+  "remote_execution_plan": {
+    "schema_version": "inferedge-remote-execution-plan-v1",
+    "mode": "starter_execute",
+    "network_execution_performed": false,
+    "transport": "http",
+    "endpoint_type": "http_request",
+    "selected_worker_id": "jetson-nano-01",
+    "task_id": "remote_task_001",
+    "agent_id": "vision_agent"
+  },
+  "remote_execution_result": {
+    "schema_version": "inferedge-remote-execution-result-v1",
+    "execution_requested": true,
+    "execution_performed": true,
+    "production_remote_execution": false,
+    "status": "failed",
+    "transport": "http",
+    "selected_worker_id": "jetson-nano-01",
+    "task_id": "remote_task_001",
+    "agent_id": "vision_agent",
+    "error_category": "connection_error",
+    "error_message": "connection refused"
+  },
+  "retry_fallback_plan": {
+    "schema_version": "inferedge-remote-retry-fallback-plan-v1",
+    "fallback_worker_ids": [
+      "jetson-fallback"
+    ],
+    "fallback_execution_performed": true,
+    "last_execution_status": "succeeded",
+    "fallback_attempted_worker_ids": [
+      "jetson-fallback"
+    ],
+    "fallback_final_status": "succeeded"
+  },
+  "runtime_events": [
+    {
+      "event": "remote_dispatch_selected"
+    },
+    {
+      "event": "remote_execution_failed",
+      "status": "failed",
+      "error_category": "connection_error"
+    },
+    {
+      "event": "remote_fallback_execution_completed",
+      "status": "succeeded",
+      "selected_worker_id": "jetson-fallback"
+    }
+  ],
+  "fallback_execution_result": {
+    "schema_version": "inferedge-remote-fallback-execution-v1",
+    "fallback_requested": true,
+    "fallback_reason": "connection_error",
+    "primary_worker_id": "jetson-nano-01",
+    "attempted_worker_ids": [
+      "jetson-fallback"
+    ],
+    "final_status": "succeeded",
+    "attempts": [
+      {
+        "schema_version": "inferedge-remote-execution-result-v1",
+        "execution_requested": true,
+        "execution_performed": true,
+        "production_remote_execution": false,
+        "status": "succeeded",
+        "transport": "http",
+        "selected_worker_id": "jetson-fallback",
+        "task_id": "remote_task_001",
+        "agent_id": "vision_agent",
+        "http_status": 200,
+        "fallback_attempt": 1,
+        "fallback_for_worker_id": "jetson-nano-01",
+        "response_json": {
+          "status": "ok"
+        }
+      }
+    ],
+    "production_remote_execution": false
+  }
+}

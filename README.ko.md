@@ -179,6 +179,16 @@ optional stale-drop evidence가 실제로 present인 동반 예시입니다. 이
 `edgeenv_orchestrator_stale_drop_summary`와 `stale_frame_risk` full evidence
 item을 모두 보존하지만, optional evidence를 required deployment decision
 evidence로 승격하지 않습니다.
+아래 명령은 committed source fixtures에서 optional-present artifact를 재생성합니다.
+
+```bash
+python -m inferedge_aiguard.cli build-runtime-intelligence-optional-stale-drop \
+  --edgeenv-regression examples/runtime_intelligence/edgeenv_runtime_regression_with_optional_stale_drop_context.json \
+  --remote-dispatch examples/runtime_intelligence/remote_dispatch_fallback_recovered_result.json \
+  --orchestration-summary examples/runtime_intelligence/orchestrator_multi_workload_sustained_summary.json \
+  --save-json examples/runtime_intelligence/aiguard_runtime_operation_guard_analysis_optional_stale_drop.json
+```
+
 `check-edgeenv-handoff-alignment`는 EdgeEnv handoff의
 `external_aiguard_required_evidence_types`가 실제 `guard_analysis.evidence`
 type set으로 충족되는지 확인합니다. 또한

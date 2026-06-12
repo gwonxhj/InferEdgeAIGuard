@@ -1,0 +1,594 @@
+{
+  "baseline_run_id": "edgeenv-smoke-baseline",
+  "candidate_run_id": "edgeenv-smoke-candidate",
+  "comparable": true,
+  "mode": "same-condition",
+  "regression_detected": false,
+  "regression_type": "mixed",
+  "severity": "high",
+  "recommendation": "review_required",
+  "evidence": {},
+  "runtime_telemetry_context": {
+    "role": "supplemental_runtime_telemetry_context",
+    "source": "result_artifacts+runtime_telemetry_history",
+    "baseline": {
+      "run_id": "edgeenv-smoke-baseline",
+      "result_telemetry_present": true,
+      "history_entry_present": true,
+      "execution_sequence_id": 1,
+      "telemetry_source": "synthetic_local_fixture"
+    },
+    "candidate": {
+      "run_id": "edgeenv-smoke-candidate",
+      "result_telemetry_present": true,
+      "history_entry_present": true,
+      "execution_sequence_id": 2,
+      "telemetry_source": "synthetic_local_fixture",
+      "orchestrator_context_present": true,
+      "orchestrator_available_sections": [
+        "available_sections",
+        "operation",
+        "queue_depth",
+        "resource",
+        "run_id"
+      ],
+      "orchestrator_operation_context": {
+        "schema_version": "inferedge-orchestrator-edgeenv-runtime-telemetry-feed-v1",
+        "role": "orchestrator_operation_context_for_edgeenv",
+        "source_repository": "InferEdgeOrchestrator",
+        "artifact_role": "orchestrator-supplemental-operation-context",
+        "producer_contract": "inferedge-orchestrator-edgeenv-runtime-telemetry-feed-v1",
+        "source": "orchestration_summary",
+        "run_id": "edgeenv-smoke-candidate",
+        "not_a_regression_judgement": true,
+        "not_a_comparability_gate": true,
+        "decision_owner": "lab",
+        "regression_owner": "edgeenv",
+        "candidate_context": {
+          "run_id": "edgeenv-smoke-candidate",
+          "telemetry_source": "inferedge_orchestrator_operation_summary",
+          "available_sections": [
+            "operation",
+            "resource"
+          ],
+          "queue_depth": 7,
+          "operation": {
+            "queue_depth": 7,
+            "max_total_queue_depth": 7,
+            "deadline_missed_count": 2,
+            "fallback_count": 1,
+            "runtime_task_event_summary": {
+              "vision_agent": {
+                "event_count": 9,
+                "event_type_counts": {
+                  "schedule": 3,
+                  "execution": 3,
+                  "policy_decision": 3
+                },
+                "reason_counts": {
+                  "deadline_missed": 1,
+                  "queue_backlog_threshold_exceeded": 1
+                },
+                "policy_decision_reason_counts": {
+                  "queue_backlog_threshold_exceeded": 1
+                },
+                "drop_reason_counts": {},
+                "deadline_missed_count": 1,
+                "fallback_decision_count": 0,
+                "scheduler_delay_event_count": 1,
+                "max_scheduler_delay_cycles": 3,
+                "max_queue_wait_ms": 15.0,
+                "latest_event_index": 42,
+                "latest_event_type": "execution"
+              },
+              "voice_command_agent": {
+                "event_count": 6,
+                "event_type_counts": {
+                  "drop": 1,
+                  "policy_decision": 1,
+                  "schedule": 2,
+                  "execution": 2
+                },
+                "reason_counts": {
+                  "queue_backlog_threshold_exceeded": 1,
+                  "load_shedding_backlog_threshold_exceeded": 1
+                },
+                "policy_decision_reason_counts": {
+                  "queue_backlog_threshold_exceeded": 1
+                },
+                "drop_reason_counts": {
+                  "load_shedding_backlog_threshold_exceeded": 1
+                },
+                "deadline_missed_count": 0,
+                "fallback_decision_count": 1,
+                "scheduler_delay_event_count": 0,
+                "max_scheduler_delay_cycles": 0,
+                "max_queue_wait_ms": 0.0,
+                "latest_event_index": 39,
+                "latest_event_type": "policy_decision"
+              }
+            },
+            "tasks_with_deadline_miss": [
+              "vision_agent"
+            ],
+            "tasks_with_fallback": [
+              "voice_command_agent"
+            ],
+            "tasks_with_scheduler_delay": [
+              "vision_agent"
+            ],
+            "operation_risk_rollup": {
+              "schema_version": "inferedge-orchestrator-operation-risk-rollup-v1",
+              "operation_context_role": "supplemental",
+              "decision_owner": "lab",
+              "scheduler_owner": "orchestrator",
+              "not_a_deployment_decision": true,
+              "risk_level": "review",
+              "first_read": "review_operation_risk_context",
+              "primary_reasons": [
+                "queue_pressure_overloaded",
+                "scheduler_delay_present",
+                "deadline_missed_present",
+                "fallback_used"
+              ],
+              "affected_tasks": {
+                "deadline_missed": [
+                  "vision_agent"
+                ],
+                "fallback": [
+                  "voice_command_agent"
+                ],
+                "scheduler_delay": [
+                  "vision_agent"
+                ],
+                "degraded": [
+                  "vision_agent"
+                ],
+                "constrained": []
+              },
+              "max_total_queue_depth": 7,
+              "overload_backlog_threshold": 3,
+              "queue_pressure_state": "overloaded",
+              "queue_pressure_reason": "queue_backlog_threshold_exceeded",
+              "deadline_missed_count": 2,
+              "fallback_count": 1,
+              "dropped_count": 1,
+              "policy_decision_count": 2,
+              "scheduler_delay_event_count": 1,
+              "resource_snapshot_count": 0
+            },
+            "latency_budget_protection": {
+              "schema_version": "inferedge-orchestrator-latency-budget-protection-v1",
+              "evidence_role": "latency_budget_protection_context",
+              "decision_owner": "lab",
+              "scheduler_owner": "orchestrator",
+              "regression_owner": "edgeenv",
+              "not_a_deployment_decision": true,
+              "protected_high_priority_task_candidates": [
+                "safety_monitor_agent"
+              ],
+              "tasks_with_latency_budget_risk": [
+                "vision_agent"
+              ],
+              "risk_reasons": [
+                "deadline_missed",
+                "scheduler_delay_observed",
+                "queue_backlog_threshold_exceeded"
+              ],
+              "per_task_budget_context": {
+                "safety_monitor_agent": {
+                  "latency_budget_ms": 20.0,
+                  "deadline_missed_count": 0,
+                  "scheduler_delay_event_count": 0,
+                  "protected_priority": true
+                },
+                "vision_agent": {
+                  "latency_budget_ms": 33.0,
+                  "deadline_missed_count": 1,
+                  "scheduler_delay_event_count": 1,
+                  "max_scheduler_delay_cycles": 3
+                }
+              }
+            },
+            "operation_timeline_summary": {
+              "schema_version": "inferedge-orchestrator-operation-timeline-summary-v1",
+              "source": "queue_depth_timeline+latency_timeline+policy_decision_log+runtime_event_summary",
+              "sample_counts": {
+                "queue_depth": 2,
+                "latency": 2,
+                "policy_decision": 2,
+                "runtime_event": 15
+              },
+              "queue": {
+                "max_total_queue_depth": 7,
+                "average_total_queue_depth": 5.5,
+                "overload_backlog_threshold": 3,
+                "pressure_state": "overloaded",
+                "pressure_reason": "queue_backlog_threshold_exceeded",
+                "max_pressure_task": "vision_agent",
+                "max_queue_depth_by_task": {
+                  "vision_agent": 5,
+                  "voice_command_agent": 2
+                }
+              },
+              "latency": {
+                "sample_count": 2,
+                "max_latency_ms": 72.0,
+                "max_queue_wait_ms": 15.0,
+                "max_queue_wait_ms_by_task": {
+                  "vision_agent": 15.0
+                },
+                "tasks_with_deadline_miss": [
+                  "vision_agent"
+                ]
+              },
+              "policy": {
+                "decision_count": 2,
+                "decision_reasons": [
+                  "queue_backlog_threshold_exceeded"
+                ],
+                "first_decision": {
+                  "task": "vision_agent",
+                  "decision_reason": "queue_backlog_threshold_exceeded"
+                },
+                "latest_decision": {
+                  "task": "voice_command_agent",
+                  "decision_reason": "queue_backlog_threshold_exceeded"
+                }
+              },
+              "affected_tasks": {
+                "deadline_missed": [
+                  "vision_agent"
+                ],
+                "fallback": [
+                  "voice_command_agent"
+                ],
+                "scheduler_delay": [
+                  "vision_agent"
+                ],
+                "stale_drop": [
+                  "voice_command_agent"
+                ],
+                "degraded": [
+                  "vision_agent"
+                ],
+                "constrained": []
+              },
+              "stale_drop": {
+                "schema_version": "inferedge-orchestrator-stale-drop-summary-v1",
+                "operation_context_role": "supplemental",
+                "scheduler_owner": "orchestrator",
+                "decision_owner": "lab",
+                "not_a_deployment_decision": true,
+                "source": "drop_events",
+                "first_read": "review_stale_drop_context",
+                "stale_drop_count": 1,
+                "total_drop_count": 4,
+                "stale_drop_rate": 0.25,
+                "stale_drop_reasons": {
+                  "queue_overflow_drop_oldest": 1
+                },
+                "stale_drop_reason_classes": [
+                  "stale_queue_overflow"
+                ],
+                "tasks_with_stale_drop": [
+                  "voice_command_agent"
+                ],
+                "task_counts": {
+                  "voice_command_agent": 1
+                },
+                "latest_stale_drop_event": {
+                  "task": "voice_command_agent",
+                  "agent_id": "voice_command_agent",
+                  "reason": "queue_overflow_drop_oldest",
+                  "stale_drop_class": "stale_queue_overflow"
+                }
+              },
+              "review_hints": [
+                "review_queue_pressure",
+                "review_scheduler_delay",
+                "review_deadline_miss",
+                "review_fallback_use",
+                "review_stale_drop"
+              ]
+            },
+            "stale_drop_summary": {
+              "schema_version": "inferedge-orchestrator-stale-drop-summary-v1",
+              "operation_context_role": "supplemental",
+              "scheduler_owner": "orchestrator",
+              "decision_owner": "lab",
+              "not_a_deployment_decision": true,
+              "source": "drop_events",
+              "first_read": "review_stale_drop_context",
+              "stale_drop_count": 1,
+              "total_drop_count": 4,
+              "stale_drop_rate": 0.25,
+              "stale_drop_reasons": {
+                "queue_overflow_drop_oldest": 1
+              },
+              "stale_drop_reason_classes": [
+                "stale_queue_overflow"
+              ],
+              "tasks_with_stale_drop": [
+                "voice_command_agent"
+              ],
+              "task_counts": {
+                "voice_command_agent": 1
+              },
+              "latest_stale_drop_event": {
+                "task": "voice_command_agent",
+                "agent_id": "voice_command_agent",
+                "reason": "queue_overflow_drop_oldest",
+                "stale_drop_class": "stale_queue_overflow"
+              }
+            }
+          },
+          "resource": {
+            "source": "tegrastats_timeline",
+            "resource_evidence_available": true,
+            "gpu_temperature": 78.5,
+            "ram_used_mb": 2048.0,
+            "throttling_detected": true
+          },
+          "producer": {
+            "operation_context_role": "supplemental",
+            "producer_sources": [
+              "device_local_cli_override",
+              "orchestration_summary"
+            ],
+            "device_local_producer_sources": [
+              "device_local_cli_override"
+            ],
+            "producer_sources_by_task": {
+              "vision_agent": [
+                "device_local_cli_override"
+              ]
+            },
+            "producer_stage_by_task": {
+              "vision_agent": "device_local_starter"
+            },
+            "producer_event_count": 4,
+            "device_local_event_count": 2,
+            "device_local_task_count": 1
+          }
+        },
+        "edgeenv_mapping_hint": {
+          "copy_candidate_context_to": "runtime_telemetry_context.candidate",
+          "operation_context_role": "supplemental",
+          "coverage_summary_owner": "edgeenv",
+          "coverage_summary_path": "runtime_telemetry_context.history.telemetry_coverage",
+          "candidate_context_required_fields": [
+            "run_id",
+            "telemetry_source",
+            "operation",
+            "resource"
+          ],
+          "aiguard_evidence_candidates": [
+            "runtime_queue_overload",
+            "runtime_thermal_instability",
+            "edgeenv_orchestrator_latency_budget_protection"
+          ]
+        },
+        "downstream_guard_alignment": {
+          "declared_by": "orchestrator",
+          "producer_lineage_evidence_type": "edgeenv_orchestrator_producer_lineage",
+          "operation_evidence_candidates": [
+            "runtime_queue_overload",
+            "runtime_thermal_instability",
+            "edgeenv_orchestrator_latency_budget_protection"
+          ],
+          "validated_by": [
+            "edgeenv runs telemetry inspect-history",
+            "inferedge-aiguard reason-edgeenv-regression",
+            "inferedgelab runtime-intelligence bundle manifest gate"
+          ],
+          "orchestrator_is_final_decision_owner": false,
+          "lab_is_final_decision_owner": true
+        },
+        "remote_runtime_event_summary": {
+          "event_count": 4,
+          "runtime_event_count": 4,
+          "production_remote_execution": false,
+          "evidence_role": "remote_dispatch_runtime_event_compact_summary",
+          "operation_boundary": "remote dispatch starter evidence only"
+        },
+        "operation_risk_summary": {
+          "schema_version": "inferedge-entrypoint-operation-risk-summary-v1",
+          "evidence_role": "derived_navigation_context",
+          "decision_owner": "lab",
+          "scheduler_owner": "orchestrator",
+          "not_a_deployment_decision": true,
+          "queue_pressure_reason": "queue_backlog_threshold_exceeded",
+          "max_pressure_task": "vision_agent",
+          "primary_health_reason": "worker_queue_pressure",
+          "degraded_worker_ids": [
+            "worker-jetson-01"
+          ],
+          "device_local_event_count": 2,
+          "producer_event_count": 4
+        }
+      }
+    },
+    "history": {
+      "schema_version": "edgeenv.runtime-telemetry-history.v1",
+      "summary": {
+        "registered_runs": 2,
+        "telemetry_runs": 2,
+        "missing_telemetry_runs": 0,
+        "history_seed_runs": 2,
+        "history_seed_run_config_runs": 2,
+        "orchestrator_feed_runs": 1
+      },
+      "telemetry_coverage": {
+        "runs_with_coverage": 2,
+        "runs_without_coverage": 0,
+        "expected_fields": [
+          "gpu_temperature",
+          "queue_depth",
+          "telemetry_timestamp"
+        ],
+        "observed_fields": [
+          "gpu_temperature",
+          "queue_depth",
+          "telemetry_timestamp"
+        ],
+        "missing_fields": [
+          "queue_depth"
+        ],
+        "coverage_ratio_min": 0.666667,
+        "coverage_ratio_max": 1.0,
+        "missing_telemetry_is_failure_values": [
+          false
+        ],
+        "any_missing_telemetry_is_failure": false,
+        "missing_field_run_count": 1,
+        "missing_field_runs": [
+          {
+            "run_id": "edgeenv-smoke-candidate",
+            "missing_fields": [
+              "queue_depth"
+            ],
+            "missing_field_count": 1,
+            "missing_telemetry_is_failure": false
+          }
+        ],
+        "run_summaries": [
+          {
+            "run_id": "edgeenv-smoke-baseline",
+            "coverage_present": true,
+            "expected_fields": [
+              "gpu_temperature",
+              "queue_depth",
+              "telemetry_timestamp"
+            ],
+            "observed_fields": [
+              "gpu_temperature",
+              "queue_depth",
+              "telemetry_timestamp"
+            ],
+            "missing_fields": [],
+            "expected_field_count": 3,
+            "observed_field_count": 3,
+            "missing_field_count": 0,
+            "coverage_ratio": 1.0,
+            "missing_telemetry_is_failure": false
+          },
+          {
+            "run_id": "edgeenv-smoke-candidate",
+            "coverage_present": true,
+            "expected_fields": [
+              "gpu_temperature",
+              "queue_depth",
+              "telemetry_timestamp"
+            ],
+            "observed_fields": [
+              "gpu_temperature",
+              "telemetry_timestamp"
+            ],
+            "missing_fields": [
+              "queue_depth"
+            ],
+            "expected_field_count": 3,
+            "observed_field_count": 2,
+            "missing_field_count": 1,
+            "coverage_ratio": 0.666667,
+            "missing_telemetry_is_failure": false
+          }
+        ]
+      },
+      "runs": [
+        {
+          "run_id": "edgeenv-smoke-baseline",
+          "runtime_telemetry_history_seed": {
+            "schema_version": "inferedge-runtime-telemetry-history-seed-v1",
+            "evidence_role": "runtime_telemetry_history_seed",
+            "registry_owner": "edgeenv",
+            "decision_owner": "lab",
+            "source_result_schema_version": "inferedge-runtime-result-v1",
+            "source_telemetry_schema_version": "inferedge-runtime-telemetry-v1",
+            "replay_scope": "single_result_to_history",
+            "replay_ready": true,
+            "production_monitoring": false,
+            "missing_telemetry_is_failure": false,
+            "source_result": {
+              "run_id": "edgeenv-smoke-baseline",
+              "compare_key": "yolov8n__b1__h640w640__fp32",
+              "backend_key": "onnxruntime__cpu",
+              "engine_backend": "onnxruntime",
+              "device": "cpu",
+              "precision": "fp32",
+              "power_mode": "unknown"
+            },
+            "run_config": {
+              "batch": 1,
+              "height": 640,
+              "width": 640,
+              "warmup": 1,
+              "runs": 10,
+              "timeout_ms": null,
+              "input_mode": "dummy",
+              "input_preprocess": "none",
+              "power_mode": "unknown",
+              "jetson_clocks": "unknown"
+            },
+            "points": [
+              {
+                "execution_sequence_id": 1,
+                "telemetry_timestamp": "2026-05-22T00:00:01Z",
+                "mean_ms": 101.0,
+                "p99_ms": 131.0,
+                "timeout_observed": false
+              }
+            ]
+          }
+        },
+        {
+          "run_id": "edgeenv-smoke-candidate",
+          "runtime_telemetry_history_seed": {
+            "schema_version": "inferedge-runtime-telemetry-history-seed-v1",
+            "evidence_role": "runtime_telemetry_history_seed",
+            "registry_owner": "edgeenv",
+            "decision_owner": "lab",
+            "source_result_schema_version": "inferedge-runtime-result-v1",
+            "source_telemetry_schema_version": "inferedge-runtime-telemetry-v1",
+            "replay_scope": "single_result_to_history",
+            "replay_ready": true,
+            "production_monitoring": false,
+            "missing_telemetry_is_failure": false,
+            "source_result": {
+              "run_id": "edgeenv-smoke-candidate",
+              "compare_key": "yolov8n__b1__h640w640__fp32",
+              "backend_key": "onnxruntime__cpu",
+              "engine_backend": "onnxruntime",
+              "device": "cpu",
+              "precision": "fp32",
+              "power_mode": "unknown"
+            },
+            "run_config": {
+              "batch": 1,
+              "height": 640,
+              "width": 640,
+              "warmup": 1,
+              "runs": 10,
+              "timeout_ms": null,
+              "input_mode": "dummy",
+              "input_preprocess": "none",
+              "power_mode": "unknown",
+              "jetson_clocks": "unknown"
+            },
+            "points": [
+              {
+                "execution_sequence_id": 2,
+                "telemetry_timestamp": "2026-05-22T00:00:02Z",
+                "mean_ms": 102.0,
+                "p99_ms": 132.0,
+                "timeout_observed": false
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "evidence_gaps": []
+  }
+}

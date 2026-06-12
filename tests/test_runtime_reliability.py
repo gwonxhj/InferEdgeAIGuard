@@ -3,12 +3,12 @@ import subprocess
 import sys
 from pathlib import Path
 
-from inferedge_aiguard.diagnosis import build_diagnosis_report
 from inferedge_aiguard.runtime_reliability import (
     analyze_edgeenv_regression_report,
     analyze_orchestration_summary,
     analyze_remote_dispatch_result,
     analyze_runtime_result,
+    build_optional_stale_drop_guard_analysis,
     compute_edgeenv_regression_metrics,
     compute_remote_dispatch_metrics,
     compute_runtime_reliability_metrics,
@@ -21,6 +21,26 @@ from inferedge_aiguard.schema import validate_diagnosis_report
 ROOT = Path(__file__).resolve().parents[1]
 EDGEENV_REGRESSION_FIXTURES = ROOT / "tests" / "fixtures" / "edgeenv_regression"
 RUNTIME_INTELLIGENCE_EXAMPLES = ROOT / "examples" / "runtime_intelligence"
+RUNTIME_INTELLIGENCE_EDGEENV_EXAMPLE = (
+    RUNTIME_INTELLIGENCE_EXAMPLES
+    / "edgeenv_runtime_regression_with_orchestrator_feed.json"
+)
+RUNTIME_INTELLIGENCE_OPTIONAL_STALE_DROP_EDGEENV_EXAMPLE = (
+    RUNTIME_INTELLIGENCE_EXAMPLES
+    / "edgeenv_runtime_regression_with_optional_stale_drop_context.json"
+)
+RUNTIME_INTELLIGENCE_REMOTE_FALLBACK_EXAMPLE = (
+    RUNTIME_INTELLIGENCE_EXAMPLES
+    / "remote_dispatch_fallback_recovered_result.json"
+)
+RUNTIME_INTELLIGENCE_ORCHESTRATOR_SUSTAINED_EXAMPLE = (
+    RUNTIME_INTELLIGENCE_EXAMPLES
+    / "orchestrator_multi_workload_sustained_summary.json"
+)
+RUNTIME_INTELLIGENCE_OPTIONAL_STALE_DROP_EXAMPLE = (
+    RUNTIME_INTELLIGENCE_EXAMPLES
+    / "aiguard_runtime_operation_guard_analysis_optional_stale_drop.json"
+)
 LAB_EXPECTED_REPORT_MARKERS = [
     "Runtime Intelligence Risk Summary",
     "Runtime replay duration scope",
@@ -820,49 +840,10 @@ def edgeenv_handoff_guard_analysis_with_remote_fallback() -> dict:
 
 
 def edgeenv_handoff_guard_analysis_with_optional_stale_drop() -> dict:
-    guard_analysis = edgeenv_handoff_guard_analysis_with_remote_fallback()
-    orchestrator_guard_analysis = analyze_orchestration_summary(
-        multi_workload_sustained_summary()
-    )
-    stale_frame = next(
-        item
-        for item in orchestrator_guard_analysis["evidence"]
-        if item["type"] == "stale_frame_risk"
-    )
-    evidence = list(guard_analysis["evidence"]) + [stale_frame]
-    source = dict(guard_analysis["source"])
-    source.update(
-        {
-            "optional_stale_drop_present_example": True,
-            "edgeenv_optional_evidence_type": (
-                "edgeenv_orchestrator_stale_drop_summary"
-            ),
-            "orchestrator_optional_evidence_type": "stale_frame_risk",
-        }
-    )
-    candidate_summary = dict(guard_analysis["candidate_summary"])
-    candidate_summary["orchestrator_sustained_runtime_reliability"] = dict(
-        orchestrator_guard_analysis["candidate_summary"].get(
-            "runtime_reliability",
-            {},
-        )
-    )
-    return build_diagnosis_report(
-        evidence=evidence,
-        source=source,
-        confidence=max(
-            float(guard_analysis.get("confidence", 0.0)),
-            float(orchestrator_guard_analysis.get("confidence", 0.0)),
-        ),
-        primary_reason=(
-            "Optional stale-drop evidence is present from both "
-            "EdgeEnv-preserved Orchestrator context and direct Orchestrator "
-            "stale-frame analysis."
-        ),
-        thresholds=guard_analysis.get("thresholds", {}),
-        baseline_summary=guard_analysis.get("baseline_summary", {}),
-        candidate_summary=candidate_summary,
-        created_at="2026-06-10T00:56:55Z",
+    return build_optional_stale_drop_guard_analysis(
+        edgeenv_regression_report_with_orchestrator_feed_context(),
+        remote_dispatch_fallback_recovered_result(),
+        multi_workload_sustained_summary(),
     )
 
 
@@ -3936,10 +3917,7 @@ def test_cli_reason_edgeenv_regression_consumes_edgeenv_sequence_fixture(tmp_pat
 
 
 def test_runtime_intelligence_example_exports_lab_ready_guard_analysis(tmp_path):
-    input_path = (
-        RUNTIME_INTELLIGENCE_EXAMPLES
-        / "edgeenv_runtime_regression_with_orchestrator_feed.json"
-    )
+    input_path = RUNTIME_INTELLIGENCE_EDGEENV_EXAMPLE
     expected_path = (
         RUNTIME_INTELLIGENCE_EXAMPLES
         / "aiguard_runtime_operation_guard_analysis.json"
@@ -4131,10 +4109,7 @@ def test_runtime_intelligence_example_exports_lab_ready_guard_analysis(tmp_path)
 
 
 def test_runtime_intelligence_optional_stale_drop_example_preserves_full_evidence_shape():
-    expected_path = (
-        RUNTIME_INTELLIGENCE_EXAMPLES
-        / "aiguard_runtime_operation_guard_analysis_optional_stale_drop.json"
-    )
+    expected_path = RUNTIME_INTELLIGENCE_OPTIONAL_STALE_DROP_EXAMPLE
 
     expected = json.loads(expected_path.read_text(encoding="utf-8"))
     generated = edgeenv_handoff_guard_analysis_with_optional_stale_drop()
@@ -4190,6 +4165,51 @@ def test_runtime_intelligence_optional_stale_drop_example_preserves_full_evidenc
     ]
     assert alignment["missing_optional_evidence_types"] == []
     assert alignment["aiguard_validates_optional_evidence_as_required"] is False
+
+
+def test_cli_rebuild_runtime_intelligence_optional_stale_drop_example(tmp_path):
+    expected = json.loads(
+        RUNTIME_INTELLIGENCE_OPTIONAL_STALE_DROP_EXAMPLE.read_text(
+            encoding="utf-8"
+        )
+    )
+    output_path = (
+        tmp_path / "aiguard_runtime_operation_guard_analysis_optional_stale_drop.json"
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "inferedge_aiguard.cli",
+            "build-runtime-intelligence-optional-stale-drop",
+            "--edgeenv-regression",
+            str(RUNTIME_INTELLIGENCE_OPTIONAL_STALE_DROP_EDGEENV_EXAMPLE),
+            "--remote-dispatch",
+            str(RUNTIME_INTELLIGENCE_REMOTE_FALLBACK_EXAMPLE),
+            "--orchestration-summary",
+            str(RUNTIME_INTELLIGENCE_ORCHESTRATOR_SUSTAINED_EXAMPLE),
+            "--save-json",
+            str(output_path),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    saved = json.loads(output_path.read_text(encoding="utf-8"))
+    validate_diagnosis_report(saved)
+    assert "- saved_json:" in result.stdout
+    assert saved == expected
+    assert saved["source"]["optional_stale_drop_present_example"] is True
+    assert {
+        item["type"] for item in saved["evidence"]
+    } >= {
+        "edgeenv_orchestrator_stale_drop_summary",
+        "remote_execution_recovered_by_fallback",
+        "stale_frame_risk",
+    }
 
 
 def test_validate_edgeenv_handoff_guard_evidence_alignment_passes():
@@ -4460,6 +4480,13 @@ def test_runtime_intelligence_docs_describe_lab_report_marker_context():
             "aiguard_runtime_operation_guard_analysis_optional_stale_drop.json"
             in doc
         )
+        assert "build-runtime-intelligence-optional-stale-drop" in doc
+        assert (
+            "edgeenv_runtime_regression_with_optional_stale_drop_context.json"
+            in doc
+        )
+        assert "remote_dispatch_fallback_recovered_result.json" in doc
+        assert "orchestrator_multi_workload_sustained_summary.json" in doc
         assert "read_only_optional_guard_context" in doc
         assert "AIGuard does not validate or own those Lab report markers" in doc
         assert "AIGuard does not validate optional evidence as required" in doc

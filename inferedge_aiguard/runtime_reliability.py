@@ -604,6 +604,95 @@ def analyze_edgeenv_regression_report(
     )
 
 
+def build_optional_stale_drop_guard_analysis(
+    edgeenv_regression_report: dict[str, Any],
+    remote_dispatch_result: dict[str, Any],
+    orchestration_summary: dict[str, Any],
+    *,
+    created_at: str = "2026-06-10T00:56:55Z",
+    thresholds: dict[str, float] | None = None,
+) -> dict[str, Any]:
+    """Build the curated Runtime Intelligence optional stale-drop example.
+
+    This combines EdgeEnv-preserved Orchestrator context, bounded remote
+    fallback evidence, and direct Orchestrator stale-frame evidence. It remains
+    an AIGuard evidence artifact only; Lab owns the deployment decision.
+    """
+
+    edgeenv_guard_analysis = analyze_edgeenv_regression_report(
+        edgeenv_regression_report,
+        thresholds=thresholds,
+    )
+    remote_guard_analysis = analyze_remote_dispatch_result(
+        remote_dispatch_result,
+        thresholds=thresholds,
+    )
+    orchestration_guard_analysis = analyze_orchestration_summary(
+        orchestration_summary,
+        thresholds=thresholds,
+    )
+    remote_recovery = _evidence_by_type(
+        remote_guard_analysis,
+        "remote_execution_recovered_by_fallback",
+    )
+    stale_frame = _evidence_by_type(
+        orchestration_guard_analysis,
+        ORCHESTRATOR_STALE_FRAME_RISK_EVIDENCE_TYPE,
+    )
+    evidence = list(edgeenv_guard_analysis["evidence"]) + [
+        remote_recovery,
+        stale_frame,
+    ]
+    source = dict(edgeenv_guard_analysis["source"])
+    source.update(
+        {
+            "optional_stale_drop_present_example": True,
+            "edgeenv_optional_evidence_type": (
+                EDGEENV_ORCHESTRATOR_STALE_DROP_SUMMARY_EVIDENCE_TYPE
+            ),
+            "orchestrator_optional_evidence_type": (
+                ORCHESTRATOR_STALE_FRAME_RISK_EVIDENCE_TYPE
+            ),
+        }
+    )
+    candidate_summary = dict(edgeenv_guard_analysis["candidate_summary"])
+    candidate_summary["orchestrator_sustained_runtime_reliability"] = dict(
+        orchestration_guard_analysis["candidate_summary"].get(
+            "runtime_reliability",
+            {},
+        )
+    )
+
+    return build_diagnosis_report(
+        evidence=evidence,
+        source=source,
+        confidence=max(
+            float(edgeenv_guard_analysis.get("confidence", 0.0)),
+            float(remote_guard_analysis.get("confidence", 0.0)),
+            float(orchestration_guard_analysis.get("confidence", 0.0)),
+        ),
+        primary_reason=(
+            "Optional stale-drop evidence is present from both "
+            "EdgeEnv-preserved Orchestrator context and direct Orchestrator "
+            "stale-frame analysis."
+        ),
+        thresholds=edgeenv_guard_analysis.get("thresholds", {}),
+        baseline_summary=edgeenv_guard_analysis.get("baseline_summary", {}),
+        candidate_summary=candidate_summary,
+        created_at=created_at,
+    )
+
+
+def _evidence_by_type(
+    guard_analysis: dict[str, Any],
+    evidence_type: str,
+) -> dict[str, Any]:
+    for item in guard_analysis.get("evidence", []):
+        if isinstance(item, dict) and item.get("type") == evidence_type:
+            return item
+    raise ValueError(f"Missing expected evidence type: {evidence_type}")
+
+
 def compute_runtime_reliability_metrics(summary: dict[str, Any]) -> dict[str, Any]:
     """Compute deterministic runtime reliability metrics from Orchestrator output."""
 

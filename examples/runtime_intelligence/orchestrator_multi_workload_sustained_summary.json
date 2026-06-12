@@ -1,0 +1,317 @@
+{
+  "schema_version": "inferedge-orchestration-summary-v1",
+  "run": {
+    "name": "agent_3_workload_sustained_high_load",
+    "scenario_mode": "sustained_high_load",
+    "frame_interval_ms": 5.0
+  },
+  "agent_runtime_summary": {
+    "schema_version": "inferedge-orchestration-summary-v1",
+    "source_contracts": {
+      "forge_agent_manifest": "inferedge-agent-manifest-v1",
+      "runtime_agent_result": "inferedge-runtime-agent-task-v1"
+    },
+    "agents": {
+      "safety_monitor_agent": {
+        "agent_id": "safety_monitor_agent",
+        "agent_type": "safety",
+        "priority": 100,
+        "latency_budget_ms": 20.0,
+        "fallback_policy": "protect"
+      },
+      "vision_agent": {
+        "agent_id": "vision_agent",
+        "agent_type": "vision",
+        "priority": 90,
+        "latency_budget_ms": 33.0,
+        "fallback_policy": "drop_stale"
+      }
+    },
+    "totals": {
+      "executed_count": 10,
+      "dropped_count": 14,
+      "deadline_missed_count": 1,
+      "fallback_count": 14,
+      "policy_decision_count": 14,
+      "overload_event_count": 14
+    }
+  },
+  "sustained_runtime_summary": {
+    "schema_version": "inferedge-orchestrator-sustained-summary-v1",
+    "scenario_mode": "sustained_high_load",
+    "queue_depth_sample_count": 3,
+    "latency_sample_count": 2,
+    "max_total_queue_depth": 6
+  },
+  "queue_depth_timeline": [
+    {
+      "cycle": 1,
+      "stage": "before_policy",
+      "queue_depth": {
+        "vision_agent": 4,
+        "voice_command_agent": 2,
+        "safety_monitor_agent": 0
+      },
+      "total_queue_depth": 6
+    }
+  ],
+  "latency_timeline": [
+    {
+      "agent_id": "vision_agent",
+      "task_id": "task_vision_agent",
+      "latency_ms": 41.0,
+      "latency_budget_ms": 33.0,
+      "deadline_missed": true
+    }
+  ],
+  "policy_decision_log": [
+    {
+      "agent_id": "vision_agent",
+      "task_id": "task_vision_agent",
+      "decision": "load_shedding",
+      "reason": "queue_backlog_threshold_exceeded",
+      "decision_reason": "queue_backlog_threshold_exceeded",
+      "total_backlog_before": 6,
+      "backlog_threshold": 3,
+      "queue_depth_snapshot": {
+        "vision_agent": 4,
+        "voice_command_agent": 2,
+        "safety_monitor_agent": 0
+      },
+      "fallback_used": true,
+      "protected_agent_id": "safety_monitor_agent"
+    }
+  ],
+  "drop_events": [
+    {
+      "agent_id": "vision_agent",
+      "reason": "load_shedding_backlog_threshold_exceeded"
+    }
+  ],
+  "overload_events": [
+    {
+      "agent_id": "vision_agent",
+      "fallback_used": true,
+      "reason": "queue_backlog_threshold_exceeded"
+    }
+  ],
+  "multi_workload_sustained_summary": {
+    "schema_version": "inferedge-orchestrator-multi-workload-sustained-v1",
+    "scenario_mode": "sustained_high_load",
+    "evidence_scope": "local sustained workload profiles with lightweight CPU profile adapters; external YOLO/Whisper/FastAPI integrations remain optional",
+    "workload_profiles": [
+      {
+        "agent_id": "vision_agent",
+        "agent_type": "vision",
+        "workload_type": "realtime_vision",
+        "runtime_loop": "yolo_detection_loop",
+        "implementation": "local_profile_adapter",
+        "profile_work_units": 24000,
+        "ingress_profile": "frame_queue",
+        "expected_runtime_mode": "sustained",
+        "preferred_device": "gpu",
+        "executed": 18,
+        "dropped": 6,
+        "deadline_missed": 4,
+        "fallback_used": 2,
+        "mean_latency_ms": 41.5,
+        "p95_latency_ms": 74.0,
+        "max_queue_backlog": 8
+      },
+      {
+        "agent_id": "voice_command_agent",
+        "agent_type": "voice",
+        "workload_type": "voice_command",
+        "runtime_loop": "whisper_command_burst",
+        "implementation": "local_profile_adapter",
+        "profile_work_units": 16000,
+        "ingress_profile": "fastapi_concurrent_request",
+        "expected_runtime_mode": "burst",
+        "preferred_device": "cpu",
+        "executed": 4,
+        "dropped": 1,
+        "deadline_missed": 1,
+        "fallback_used": 1,
+        "mean_latency_ms": 122.0,
+        "p95_latency_ms": 180.0,
+        "max_queue_backlog": 3
+      },
+      {
+        "agent_id": "safety_monitor_agent",
+        "agent_type": "safety",
+        "workload_type": "telemetry_monitor",
+        "runtime_loop": "safety_monitor_loop",
+        "implementation": "local_profile_adapter",
+        "profile_work_units": 6000,
+        "ingress_profile": "periodic_monitor",
+        "expected_runtime_mode": "periodic",
+        "preferred_device": "cpu",
+        "executed": 8,
+        "dropped": 0,
+        "deadline_missed": 0,
+        "fallback_used": 0,
+        "mean_latency_ms": 8.0,
+        "p95_latency_ms": 11.0,
+        "max_queue_backlog": 0
+      }
+    ],
+    "observed_runtime_signals": {
+      "max_total_queue_depth": 11,
+      "executed_count": 30,
+      "dropped_count": 7,
+      "deadline_missed_count": 5,
+      "fallback_count": 3,
+      "policy_decision_count": 5,
+      "policy_decision_reasons": [
+        "stale_frame_drop_due_to_queue_latency",
+        "fallback_activated_due_to_overload_risk"
+      ],
+      "tegrastats_sample_count": 2,
+      "local_profile_adapter_count": 30,
+      "local_profile_elapsed_ms": 124.5,
+      "local_profile_kinds": [
+        "safety_monitor_loop",
+        "vision_frame_loop",
+        "voice_command_burst"
+      ]
+    },
+    "operation_timeline_summary": {
+      "schema_version": "inferedge-orchestrator-operation-timeline-summary-v1",
+      "source": "queue_depth_timeline+latency_timeline+policy_decision_log+runtime_event_summary",
+      "sample_counts": {
+        "queue_depth": 1,
+        "latency": 1,
+        "policy_decision": 1,
+        "runtime_event": 2
+      },
+      "queue": {
+        "max_total_queue_depth": 11,
+        "average_total_queue_depth": 7.5,
+        "overload_backlog_threshold": 3,
+        "pressure_state": "overloaded",
+        "pressure_reason": "queue_backlog_threshold_exceeded",
+        "max_pressure_task": "vision_agent",
+        "max_queue_depth_by_task": {
+          "vision_agent": 8,
+          "voice_command_agent": 3
+        }
+      },
+      "latency": {
+        "sample_count": 1,
+        "max_latency_ms": 180.0,
+        "max_queue_wait_ms": 32.5,
+        "max_queue_wait_ms_by_task": {
+          "vision_agent": 32.5
+        },
+        "tasks_with_deadline_miss": [
+          "vision_agent"
+        ]
+      },
+      "policy": {
+        "decision_count": 1,
+        "decision_reasons": [
+          "queue_backlog_threshold_exceeded"
+        ],
+        "first_decision": {
+          "task": "voice_command_agent",
+          "decision_reason": "queue_backlog_threshold_exceeded"
+        },
+        "latest_decision": {
+          "task": "voice_command_agent",
+          "decision_reason": "queue_backlog_threshold_exceeded"
+        }
+      },
+      "affected_tasks": {
+        "deadline_missed": [
+          "vision_agent"
+        ],
+        "fallback": [
+          "voice_command_agent"
+        ],
+        "scheduler_delay": [
+          "voice_command_agent"
+        ],
+        "stale_drop": [
+          "vision_agent",
+          "voice_command_agent"
+        ],
+        "degraded": [
+          "vision_agent",
+          "voice_command_agent"
+        ],
+        "constrained": []
+      },
+      "stale_drop": {
+        "schema_version": "inferedge-orchestrator-stale-drop-summary-v1",
+        "operation_context_role": "supplemental",
+        "scheduler_owner": "orchestrator",
+        "decision_owner": "lab",
+        "not_a_deployment_decision": true,
+        "source": "drop_events",
+        "first_read": "review_stale_drop_context",
+        "stale_drop_count": 5,
+        "total_drop_count": 7,
+        "stale_drop_rate": 0.714,
+        "stale_drop_reasons": {
+          "load_shedding_backlog_threshold_exceeded": 3,
+          "queue_overflow_drop_oldest": 2
+        },
+        "stale_drop_reason_classes": [
+          "load_shedding_stale_backlog",
+          "stale_queue_overflow"
+        ],
+        "tasks_with_stale_drop": [
+          "vision_agent",
+          "voice_command_agent"
+        ],
+        "task_counts": {
+          "vision_agent": 3,
+          "voice_command_agent": 2
+        },
+        "latest_stale_drop_event": {
+          "task": "voice_command_agent",
+          "agent_id": "voice_command_agent",
+          "reason": "queue_overflow_drop_oldest",
+          "stale_drop_class": "stale_queue_overflow"
+        },
+        "interpretation": "Queued stale/backlog work was dropped as scheduler evidence only; Lab remains the final deployment decision owner."
+      },
+      "review_hints": [
+        "review_queue_pressure",
+        "review_scheduler_delay",
+        "review_deadline_miss",
+        "review_fallback_use",
+        "review_stale_drop"
+      ]
+    }
+  },
+  "tegrastats_timeline": {
+    "source": "sample",
+    "sample_count": 2,
+    "samples": [
+      {
+        "sample_index": 0,
+        "ram_used_mb": 2048,
+        "gpu_percent": 42,
+        "temperatures_c": {
+          "cpu": 66.5,
+          "gpu": 68.1
+        }
+      },
+      {
+        "sample_index": 1,
+        "ram_used_mb": 2304,
+        "gpu_percent": 91,
+        "temperatures_c": {
+          "cpu": 76.2,
+          "gpu": 74.0
+        }
+      }
+    ],
+    "summary": {
+      "max_gpu_percent": 91,
+      "max_ram_used_mb": 2304,
+      "max_temperature_c": 76.2
+    }
+  }
+}

@@ -504,6 +504,16 @@ is the companion example where optional stale-drop evidence is present. It keeps
 full `edgeenv_orchestrator_stale_drop_summary` and `stale_frame_risk` evidence
 items in `guard_analysis.evidence` while leaving those optional labels out of
 the required deployment-decision contract.
+Regenerate it from the committed source fixtures with:
+
+```bash
+python -m inferedge_aiguard.cli build-runtime-intelligence-optional-stale-drop \
+  --edgeenv-regression examples/runtime_intelligence/edgeenv_runtime_regression_with_optional_stale_drop_context.json \
+  --remote-dispatch examples/runtime_intelligence/remote_dispatch_fallback_recovered_result.json \
+  --orchestration-summary examples/runtime_intelligence/orchestrator_multi_workload_sustained_summary.json \
+  --save-json examples/runtime_intelligence/aiguard_runtime_operation_guard_analysis_optional_stale_drop.json
+```
+
 `check-edgeenv-handoff-alignment` verifies that EdgeEnv's
 `external_aiguard_required_evidence_types` are present in
 `guard_analysis.evidence`. It also checks the handoff boundary flags that keep

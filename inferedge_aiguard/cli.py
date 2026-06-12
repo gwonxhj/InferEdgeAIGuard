@@ -19,6 +19,7 @@ from .runtime_reliability import (
     analyze_orchestration_summary,
     analyze_remote_dispatch_result,
     analyze_runtime_result,
+    build_optional_stale_drop_guard_analysis,
     validate_edgeenv_handoff_guard_evidence_alignment,
 )
 from .schema import load_output_json
@@ -167,6 +168,35 @@ def build_parser() -> argparse.ArgumentParser:
     )
     _add_save_options(check_edgeenv_handoff_parser)
 
+    stale_drop_example_parser = subparsers.add_parser(
+        "build-runtime-intelligence-optional-stale-drop",
+        help=(
+            "Rebuild the curated Runtime Intelligence optional stale-drop "
+            "guard_analysis example from source artifacts"
+        ),
+    )
+    stale_drop_example_parser.add_argument(
+        "--edgeenv-regression",
+        required=True,
+        help="Path to EdgeEnv runtime regression report JSON",
+    )
+    stale_drop_example_parser.add_argument(
+        "--remote-dispatch",
+        required=True,
+        help="Path to Orchestrator remote dispatch fallback result JSON",
+    )
+    stale_drop_example_parser.add_argument(
+        "--orchestration-summary",
+        required=True,
+        help="Path to Orchestrator sustained summary JSON with stale-drop context",
+    )
+    stale_drop_example_parser.add_argument(
+        "--created-at",
+        default="2026-06-10T00:56:55Z",
+        help="Stable created_at timestamp for the generated fixture",
+    )
+    _add_save_options(stale_drop_example_parser)
+
     portfolio_demo_parser = subparsers.add_parser(
         "portfolio-demo",
         help="Replay bundled AIGuard portfolio demo cases",
@@ -301,6 +331,20 @@ def main(argv: list[str] | None = None) -> int:
             save_md=args.save_md,
         )
         return 0 if summary.get("status") == "passed" else 2
+
+    if args.command == "build-runtime-intelligence-optional-stale-drop":
+        summary = build_optional_stale_drop_guard_analysis(
+            _load_json_dict(args.edgeenv_regression),
+            _load_json_dict(args.remote_dispatch),
+            _load_json_dict(args.orchestration_summary),
+            created_at=args.created_at,
+        )
+        _emit_summary(
+            summary,
+            save_json=args.save_json,
+            save_md=args.save_md,
+        )
+        return 0
 
     if args.command == "portfolio-demo":
         _emit_summary(
