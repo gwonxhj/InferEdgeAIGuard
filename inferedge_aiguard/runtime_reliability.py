@@ -29,6 +29,38 @@ EDGEENV_HANDOFF_GUARD_ALIGNMENT_SCHEMA_VERSION = (
 EDGEENV_HANDOFF_OPTIONAL_EVIDENCE_CONTEXT_ROLE = (
     "read_only_optional_guard_context"
 )
+OPTIONAL_PRESENT_SOURCE_ARTIFACT_CONTEXT_ROLE = "read_only_cross_repo_traceability"
+OPTIONAL_PRESENT_SOURCE_ARTIFACT_REPRODUCTION_COMMAND = [
+    "python",
+    "-m",
+    "inferedge_aiguard.cli",
+    "build-runtime-intelligence-optional-stale-drop",
+    "--edgeenv-regression",
+    (
+        "examples/runtime_intelligence/"
+        "edgeenv_runtime_regression_with_optional_stale_drop_context.json"
+    ),
+    "--remote-dispatch",
+    "examples/runtime_intelligence/remote_dispatch_fallback_recovered_result.json",
+    "--orchestration-summary",
+    "examples/runtime_intelligence/orchestrator_multi_workload_sustained_summary.json",
+    "--save-json",
+    (
+        "examples/runtime_intelligence/"
+        "aiguard_runtime_operation_guard_analysis_optional_stale_drop.json"
+    ),
+]
+OPTIONAL_PRESENT_SOURCE_ARTIFACT = {
+    "repository": "InferEdgeAIGuard",
+    "path": (
+        "examples/runtime_intelligence/"
+        "aiguard_runtime_operation_guard_analysis_optional_stale_drop.json"
+    ),
+    "schema_version": "inferedge-aiguard-diagnosis-v1",
+    "role": "aiguard-optional-stale-drop-full-evidence-source",
+    "context_role": OPTIONAL_PRESENT_SOURCE_ARTIFACT_CONTEXT_ROLE,
+    "reproduction_command": OPTIONAL_PRESENT_SOURCE_ARTIFACT_REPRODUCTION_COMMAND,
+}
 EDGEENV_ORCHESTRATOR_PRODUCER_LINEAGE_EVIDENCE_TYPE = (
     "edgeenv_orchestrator_producer_lineage"
 )
@@ -256,7 +288,7 @@ def validate_edgeenv_handoff_guard_evidence_alignment(
         else "regenerate_guard_analysis_or_update_handoff_contract"
     )
 
-    return {
+    alignment_summary = {
         "schema_version": EDGEENV_HANDOFF_GUARD_ALIGNMENT_SCHEMA_VERSION,
         "status": status,
         "recommendation": recommendation,
@@ -310,6 +342,18 @@ def validate_edgeenv_handoff_guard_evidence_alignment(
         "guard_alignment_summary_errors": guard_alignment_summary_errors,
         "errors": errors,
     }
+    if _has_optional_stale_drop_full_evidence(optional_guard_evidence_types_present):
+        alignment_summary["optional_present_source_artifact"] = dict(
+            OPTIONAL_PRESENT_SOURCE_ARTIFACT
+        )
+    return alignment_summary
+
+
+def _has_optional_stale_drop_full_evidence(optional_types: list[str]) -> bool:
+    return {
+        ORCHESTRATOR_STALE_FRAME_RISK_EVIDENCE_TYPE,
+        EDGEENV_ORCHESTRATOR_STALE_DROP_SUMMARY_EVIDENCE_TYPE,
+    }.issubset(set(optional_types))
 
 
 def _first_evidence_item(

@@ -319,6 +319,19 @@ python -m inferedge_aiguard.cli build-runtime-intelligence-optional-stale-drop \
   --save-json examples/runtime_intelligence/aiguard_runtime_operation_guard_analysis_optional_stale_drop.json
 ```
 
+The producer smoke wraps that regeneration path and compares the generated
+artifact with the committed fixture. If a sibling InferEdgeLab checkout is
+available, it also runs Lab's source traceability gate against the generated
+optional-present alignment metadata. The alignment summary exposes the fixture
+through `optional_present_source_artifact` with
+`read_only_cross_repo_traceability` context, so Lab can verify the source
+without making AIGuard the deployment decision owner:
+
+```bash
+bash scripts/smoke_runtime_intelligence_optional_stale_drop.sh \
+  --output-dir reports/runtime_intelligence_optional_stale_drop
+```
+
 `check-edgeenv-handoff-alignment`는 EdgeEnv handoff의
 `external_aiguard_required_evidence_types`가 실제 `guard_analysis.evidence`
 type set으로 충족되는지 확인합니다. 또한
