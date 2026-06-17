@@ -62,6 +62,20 @@ execution 완료, long-lived worker readiness, secure tunnel operation,
 production retry/failover, cloud orchestration을 확인하지 않습니다. 최종
 deployment decision owner는 Lab입니다.
 
+## Curated Orchestrator Sample Handoff
+
+Orchestrator repository는 작은 reviewer-facing sample을 `examples/telemetry/`
+아래에 둡니다. AIGuard는 같은 signal vocabulary를 소비하지만, 이 sample의
+owner가 되거나 이를 deployment decision으로 바꾸지 않습니다.
+
+| Orchestrator sample | AIGuard evidence type | Review meaning |
+|---|---|---|
+| `agent_scheduler_delay_sample.json` | `scheduler_delay_pattern` | delayed execution, queue wait, policy/drop reason count를 보여주며 AIGuard가 deterministic runtime-reliability evidence로 해석할 수 있습니다. |
+| `remote_fallback_recovery_sample.json` | `remote_execution_recovered_by_fallback` | primary starter failure, bounded fallback recovery, compact remote runtime event summary consistency를 보여줍니다. |
+
+이 sample들은 Orchestrator -> AIGuard handoff를 추적하기 위한 review example입니다.
+benchmark output, production retry proof, Lab-owned deployment decision이 아닙니다.
+
 ## Evidence Mapping
 
 | Evidence type | Metric | Review threshold | Block threshold | 의미 |

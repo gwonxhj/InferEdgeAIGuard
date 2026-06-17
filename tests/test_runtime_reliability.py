@@ -4575,3 +4575,26 @@ def test_runtime_intelligence_docs_describe_lab_report_marker_context():
         assert "AIGuard does not validate optional evidence as required" in doc
         for marker in LAB_EXPECTED_REPORT_MARKERS:
             assert marker in doc
+
+
+def test_runtime_reliability_docs_map_orchestrator_curated_samples():
+    docs = [
+        (ROOT / "docs" / "runtime_reliability_signals.md").read_text(
+            encoding="utf-8"
+        ),
+        (ROOT / "docs" / "runtime_reliability_signals.ko.md").read_text(
+            encoding="utf-8"
+        ),
+    ]
+
+    for doc in docs:
+        assert "Curated Orchestrator Sample Handoff" in doc
+        assert "agent_scheduler_delay_sample.json" in doc
+        assert "remote_fallback_recovery_sample.json" in doc
+        assert "scheduler_delay_pattern" in doc
+        assert "remote_execution_recovered_by_fallback" in doc
+        assert "benchmark output" in doc
+        assert "production retry proof" in doc
+        assert "Lab-owned deployment decision" in doc
+
+    assert "curated documentation artifacts" in docs[0]

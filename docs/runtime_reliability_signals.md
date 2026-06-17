@@ -79,6 +79,21 @@ remote execution, long-lived worker readiness, secure tunnel operation,
 production retry/failover, or cloud orchestration. Lab remains the final
 deployment decision owner.
 
+## Curated Orchestrator Sample Handoff
+
+The Orchestrator repository keeps small reviewer-facing samples under
+`examples/telemetry/`. AIGuard consumes the same signal vocabulary, but it does
+not own those samples or turn them into deployment decisions.
+
+| Orchestrator sample | AIGuard evidence type | Review meaning |
+|---|---|---|
+| `agent_scheduler_delay_sample.json` | `scheduler_delay_pattern` | Shows delayed execution, queue wait, and policy/drop reason counts that AIGuard can turn into deterministic runtime-reliability evidence. |
+| `remote_fallback_recovery_sample.json` | `remote_execution_recovered_by_fallback` | Shows primary starter failure, bounded fallback recovery, and compact remote runtime event summary consistency. |
+
+Use these samples as traceable review examples for the Orchestrator -> AIGuard
+handoff. They are curated documentation artifacts, not benchmark outputs,
+production retry proof, or Lab-owned deployment decisions.
+
 ## Evidence Mapping
 
 | Evidence type | Metric | Review threshold | Block threshold | Meaning |
