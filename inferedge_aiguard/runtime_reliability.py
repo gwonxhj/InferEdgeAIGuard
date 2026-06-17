@@ -79,6 +79,13 @@ EDGEENV_ORCHESTRATOR_LATENCY_BUDGET_PROTECTION_EVIDENCE_TYPE = (
 EDGEENV_ORCHESTRATOR_LATENCY_BUDGET_PROTECTION_SCHEMA_VERSION = (
     "inferedge-orchestrator-latency-budget-protection-v1"
 )
+ORCHESTRATOR_SCHEDULER_FAIRNESS_EVIDENCE_TYPE = "scheduler_fairness_risk"
+EDGEENV_ORCHESTRATOR_SCHEDULER_FAIRNESS_EVIDENCE_TYPE = (
+    "edgeenv_orchestrator_scheduler_fairness_summary"
+)
+EDGEENV_ORCHESTRATOR_SCHEDULER_FAIRNESS_SCHEMA_VERSION = (
+    "inferedge-orchestrator-scheduler-fairness-summary-v1"
+)
 ORCHESTRATOR_OPERATION_TIMELINE_SUMMARY_EVIDENCE_TYPE = (
     "operation_timeline_summary"
 )
@@ -141,6 +148,8 @@ DEFAULT_RUNTIME_RELIABILITY_THRESHOLDS = {
     "queue_pressure_reason_count_review": 1,
     "worker_operation_risk_count_review": 1,
     "worker_operation_risk_count_blocked": 3,
+    "scheduler_starvation_risk_count_review": 1,
+    "scheduler_starvation_risk_count_blocked": 3,
     "device_local_event_count_review": 1,
     "edgeenv_mean_delta_pct_review": 15.0,
     "edgeenv_p99_delta_pct_review": 25.0,
@@ -486,6 +495,13 @@ def analyze_orchestration_summary(
     )
     if operation_timeline_evidence is not None:
         evidence.append(operation_timeline_evidence)
+    scheduler_fairness_evidence = _scheduler_fairness_risk_evidence(
+        metrics,
+        totals,
+        policy,
+    )
+    if scheduler_fairness_evidence is not None:
+        evidence.append(scheduler_fairness_evidence)
     stale_drop_evidence = _stale_frame_risk_evidence(metrics, totals, policy)
     if stale_drop_evidence is not None:
         evidence.append(stale_drop_evidence)
@@ -763,6 +779,11 @@ def compute_runtime_reliability_metrics(summary: dict[str, Any]) -> dict[str, An
     operation_timeline_stale_drop = _mapping(
         operation_timeline_summary.get("stale_drop")
     )
+    operation_timeline_scheduler_fairness = _mapping(
+        operation_timeline_summary.get("scheduler_fairness")
+        or multi_workload_summary.get("scheduler_fairness_summary")
+        or summary.get("scheduler_fairness_summary")
+    )
     operation_timeline_review_hints = _string_list(
         operation_timeline_summary.get("review_hints")
     )
@@ -809,6 +830,21 @@ def compute_runtime_reliability_metrics(summary: dict[str, Any]) -> dict[str, An
     )
     operation_timeline_max_latency_ms = _optional_non_negative_number(
         operation_timeline_latency.get("max_latency_ms")
+    )
+    scheduler_fairness_starvation_tasks = _string_list(
+        operation_timeline_scheduler_fairness.get("tasks_with_starvation_risk")
+    )
+    scheduler_fairness_delay_tasks = _string_list(
+        operation_timeline_scheduler_fairness.get("tasks_with_scheduler_delay")
+    )
+    scheduler_fairness_degraded_tasks = _string_list(
+        operation_timeline_scheduler_fairness.get("tasks_with_degradation")
+    )
+    scheduler_fairness_protected_tasks = _string_list(
+        operation_timeline_scheduler_fairness.get("protected_high_priority_tasks")
+    )
+    scheduler_fairness_task_context = _mapping(
+        operation_timeline_scheduler_fairness.get("task_fairness")
     )
     totals = _totals(runtime_summary)
     latency_timeline = _list(summary.get("latency_timeline"))
@@ -1014,6 +1050,34 @@ def compute_runtime_reliability_metrics(summary: dict[str, Any]) -> dict[str, An
         "operation_timeline_stale_drop_not_a_deployment_decision": (
             operation_timeline_stale_drop.get("not_a_deployment_decision")
         ),
+        "scheduler_fairness_summary": dict(operation_timeline_scheduler_fairness),
+        "scheduler_fairness_summary_present": bool(
+            operation_timeline_scheduler_fairness
+        ),
+        "scheduler_fairness_summary_schema_version": (
+            operation_timeline_scheduler_fairness.get("schema_version")
+        ),
+        "scheduler_fairness_protected_high_priority_tasks": (
+            scheduler_fairness_protected_tasks
+        ),
+        "scheduler_fairness_starvation_risk_tasks": (
+            scheduler_fairness_starvation_tasks
+        ),
+        "scheduler_fairness_scheduler_delay_tasks": scheduler_fairness_delay_tasks,
+        "scheduler_fairness_degraded_tasks": scheduler_fairness_degraded_tasks,
+        "scheduler_fairness_task_context": dict(scheduler_fairness_task_context),
+        "scheduler_fairness_starvation_risk_count": float(
+            len(scheduler_fairness_starvation_tasks)
+        ),
+        "scheduler_fairness_decision_owner": (
+            operation_timeline_scheduler_fairness.get("decision_owner")
+        ),
+        "scheduler_fairness_scheduler_owner": (
+            operation_timeline_scheduler_fairness.get("scheduler_owner")
+        ),
+        "scheduler_fairness_not_a_deployment_decision": (
+            operation_timeline_scheduler_fairness.get("not_a_deployment_decision")
+        ),
         "runtime_event_producer_sources": _string_list(
             runtime_event_summary.get("producer_sources")
         ),
@@ -1184,6 +1248,26 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
     )
     candidate_operation_timeline_affected_tasks = _mapping(
         candidate_operation_timeline_summary.get("affected_tasks")
+    )
+    candidate_scheduler_fairness_summary = _mapping(
+        candidate_orchestrator_operation.get("scheduler_fairness_summary")
+        or candidate_operation_timeline_summary.get("scheduler_fairness")
+        or candidate_orchestrator_context.get("scheduler_fairness_summary")
+    )
+    candidate_scheduler_fairness_starvation_tasks = _string_list(
+        candidate_scheduler_fairness_summary.get("tasks_with_starvation_risk")
+    )
+    candidate_scheduler_fairness_delay_tasks = _string_list(
+        candidate_scheduler_fairness_summary.get("tasks_with_scheduler_delay")
+    )
+    candidate_scheduler_fairness_degraded_tasks = _string_list(
+        candidate_scheduler_fairness_summary.get("tasks_with_degradation")
+    )
+    candidate_scheduler_fairness_protected_tasks = _string_list(
+        candidate_scheduler_fairness_summary.get("protected_high_priority_tasks")
+    )
+    candidate_scheduler_fairness_task_context = _mapping(
+        candidate_scheduler_fairness_summary.get("task_fairness")
     )
     candidate_stale_drop_summary = _mapping(
         candidate_orchestrator_operation.get("stale_drop_summary")
@@ -1903,6 +1987,42 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
             _string_list(
                 candidate_operation_timeline_affected_tasks.get("constrained")
             )
+        ),
+        "orchestrator_scheduler_fairness_summary": dict(
+            candidate_scheduler_fairness_summary
+        ),
+        "orchestrator_scheduler_fairness_summary_present": bool(
+            candidate_scheduler_fairness_summary
+        ),
+        "orchestrator_scheduler_fairness_summary_schema_version": (
+            candidate_scheduler_fairness_summary.get("schema_version")
+        ),
+        "orchestrator_scheduler_fairness_protected_high_priority_tasks": (
+            candidate_scheduler_fairness_protected_tasks
+        ),
+        "orchestrator_scheduler_fairness_starvation_risk_tasks": (
+            candidate_scheduler_fairness_starvation_tasks
+        ),
+        "orchestrator_scheduler_fairness_scheduler_delay_tasks": (
+            candidate_scheduler_fairness_delay_tasks
+        ),
+        "orchestrator_scheduler_fairness_degraded_tasks": (
+            candidate_scheduler_fairness_degraded_tasks
+        ),
+        "orchestrator_scheduler_fairness_task_context": dict(
+            candidate_scheduler_fairness_task_context
+        ),
+        "orchestrator_scheduler_fairness_starvation_risk_count": float(
+            len(candidate_scheduler_fairness_starvation_tasks)
+        ),
+        "orchestrator_scheduler_fairness_decision_owner": (
+            candidate_scheduler_fairness_summary.get("decision_owner")
+        ),
+        "orchestrator_scheduler_fairness_scheduler_owner": (
+            candidate_scheduler_fairness_summary.get("scheduler_owner")
+        ),
+        "orchestrator_scheduler_fairness_not_a_deployment_decision": (
+            candidate_scheduler_fairness_summary.get("not_a_deployment_decision")
         ),
         "orchestrator_operation_timeline_affected_stale_drop_tasks": (
             candidate_stale_drop_tasks
@@ -2894,6 +3014,88 @@ def _operation_timeline_summary_evidence(
     )
 
 
+def _scheduler_fairness_risk_evidence(
+    metrics: dict[str, Any],
+    totals: dict[str, Any],
+    thresholds: dict[str, float],
+) -> dict[str, Any] | None:
+    if not metrics.get("scheduler_fairness_summary_present"):
+        return None
+
+    starvation_count = _non_negative_number(
+        metrics.get("scheduler_fairness_starvation_risk_count")
+    )
+    review_threshold = thresholds["scheduler_starvation_risk_count_review"]
+    blocked_threshold = thresholds["scheduler_starvation_risk_count_blocked"]
+    severity = _rate_severity(
+        value=starvation_count,
+        review=review_threshold,
+        blocked=blocked_threshold,
+    )
+    status = _status_for_runtime_metric(severity)
+    protected_tasks = _string_list(
+        metrics.get("scheduler_fairness_protected_high_priority_tasks")
+    )
+    starvation_tasks = _string_list(
+        metrics.get("scheduler_fairness_starvation_risk_tasks")
+    )
+    delay_tasks = _string_list(metrics.get("scheduler_fairness_scheduler_delay_tasks"))
+    degraded_tasks = _string_list(metrics.get("scheduler_fairness_degraded_tasks"))
+    suspected_causes: list[str] = []
+    if starvation_tasks:
+        suspected_causes.append("scheduler_starvation_context")
+    if delay_tasks:
+        suspected_causes.append("scheduler_delay_context")
+    if degraded_tasks:
+        suspected_causes.append("worker_degradation_context")
+    if protected_tasks:
+        suspected_causes.append("high_priority_protection_context")
+
+    return build_evidence_item(
+        evidence_type=ORCHESTRATOR_SCHEDULER_FAIRNESS_EVIDENCE_TYPE,
+        metric_name="scheduler_starvation_risk_count",
+        observed_value=starvation_count,
+        baseline_value=0,
+        threshold=review_threshold,
+        delta=None,
+        delta_pct=None,
+        increase_factor=None,
+        severity=severity,
+        status=status,
+        explanation=(
+            "Orchestrator scheduler_fairness_summary reports "
+            f"{int(starvation_count)} task(s) with starvation risk."
+        ),
+        why_it_matters=(
+            "Fairness context shows which workloads were protected, delayed, "
+            "starved, or degraded under sustained overload without making "
+            "AIGuard the deployment decision owner."
+        ),
+        suspected_causes=suspected_causes,
+        recommendation=(
+            "Review scheduler_fairness_summary with queue pressure, policy "
+            "decisions, and worker health before treating this operation profile "
+            "as stable. Lab remains the final deployment decision owner."
+            if status != "passed"
+            else "Scheduler fairness summary is present without starvation risk."
+        ),
+        raw_context={
+            "totals": totals,
+            "scheduler_fairness_summary": metrics.get("scheduler_fairness_summary"),
+            "protected_high_priority_tasks": protected_tasks,
+            "tasks_with_starvation_risk": starvation_tasks,
+            "tasks_with_scheduler_delay": delay_tasks,
+            "tasks_with_degradation": degraded_tasks,
+            "task_fairness": metrics.get("scheduler_fairness_task_context"),
+            "decision_owner": metrics.get("scheduler_fairness_decision_owner"),
+            "scheduler_owner": metrics.get("scheduler_fairness_scheduler_owner"),
+            "not_a_deployment_decision": metrics.get(
+                "scheduler_fairness_not_a_deployment_decision"
+            ),
+        },
+    )
+
+
 def _stale_frame_risk_evidence(
     metrics: dict[str, Any],
     totals: dict[str, Any],
@@ -3316,6 +3518,11 @@ def _edgeenv_regression_evidence(
     )
     if operation_timeline_evidence is not None:
         evidence.append(operation_timeline_evidence)
+    scheduler_fairness_evidence = (
+        _edgeenv_orchestrator_scheduler_fairness_evidence(metrics)
+    )
+    if scheduler_fairness_evidence is not None:
+        evidence.append(scheduler_fairness_evidence)
     stale_drop_evidence = _edgeenv_orchestrator_stale_drop_summary_evidence(
         metrics,
         thresholds,
@@ -4552,6 +4759,120 @@ def _edgeenv_orchestrator_operation_timeline_summary_evidence(
                 "decision_owner": "lab",
                 "scheduler_owner": "orchestrator",
                 "not_a_deployment_decision": True,
+            },
+        },
+    )
+
+
+def _edgeenv_orchestrator_scheduler_fairness_evidence(
+    metrics: dict[str, Any],
+) -> dict[str, Any] | None:
+    if not metrics.get("runtime_telemetry_context_present"):
+        return None
+    if not metrics.get("orchestrator_scheduler_fairness_summary_present"):
+        return None
+
+    starvation_tasks = _string_list(
+        metrics.get("orchestrator_scheduler_fairness_starvation_risk_tasks")
+    )
+    delay_tasks = _string_list(
+        metrics.get("orchestrator_scheduler_fairness_scheduler_delay_tasks")
+    )
+    degraded_tasks = _string_list(
+        metrics.get("orchestrator_scheduler_fairness_degraded_tasks")
+    )
+    protected_tasks = _string_list(
+        metrics.get("orchestrator_scheduler_fairness_protected_high_priority_tasks")
+    )
+    boundary_ok = (
+        metrics.get("orchestrator_scheduler_fairness_summary_schema_version")
+        == EDGEENV_ORCHESTRATOR_SCHEDULER_FAIRNESS_SCHEMA_VERSION
+        and metrics.get("orchestrator_scheduler_fairness_decision_owner") == "lab"
+        and metrics.get("orchestrator_scheduler_fairness_scheduler_owner")
+        == "orchestrator"
+        and metrics.get("orchestrator_scheduler_fairness_not_a_deployment_decision")
+        is True
+    )
+
+    review_markers: list[str] = []
+    if starvation_tasks:
+        review_markers.append("scheduler_starvation_context")
+    if delay_tasks:
+        review_markers.append("scheduler_delay_context")
+    if degraded_tasks:
+        review_markers.append("worker_degradation_context")
+    if protected_tasks:
+        review_markers.append("high_priority_protection_context")
+    if not boundary_ok:
+        review_markers.append("scheduler_fairness_boundary_marker_gap")
+    review_markers = _unique_string_values(review_markers)
+
+    observed_value = len(review_markers)
+    status = "warning" if observed_value else "passed"
+    severity = "medium" if status != "passed" else "low"
+    suspected_causes: list[str] = []
+    if "scheduler_starvation_context" in review_markers:
+        suspected_causes.append("scheduler_starvation_context")
+    if "scheduler_delay_context" in review_markers:
+        suspected_causes.append("scheduler_delay_context")
+    if "worker_degradation_context" in review_markers:
+        suspected_causes.append("worker_degradation_context")
+    if "high_priority_protection_context" in review_markers:
+        suspected_causes.append("high_priority_protection_context")
+    if "scheduler_fairness_boundary_marker_gap" in review_markers:
+        suspected_causes.append("scheduler_fairness_boundary_marker_gap")
+
+    return build_evidence_item(
+        evidence_type=EDGEENV_ORCHESTRATOR_SCHEDULER_FAIRNESS_EVIDENCE_TYPE,
+        metric_name="orchestrator_scheduler_fairness_marker_count",
+        observed_value=observed_value,
+        baseline_value=0,
+        threshold=1,
+        delta=None,
+        delta_pct=None,
+        increase_factor=None,
+        severity=severity,
+        status=status,
+        explanation=(
+            "EdgeEnv preserved Orchestrator scheduler_fairness_summary with "
+            f"{observed_value} deterministic review marker(s)."
+        ),
+        why_it_matters=(
+            "The preserved fairness summary shows which high-priority tasks were "
+            "protected and which workloads carried starvation, delay, or "
+            "degradation risk without making AIGuard the final deployment owner."
+        ),
+        suspected_causes=suspected_causes,
+        recommendation=(
+            "Review scheduler_fairness_summary in Lab alongside queue pressure, "
+            "policy decisions, and worker health before treating the operation "
+            "profile as stable."
+            if status != "passed"
+            else "Preserved scheduler fairness summary is present without "
+            "deterministic review markers."
+        ),
+        raw_context={
+            "edgeenv_regression": metrics,
+            "scheduler_fairness_summary": {
+                "summary": metrics.get("orchestrator_scheduler_fairness_summary"),
+                "boundary_markers_valid": boundary_ok,
+                "protected_high_priority_tasks": protected_tasks,
+                "tasks_with_starvation_risk": starvation_tasks,
+                "tasks_with_scheduler_delay": delay_tasks,
+                "tasks_with_degradation": degraded_tasks,
+                "task_fairness": metrics.get(
+                    "orchestrator_scheduler_fairness_task_context"
+                ),
+                "review_markers": review_markers,
+                "decision_owner": metrics.get(
+                    "orchestrator_scheduler_fairness_decision_owner"
+                ),
+                "scheduler_owner": metrics.get(
+                    "orchestrator_scheduler_fairness_scheduler_owner"
+                ),
+                "not_a_deployment_decision": metrics.get(
+                    "orchestrator_scheduler_fairness_not_a_deployment_decision"
+                ),
             },
         },
     )
@@ -5886,6 +6207,9 @@ def _operation_timeline_affected_tasks(metrics: dict[str, Any]) -> list[str]:
         "operation_timeline_affected_stale_drop_tasks",
         "operation_timeline_affected_degraded_tasks",
         "operation_timeline_affected_constrained_tasks",
+        "scheduler_fairness_starvation_risk_tasks",
+        "scheduler_fairness_scheduler_delay_tasks",
+        "scheduler_fairness_degraded_tasks",
     ):
         for task in _string_list(metrics.get(key)):
             if task not in tasks:
@@ -5902,6 +6226,9 @@ def _edgeenv_operation_timeline_affected_tasks(metrics: dict[str, Any]) -> list[
         "orchestrator_operation_timeline_affected_stale_drop_tasks",
         "orchestrator_operation_timeline_affected_degraded_tasks",
         "orchestrator_operation_timeline_affected_constrained_tasks",
+        "orchestrator_scheduler_fairness_starvation_risk_tasks",
+        "orchestrator_scheduler_fairness_scheduler_delay_tasks",
+        "orchestrator_scheduler_fairness_degraded_tasks",
     ):
         for task in _string_list(metrics.get(key)):
             if task not in tasks:

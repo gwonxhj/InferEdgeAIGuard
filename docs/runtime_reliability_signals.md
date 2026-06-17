@@ -109,6 +109,7 @@ production retry proof, or Lab-owned deployment decisions.
 | `worker_health_degradation` | `degraded_or_constrained_worker_count` | `>= 1` | `>= 3` degraded workers or any constrained worker | Worker health snapshot explains degraded/constrained runtime loops |
 | `scheduler_delay_pattern` | `scheduler_delay_event_count` | `>= 1` | `>= 3` | Runtime event timeline shows tasks delayed across scheduler cycles |
 | `operation_timeline_summary` | `operation_timeline_review_marker_count` | `>= 1` review marker | n/a | Orchestrator compact operation timeline links queue pressure, latency wait, policy decisions, and affected tasks |
+| `scheduler_fairness_risk` | `scheduler_starvation_risk_count` | `>= 1` | `>= 3` | Orchestrator scheduler fairness summary identifies protected high-priority tasks and workloads with starvation, delay, or degradation risk |
 | `queue_pressure_context` | `queue_pressure_reason_count` | `>= 1` concerning reason | n/a | Queue pressure reason explains whether backlog was near or beyond the overload threshold |
 | `worker_operation_risk_summary` | `worker_operation_risk_count` | `>= 1` | `>= 3` | Worker operation risk summary identifies latency/fallback/drop/queue-pressure risk labels |
 | `device_local_operation_context` | `device_local_event_count` | `>= 1` when device-local tasks exist | n/a | Device-local starter records local producer sources and runtime event coverage |
@@ -128,6 +129,7 @@ production retry proof, or Lab-owned deployment decisions.
 | `edgeenv_orchestrator_operation_risk_rollup` | `orchestrator_operation_risk_rollup_marker_count` | `>= 1` risk/queue/task/boundary marker | n/a | EdgeEnv preserved Orchestrator operation risk rollup as compact deterministic operation warning context |
 | `edgeenv_orchestrator_latency_budget_protection` | `orchestrator_latency_budget_protection_marker_count` | `>= 1` risk/boundary marker | n/a | EdgeEnv preserved Orchestrator latency-budget protection context for protected high-priority tasks and budget-risk tasks |
 | `edgeenv_orchestrator_operation_timeline_summary` | `orchestrator_operation_timeline_review_marker_count` | `>= 1` review/boundary marker | n/a | EdgeEnv preserved Orchestrator operation timeline summary as compact queue/latency/policy navigation evidence |
+| `edgeenv_orchestrator_scheduler_fairness_summary` | `orchestrator_scheduler_fairness_marker_count` | `>= 1` starvation/delay/degradation/boundary marker | n/a | EdgeEnv preserved Orchestrator scheduler fairness summary as supplemental fairness context for Lab review |
 | `edgeenv_orchestrator_stale_drop_summary` | `orchestrator_stale_drop_rate` | `>= 0.20` or any stale drop | `>= 0.50` | EdgeEnv preserved Orchestrator stale-drop summary as affected-agent stale/backlog context |
 | `runtime_thermal_instability` | `candidate_max_temperature_c` / `candidate_throttling_detected` | temperature `>= 70.0` or throttling `true` | temperature `>= 85.0` | EdgeEnv telemetry or attached Orchestrator feed indicates thermal/throttling pressure |
 | `runtime_queue_overload` | `candidate_queue_depth` | `>= 3.0` | `>= 8.0` | EdgeEnv telemetry or attached Orchestrator feed indicates queue backlog pressure |
@@ -197,6 +199,8 @@ reasons over:
 - `multi_workload_sustained_summary.operation_timeline_summary.review_hints`
 - `multi_workload_sustained_summary.operation_timeline_summary.affected_tasks`
 - `multi_workload_sustained_summary.operation_timeline_summary.stale_drop`
+- `multi_workload_sustained_summary.operation_timeline_summary.scheduler_fairness`
+- `multi_workload_sustained_summary.scheduler_fairness_summary`
 - `multi_workload_sustained_summary.operation_timeline_summary.latency.max_queue_wait_ms`
 - `multi_workload_sustained_summary.operation_timeline_summary.policy.decision_reasons`
 - `multi_workload_sustained_summary.operation_timeline_summary.queue.pressure_reason`
@@ -222,6 +226,14 @@ reason counts as review evidence without inferring a root cause.
 reason counts, reason classes, latest stale drop event, and
 `tasks_with_stale_drop` as deterministic scheduler evidence. This explains
 affected agents under sustained overload; it is not a deployment decision.
+
+`scheduler_fairness_risk` is emitted when Orchestrator reports
+`scheduler_fairness_summary` or `operation_timeline_summary.scheduler_fairness`.
+AIGuard preserves protected high-priority tasks, starvation-risk tasks,
+scheduler-delay tasks, degraded tasks, and per-task fairness context as
+deterministic operation evidence. This helps Lab review fairness under
+sustained overload without making AIGuard the scheduler or deployment decision
+owner.
 
 `worker_operation_risk_summary` is emitted when Orchestrator records non-healthy
 operation risk labels such as `latency_or_fallback_risk` or
@@ -470,6 +482,12 @@ review hints, queue pressure reason, max queue wait, policy decision reasons,
 and affected deadline/fallback/scheduler-delay tasks. This is deterministic
 navigation evidence for Lab review; it does not replace the full Orchestrator
 timelines or make AIGuard the deployment decision owner.
+When EdgeEnv also preserves Orchestrator `scheduler_fairness_summary`, AIGuard
+emits `edgeenv_orchestrator_scheduler_fairness_summary` to explain protected
+high-priority tasks, starvation-risk tasks, scheduler-delay tasks, degraded
+tasks, and per-task fairness context. This is supplemental operation evidence
+for Lab review; it does not make AIGuard the scheduler or final deployment
+decision owner.
 When EdgeEnv also preserves Orchestrator `stale_drop_summary`, AIGuard emits
 `edgeenv_orchestrator_stale_drop_summary` to explain stale/backlog drop rate,
 reason counts, reason classes, latest stale drop event, and affected tasks while
