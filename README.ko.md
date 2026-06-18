@@ -160,6 +160,12 @@ EdgeEnv가 Orchestrator `latency_budget_protection` block을 보존하면 AIGuar
 high-priority task, latency-budget risk task, deadline/scheduler/queue reason,
 per-task budget context를 설명합니다. 이는 runtime operation warning context이며
 AIGuard가 scheduler나 final decision owner가 된다는 의미가 아닙니다.
+EdgeEnv가 Orchestrator `scheduler_fairness_summary` block을 보존하면 AIGuard는
+`edgeenv_orchestrator_scheduler_fairness_summary` evidence로 protected
+high-priority task, starvation-risk task, scheduler-delay task, degraded task,
+per-task fairness context를 설명합니다. 이는 Lab review용 supplemental
+operation context이며 AIGuard가 scheduler나 final decision owner가 된다는
+의미가 아닙니다.
 EdgeEnv가 Runtime의 `runtime_telemetry_history_seed`를 보존하면 AIGuard는
 `inferedge-runtime-telemetry-history-seed-v1`, `registry_owner=edgeenv`,
 `decision_owner=lab` marker를 raw context에 유지합니다. EdgeEnv가 seed

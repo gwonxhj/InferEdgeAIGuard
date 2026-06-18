@@ -343,6 +343,61 @@ def multi_workload_sustained_summary() -> dict:
                     "only; Lab remains the final deployment decision owner."
                 ),
             },
+            "scheduler_fairness": {
+                "schema_version": (
+                    "inferedge-orchestrator-scheduler-fairness-summary-v1"
+                ),
+                "operation_context_role": "supplemental",
+                "scheduler_owner": "orchestrator",
+                "decision_owner": "lab",
+                "not_a_deployment_decision": True,
+                "protected_high_priority_tasks": ["safety_monitor_agent"],
+                "tasks_with_starvation_risk": [
+                    "vision_agent",
+                    "voice_command_agent",
+                ],
+                "tasks_with_scheduler_delay": ["voice_command_agent"],
+                "tasks_with_degradation": [
+                    "vision_agent",
+                    "voice_command_agent",
+                ],
+                "task_fairness": {
+                    "vision_agent": {
+                        "priority": 80,
+                        "executed_count": 18,
+                        "dropped_count": 6,
+                        "fallback_count": 2,
+                        "scheduler_delay_event_count": 0,
+                        "max_scheduler_delay_cycles": 0,
+                        "health_state": "degraded",
+                        "starvation_risk": True,
+                        "starvation_reasons": [
+                            "fallback_policy_used",
+                            "worker_degraded",
+                        ],
+                    },
+                    "voice_command_agent": {
+                        "priority": 50,
+                        "executed_count": 4,
+                        "dropped_count": 1,
+                        "fallback_count": 1,
+                        "scheduler_delay_event_count": 1,
+                        "max_scheduler_delay_cycles": 3,
+                        "health_state": "degraded",
+                        "starvation_risk": True,
+                        "starvation_reasons": [
+                            "scheduler_delay_present",
+                            "multi_cycle_scheduler_delay",
+                            "fallback_policy_used",
+                            "worker_degraded",
+                        ],
+                    },
+                },
+                "interpretation": (
+                    "Scheduler fairness is supplemental operation evidence; "
+                    "Lab remains the final deployment decision owner."
+                ),
+            },
             "review_hints": [
                 "review_queue_pressure",
                 "review_scheduler_delay",
@@ -1082,6 +1137,68 @@ def edgeenv_regression_report_with_orchestrator_feed_context() -> dict:
                         },
                     },
                 },
+                "scheduler_fairness_summary": {
+                    "schema_version": (
+                        "inferedge-orchestrator-scheduler-fairness-summary-v1"
+                    ),
+                    "operation_context_role": "supplemental",
+                    "scheduler_owner": "orchestrator",
+                    "decision_owner": "lab",
+                    "not_a_deployment_decision": True,
+                    "protected_high_priority_tasks": ["safety_monitor_agent"],
+                    "tasks_with_starvation_risk": [
+                        "vision_agent",
+                        "voice_command_agent",
+                    ],
+                    "tasks_with_scheduler_delay": ["vision_agent"],
+                    "tasks_with_degradation": [
+                        "vision_agent",
+                        "voice_command_agent",
+                    ],
+                    "task_fairness": {
+                        "safety_monitor_agent": {
+                            "priority": 100,
+                            "executed_count": 20,
+                            "dropped_count": 0,
+                            "fallback_count": 0,
+                            "scheduler_delay_event_count": 0,
+                            "health_state": "healthy",
+                            "starvation_risk": False,
+                            "starvation_reasons": [],
+                        },
+                        "vision_agent": {
+                            "priority": 80,
+                            "executed_count": 18,
+                            "dropped_count": 4,
+                            "fallback_count": 0,
+                            "scheduler_delay_event_count": 1,
+                            "max_scheduler_delay_cycles": 3,
+                            "health_state": "degraded",
+                            "starvation_risk": True,
+                            "starvation_reasons": [
+                                "scheduler_delay_present",
+                                "worker_degraded",
+                            ],
+                        },
+                        "voice_command_agent": {
+                            "priority": 50,
+                            "executed_count": 4,
+                            "dropped_count": 1,
+                            "fallback_count": 1,
+                            "scheduler_delay_event_count": 0,
+                            "health_state": "degraded",
+                            "starvation_risk": True,
+                            "starvation_reasons": [
+                                "fallback_policy_used",
+                                "worker_degraded",
+                            ],
+                        },
+                    },
+                    "interpretation": (
+                        "Scheduler fairness is supplemental operation evidence; "
+                        "Lab remains the final deployment decision owner."
+                    ),
+                },
                 "operation_timeline_summary": {
                     "schema_version": (
                         "inferedge-orchestrator-operation-timeline-summary-v1"
@@ -1256,6 +1373,7 @@ def edgeenv_regression_report_with_orchestrator_feed_context() -> dict:
                 "runtime_queue_overload",
                 "runtime_thermal_instability",
                 "edgeenv_orchestrator_latency_budget_protection",
+                "edgeenv_orchestrator_scheduler_fairness_summary",
             ],
         },
         "downstream_guard_alignment": {
@@ -1267,6 +1385,7 @@ def edgeenv_regression_report_with_orchestrator_feed_context() -> dict:
                 "runtime_queue_overload",
                 "runtime_thermal_instability",
                 "edgeenv_orchestrator_latency_budget_protection",
+                "edgeenv_orchestrator_scheduler_fairness_summary",
             ],
             "validated_by": [
                 "edgeenv runs telemetry inspect-history",
@@ -1760,6 +1879,28 @@ def test_multi_workload_sustained_summary_adds_profile_and_thermal_metrics():
         ]
         == "stale_queue_overflow"
     )
+    assert metrics["scheduler_fairness_summary_present"] is True
+    assert metrics["scheduler_fairness_summary_schema_version"] == (
+        "inferedge-orchestrator-scheduler-fairness-summary-v1"
+    )
+    assert metrics["scheduler_fairness_protected_high_priority_tasks"] == [
+        "safety_monitor_agent"
+    ]
+    assert metrics["scheduler_fairness_starvation_risk_tasks"] == [
+        "vision_agent",
+        "voice_command_agent",
+    ]
+    assert metrics["scheduler_fairness_scheduler_delay_tasks"] == [
+        "voice_command_agent"
+    ]
+    assert metrics["scheduler_fairness_degraded_tasks"] == [
+        "vision_agent",
+        "voice_command_agent",
+    ]
+    assert metrics["scheduler_fairness_starvation_risk_count"] == 2.0
+    assert metrics["scheduler_fairness_decision_owner"] == "lab"
+    assert metrics["scheduler_fairness_scheduler_owner"] == "orchestrator"
+    assert metrics["scheduler_fairness_not_a_deployment_decision"] is True
     assert metrics["tegrastats_sample_count"] == 2
     assert metrics["max_temperature_c"] == 76.2
     assert metrics["max_gpu_percent"] == 91
@@ -2004,6 +2145,7 @@ def test_compute_edgeenv_regression_metrics_extracts_orchestrator_feed_context()
         "runtime_queue_overload",
         "runtime_thermal_instability",
         "edgeenv_orchestrator_latency_budget_protection",
+        "edgeenv_orchestrator_scheduler_fairness_summary",
     }
     assert metrics["orchestrator_guard_alignment_declared_by"] == "orchestrator"
     assert metrics[
@@ -2015,6 +2157,7 @@ def test_compute_edgeenv_regression_metrics_extracts_orchestrator_feed_context()
         "runtime_queue_overload",
         "runtime_thermal_instability",
         "edgeenv_orchestrator_latency_budget_protection",
+        "edgeenv_orchestrator_scheduler_fairness_summary",
     }
     assert (
         metrics["orchestrator_guard_alignment_orchestrator_is_final_decision_owner"]
@@ -2191,6 +2334,34 @@ def test_compute_edgeenv_regression_metrics_extracts_orchestrator_feed_context()
     assert metrics["orchestrator_operation_timeline_affected_stale_drop_tasks"] == [
         "voice_command_agent",
     ]
+    assert metrics["orchestrator_scheduler_fairness_summary_present"] is True
+    assert metrics["orchestrator_scheduler_fairness_summary_schema_version"] == (
+        "inferedge-orchestrator-scheduler-fairness-summary-v1"
+    )
+    assert metrics[
+        "orchestrator_scheduler_fairness_protected_high_priority_tasks"
+    ] == ["safety_monitor_agent"]
+    assert metrics["orchestrator_scheduler_fairness_starvation_risk_tasks"] == [
+        "vision_agent",
+        "voice_command_agent",
+    ]
+    assert metrics["orchestrator_scheduler_fairness_scheduler_delay_tasks"] == [
+        "vision_agent"
+    ]
+    assert metrics["orchestrator_scheduler_fairness_degraded_tasks"] == [
+        "vision_agent",
+        "voice_command_agent",
+    ]
+    assert metrics["orchestrator_scheduler_fairness_starvation_risk_count"] == 2.0
+    assert metrics["orchestrator_scheduler_fairness_decision_owner"] == "lab"
+    assert (
+        metrics["orchestrator_scheduler_fairness_scheduler_owner"]
+        == "orchestrator"
+    )
+    assert (
+        metrics["orchestrator_scheduler_fairness_not_a_deployment_decision"]
+        is True
+    )
     assert metrics["orchestrator_stale_drop_summary_present"] is True
     assert metrics["orchestrator_stale_drop_count"] == 1
     assert metrics["orchestrator_stale_drop_total_count"] == 4
@@ -2301,6 +2472,7 @@ def test_compute_edgeenv_regression_metrics_preserves_missing_orchestrator_conte
         "runtime_queue_overload",
         "runtime_thermal_instability",
         "edgeenv_orchestrator_latency_budget_protection",
+        "edgeenv_orchestrator_scheduler_fairness_summary",
     }
 
 
@@ -2502,6 +2674,7 @@ def test_analyze_edgeenv_regression_report_warns_on_orchestrator_feed_context():
     assert "edgeenv_orchestrator_task_event_rollup" in evidence_types
     assert "edgeenv_orchestrator_latency_budget_protection" in evidence_types
     assert "edgeenv_orchestrator_operation_timeline_summary" in evidence_types
+    assert "edgeenv_orchestrator_scheduler_fairness_summary" in evidence_types
     assert "edgeenv_orchestrator_stale_drop_summary" in evidence_types
     assert "runtime_thermal_instability" in evidence_types
     assert "runtime_queue_overload" in evidence_types
@@ -2530,6 +2703,7 @@ def test_analyze_edgeenv_regression_report_warns_on_orchestrator_feed_context():
         "runtime_queue_overload",
         "runtime_thermal_instability",
         "edgeenv_orchestrator_latency_budget_protection",
+        "edgeenv_orchestrator_scheduler_fairness_summary",
     }
     queue_context = queue_evidence["raw_context"]["edgeenv_regression"]
     assert queue_context["orchestrator_source_repository"] == "InferEdgeOrchestrator"
@@ -2599,6 +2773,7 @@ def test_analyze_edgeenv_regression_report_warns_on_orchestrator_feed_context():
         "runtime_queue_overload",
         "runtime_thermal_instability",
         "edgeenv_orchestrator_latency_budget_protection",
+        "edgeenv_orchestrator_scheduler_fairness_summary",
     }
     assert producer_lineage["raw_context"]["producer_lineage"][
         "candidate_remote_runtime_event_summary_evidence_role"
@@ -2761,6 +2936,36 @@ def test_analyze_edgeenv_regression_report_warns_on_orchestrator_feed_context():
         "queue_backlog_threshold_exceeded"
     ]
     assert timeline_context["decision_owner"] == "lab"
+    scheduler_fairness = next(
+        item
+        for item in report["evidence"]
+        if item["type"] == "edgeenv_orchestrator_scheduler_fairness_summary"
+    )
+    assert scheduler_fairness["status"] == "warning"
+    assert scheduler_fairness["observed_value"] == 4
+    assert scheduler_fairness["threshold"] == 1
+    assert "scheduler_starvation_context" in scheduler_fairness["suspected_causes"]
+    assert "scheduler_delay_context" in scheduler_fairness["suspected_causes"]
+    assert "worker_degradation_context" in scheduler_fairness["suspected_causes"]
+    fairness_context = scheduler_fairness["raw_context"][
+        "scheduler_fairness_summary"
+    ]
+    assert fairness_context["boundary_markers_valid"] is True
+    assert fairness_context["protected_high_priority_tasks"] == [
+        "safety_monitor_agent"
+    ]
+    assert fairness_context["tasks_with_starvation_risk"] == [
+        "vision_agent",
+        "voice_command_agent",
+    ]
+    assert fairness_context["tasks_with_scheduler_delay"] == ["vision_agent"]
+    assert fairness_context["tasks_with_degradation"] == [
+        "vision_agent",
+        "voice_command_agent",
+    ]
+    assert fairness_context["decision_owner"] == "lab"
+    assert fairness_context["scheduler_owner"] == "orchestrator"
+    assert fairness_context["not_a_deployment_decision"] is True
     stale_drop = next(
         item
         for item in report["evidence"]
@@ -2975,6 +3180,7 @@ def test_analyze_edgeenv_regression_report_preserves_missing_orchestrator_raw_co
         "runtime_queue_overload",
         "runtime_thermal_instability",
         "edgeenv_orchestrator_latency_budget_protection",
+        "edgeenv_orchestrator_scheduler_fairness_summary",
     }
     assert set(
         replay_context[
@@ -2984,6 +3190,7 @@ def test_analyze_edgeenv_regression_report_preserves_missing_orchestrator_raw_co
         "runtime_queue_overload",
         "runtime_thermal_instability",
         "edgeenv_orchestrator_latency_budget_protection",
+        "edgeenv_orchestrator_scheduler_fairness_summary",
     }
     assert report["candidate_summary"]["edgeenv_regression"][
         "history_missing_orchestrator_context_count"
@@ -3097,6 +3304,7 @@ def test_analyze_multi_workload_sustained_summary_adds_runtime_evidence():
     assert "profiled_workload_pressure" in evidence_types
     assert "thermal_resource_pressure" in evidence_types
     assert "operation_timeline_summary" in evidence_types
+    assert "scheduler_fairness_risk" in evidence_types
     assert "stale_frame_risk" in evidence_types
     profile_evidence = next(
         item for item in report["evidence"] if item["type"] == "profiled_workload_pressure"
@@ -3144,6 +3352,24 @@ def test_analyze_multi_workload_sustained_summary_adds_runtime_evidence():
     assert timeline_evidence["raw_context"]["policy_decision_reasons"] == [
         "queue_backlog_threshold_exceeded"
     ]
+    fairness_evidence = next(
+        item for item in report["evidence"] if item["type"] == "scheduler_fairness_risk"
+    )
+    assert fairness_evidence["status"] == "failed"
+    assert fairness_evidence["observed_value"] == 2.0
+    assert "scheduler_starvation_context" in fairness_evidence["suspected_causes"]
+    assert "scheduler_delay_context" in fairness_evidence["suspected_causes"]
+    assert "worker_degradation_context" in fairness_evidence["suspected_causes"]
+    assert fairness_evidence["raw_context"]["protected_high_priority_tasks"] == [
+        "safety_monitor_agent"
+    ]
+    assert fairness_evidence["raw_context"]["tasks_with_starvation_risk"] == [
+        "vision_agent",
+        "voice_command_agent",
+    ]
+    assert fairness_evidence["raw_context"]["decision_owner"] == "lab"
+    assert fairness_evidence["raw_context"]["scheduler_owner"] == "orchestrator"
+    assert fairness_evidence["raw_context"]["not_a_deployment_decision"] is True
     stale_evidence = next(
         item for item in report["evidence"] if item["type"] == "stale_frame_risk"
     )
@@ -3970,6 +4196,7 @@ def test_runtime_intelligence_example_exports_lab_ready_guard_analysis(tmp_path)
         "edgeenv_orchestrator_task_event_rollup",
         "edgeenv_orchestrator_latency_budget_protection",
         "edgeenv_orchestrator_operation_timeline_summary",
+        "edgeenv_orchestrator_scheduler_fairness_summary",
         "runtime_history_seed_run_config_traceability",
         "runtime_thermal_instability",
         "runtime_queue_overload",
@@ -4016,6 +4243,7 @@ def test_runtime_intelligence_example_exports_lab_ready_guard_analysis(tmp_path)
         "runtime_queue_overload",
         "runtime_thermal_instability",
         "edgeenv_orchestrator_latency_budget_protection",
+        "edgeenv_orchestrator_scheduler_fairness_summary",
     }
     coverage_evidence = next(
         item
@@ -4035,6 +4263,7 @@ def test_runtime_intelligence_example_exports_lab_ready_guard_analysis(tmp_path)
         "runtime_queue_overload",
         "runtime_thermal_instability",
         "edgeenv_orchestrator_latency_budget_protection",
+        "edgeenv_orchestrator_scheduler_fairness_summary",
     }
     assert coverage_context["orchestrator_source_repository"] == "InferEdgeOrchestrator"
     assert (
@@ -4108,6 +4337,19 @@ def test_runtime_intelligence_example_exports_lab_ready_guard_analysis(tmp_path)
     assert operation_timeline["raw_context"]["operation_timeline_summary"][
         "max_queue_wait_ms"
     ] == 15.0
+    scheduler_fairness = next(
+        item
+        for item in saved["evidence"]
+        if item["type"] == "edgeenv_orchestrator_scheduler_fairness_summary"
+    )
+    assert scheduler_fairness["status"] == "warning"
+    assert scheduler_fairness["observed_value"] == 4
+    assert scheduler_fairness["raw_context"]["scheduler_fairness_summary"][
+        "protected_high_priority_tasks"
+    ] == ["safety_monitor_agent"]
+    assert scheduler_fairness["raw_context"]["scheduler_fairness_summary"][
+        "tasks_with_starvation_risk"
+    ] == ["vision_agent", "voice_command_agent"]
     assert forbidden_decision_keys.isdisjoint(saved)
     assert forbidden_decision_keys.isdisjoint(expected)
 

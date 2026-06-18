@@ -279,6 +279,12 @@ high-priority task, latency-budget risk task, deadline/scheduler/queue reason,
 per-task budget context를 설명합니다. 이 evidence는 operation warning
 context이며 AIGuard가 scheduler나 deployment decision owner가 된다는 뜻이
 아닙니다.
+EdgeEnv가 Orchestrator `scheduler_fairness_summary` block을 보존하면 AIGuard는
+`edgeenv_orchestrator_scheduler_fairness_summary` evidence로 protected
+high-priority task, starvation-risk task, scheduler-delay task, degraded task,
+per-task fairness context를 설명합니다. 이 evidence도 Lab review용
+supplemental operation context이며 AIGuard가 scheduler나 final deployment
+decision owner가 된다는 의미가 아닙니다.
 EdgeEnv가 Orchestrator `runtime_task_event_summary`와
 `tasks_with_deadline_miss` / `tasks_with_fallback` /
 `tasks_with_scheduler_delay` rollup을 보존하면 AIGuard는
