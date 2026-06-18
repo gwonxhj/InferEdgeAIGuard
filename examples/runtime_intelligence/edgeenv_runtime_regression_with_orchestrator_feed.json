@@ -316,7 +316,44 @@
                 "review_scheduler_delay",
                 "review_deadline_miss",
                 "review_fallback_use"
-              ]
+              ],
+              "policy_pressure": {
+                "schema_version": "inferedge-orchestrator-policy-pressure-summary-v1",
+                "operation_context_role": "supplemental",
+                "scheduler_owner": "orchestrator",
+                "decision_owner": "lab",
+                "not_a_deployment_decision": true,
+                "source": "policy_decision_log+runtime_event_summary",
+                "first_read": "review_policy_pressure_context",
+                "decision_count": 2,
+                "decision_reason_counts": {
+                  "queue_backlog_threshold_exceeded": 2
+                },
+                "limited_tasks": [
+                  "vision_agent",
+                  "voice_command_agent"
+                ],
+                "protected_tasks": [
+                  "safety_monitor_agent"
+                ],
+                "fallback_tasks": [
+                  "voice_command_agent"
+                ],
+                "fallback_decision_count": 1,
+                "backlog_thresholds": [
+                  3
+                ],
+                "max_total_backlog_before": 7,
+                "max_backlog_over_threshold": 4,
+                "pressure_markers": [
+                  "policy_decision_present",
+                  "backlog_exceeded_threshold",
+                  "fallback_policy_used",
+                  "workload_limited_by_policy",
+                  "scheduler_delay_present"
+                ],
+                "interpretation": "Policy pressure is supplemental operation evidence showing which scheduler decisions limited or protected work under backlog pressure; Lab remains the final deployment decision owner."
+              }
             }
           },
           "resource": {

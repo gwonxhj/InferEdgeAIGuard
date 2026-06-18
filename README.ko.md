@@ -160,6 +160,11 @@ EdgeEnv가 Orchestrator `latency_budget_protection` block을 보존하면 AIGuar
 high-priority task, latency-budget risk task, deadline/scheduler/queue reason,
 per-task budget context를 설명합니다. 이는 runtime operation warning context이며
 AIGuard가 scheduler나 final decision owner가 된다는 의미가 아닙니다.
+EdgeEnv가 Orchestrator `policy_pressure` block을 보존하면 AIGuard는
+`edgeenv_orchestrator_policy_pressure_summary` evidence로 limited task,
+protected task, fallback task, decision reason count, pressure marker를
+설명합니다. 이는 scheduler pressure를 Lab review context로 보존하는 것이며
+AIGuard가 scheduler나 final decision owner가 된다는 의미가 아닙니다.
 EdgeEnv가 Orchestrator `scheduler_fairness_summary` block을 보존하면 AIGuard는
 `edgeenv_orchestrator_scheduler_fairness_summary` evidence로 protected
 high-priority task, starvation-risk task, scheduler-delay task, degraded task,
