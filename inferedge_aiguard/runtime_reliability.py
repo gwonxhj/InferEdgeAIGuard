@@ -260,6 +260,10 @@ def validate_edgeenv_handoff_guard_evidence_alignment(
         evidence_items,
         EDGEENV_ORCHESTRATOR_PRODUCER_LINEAGE_EVIDENCE_TYPE,
     )
+    policy_pressure_evidence = _first_evidence_item(
+        evidence_items,
+        EDGEENV_ORCHESTRATOR_POLICY_PRESSURE_EVIDENCE_TYPE,
+    )
     handoff_guard_alignment_run_ids = _unique_string_values(
         handoff_summary.get("producer_lineage_guard_alignment_run_ids")
     )
@@ -273,6 +277,17 @@ def validate_edgeenv_handoff_guard_evidence_alignment(
         handoff_guard_alignment_run_ids=handoff_guard_alignment_run_ids,
         guard_analysis_guard_alignment_run_ids=guard_analysis_guard_alignment_run_ids,
         producer_lineage_evidence=producer_lineage_evidence,
+    )
+    handoff_policy_pressure_run_ids = _unique_string_values(
+        handoff_summary.get("orchestrator_policy_pressure_summary_run_ids")
+    )
+    guard_analysis_policy_pressure_run_ids = (
+        _guard_analysis_policy_pressure_summary_run_ids(policy_pressure_evidence)
+    )
+    policy_pressure_summary_errors = _policy_pressure_summary_alignment_errors(
+        handoff_summary,
+        handoff_policy_pressure_run_ids=handoff_policy_pressure_run_ids,
+        guard_analysis_policy_pressure_run_ids=guard_analysis_policy_pressure_run_ids,
     )
 
     errors = []
@@ -297,6 +312,8 @@ def validate_edgeenv_handoff_guard_evidence_alignment(
         errors.append("boundary_flag_mismatch")
     if guard_alignment_summary_errors:
         errors.append("producer_lineage_guard_alignment_summary_mismatch")
+    if policy_pressure_summary_errors:
+        errors.append("policy_pressure_summary_run_id_mismatch")
 
     status = "failed" if errors else "passed"
     recommendation = (
@@ -357,6 +374,11 @@ def validate_edgeenv_handoff_guard_evidence_alignment(
             guard_analysis_guard_alignment_run_ids
         ),
         "guard_alignment_summary_errors": guard_alignment_summary_errors,
+        "handoff_policy_pressure_summary_run_ids": handoff_policy_pressure_run_ids,
+        "guard_analysis_policy_pressure_summary_run_ids": (
+            guard_analysis_policy_pressure_run_ids
+        ),
+        "policy_pressure_summary_errors": policy_pressure_summary_errors,
         "errors": errors,
     }
     if _has_optional_stale_drop_full_evidence(optional_guard_evidence_types_present):
@@ -410,6 +432,44 @@ def _guard_analysis_producer_lineage_guard_alignment_run_ids(
                 run_ids.append(run_id)
 
     return run_ids
+
+
+def _guard_analysis_policy_pressure_summary_run_ids(
+    policy_pressure_evidence: dict[str, Any] | None,
+) -> list[str]:
+    if not isinstance(policy_pressure_evidence, dict):
+        return []
+    raw_context = _mapping(policy_pressure_evidence.get("raw_context"))
+    edgeenv_context = _mapping(raw_context.get("edgeenv_regression"))
+    policy_pressure = _mapping(raw_context.get("policy_pressure_summary"))
+    if policy_pressure.get("boundary_markers_valid") is not True:
+        return []
+    candidate_run_id = edgeenv_context.get("candidate_run_id")
+    if _non_empty_string(candidate_run_id):
+        return [candidate_run_id]
+    return []
+
+
+def _policy_pressure_summary_alignment_errors(
+    handoff_summary: dict[str, Any],
+    *,
+    handoff_policy_pressure_run_ids: list[str],
+    guard_analysis_policy_pressure_run_ids: list[str],
+) -> list[dict[str, Any]]:
+    if (
+        "orchestrator_policy_pressure_summary_run_ids" not in handoff_summary
+        and not handoff_policy_pressure_run_ids
+    ):
+        return []
+    if handoff_policy_pressure_run_ids == guard_analysis_policy_pressure_run_ids:
+        return []
+    return [
+        {
+            "field": "orchestrator_policy_pressure_summary_run_ids",
+            "expected": guard_analysis_policy_pressure_run_ids,
+            "observed": handoff_policy_pressure_run_ids,
+        }
+    ]
 
 
 def _guard_alignment_summary_errors(
