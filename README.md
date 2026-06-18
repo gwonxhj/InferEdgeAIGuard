@@ -374,6 +374,11 @@ EdgeEnv producer summary와 AIGuard deterministic evidence가 같은
 producer-lineage marker를 가리키는지 확인합니다. 이 gate는 누락 evidence와
 ownership boundary flag mismatch를 찾기 위한 smoke이며, AIGuard가 Lab의
 final deployment decision을 대신한다는 의미가 아닙니다.
+EdgeEnv가
+`edgeenv_report_summary.orchestrator_policy_pressure_summary_run_ids`도
+노출하면 같은 gate는 AIGuard의
+`edgeenv_orchestrator_policy_pressure_summary` raw context와 비교해
+policy-pressure handoff traceability가 같은 run을 가리키는지 확인합니다.
 
 Remote dispatch starter 결과도 deterministic evidence로 해석할 수 있습니다.
 

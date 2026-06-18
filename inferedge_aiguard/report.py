@@ -337,6 +337,12 @@ def _format_edgeenv_handoff_alignment_summary(summary: dict[str, Any]) -> str:
     guard_alignment_run_ids = _format_list(
         summary.get("guard_analysis_producer_lineage_guard_alignment_run_ids", [])
     )
+    handoff_policy_pressure_run_ids = _format_list(
+        summary.get("handoff_policy_pressure_summary_run_ids", [])
+    )
+    guard_policy_pressure_run_ids = _format_list(
+        summary.get("guard_analysis_policy_pressure_summary_run_ids", [])
+    )
     optional_source_artifact = _optional_source_artifact_marker(summary)
     optional_reproduction_command = _optional_source_reproduction_command(summary)
     lines = [
@@ -409,6 +415,14 @@ def _format_edgeenv_handoff_alignment_summary(summary: dict[str, Any]) -> str:
             "- guard_analysis_producer_lineage_guard_alignment_run_ids: "
             f"{guard_alignment_run_ids}"
         ),
+        (
+            "- handoff_policy_pressure_summary_run_ids: "
+            f"{handoff_policy_pressure_run_ids}"
+        ),
+        (
+            "- guard_analysis_policy_pressure_summary_run_ids: "
+            f"{guard_policy_pressure_run_ids}"
+        ),
     ]
     if optional_source_artifact:
         lines.append(f"- optional_present_source_artifact: {optional_source_artifact}")
@@ -424,6 +438,19 @@ def _format_edgeenv_handoff_alignment_summary(summary: dict[str, Any]) -> str:
     if guard_alignment_summary_errors:
         lines.append("- guard_alignment_summary_errors:")
         for error in guard_alignment_summary_errors:
+            lines.append(
+                "  - "
+                f"field={error.get('field')} | "
+                f"expected={error.get('expected')} | "
+                f"observed={error.get('observed')}"
+            )
+    policy_pressure_summary_errors = summary.get(
+        "policy_pressure_summary_errors",
+        [],
+    )
+    if policy_pressure_summary_errors:
+        lines.append("- policy_pressure_summary_errors:")
+        for error in policy_pressure_summary_errors:
             lines.append(
                 "  - "
                 f"field={error.get('field')} | "

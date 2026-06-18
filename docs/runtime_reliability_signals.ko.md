@@ -523,6 +523,12 @@ gate remains responsible for enforcing the final report contract. 또한 EdgeEnv
 context와 대조해 producer-lineage marker handoff가 조용히 어긋나지 않게
 합니다. 이는 artifact alignment를 위한 deterministic smoke gate이며 새
 deployment decision 경로가 아닙니다.
+EdgeEnv가
+`edgeenv_report_summary.orchestrator_policy_pressure_summary_run_ids`도
+제공하면, 같은 gate는 이를 AIGuard의
+`edgeenv_orchestrator_policy_pressure_summary` raw context와 대조해
+EdgeEnv가 direct/timeline mirror를 검증한 뒤에도 policy-pressure handoff
+traceability가 같은 run을 가리키는지 확인합니다.
 
 Remote dispatch starter result도 직접 분석할 수 있습니다.
 

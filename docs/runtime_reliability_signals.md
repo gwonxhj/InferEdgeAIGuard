@@ -599,6 +599,12 @@ gate compares that summary with AIGuard's
 `edgeenv_orchestrator_producer_lineage` raw context so producer-lineage marker
 handoff cannot drift silently. This is a deterministic smoke gate for artifact
 alignment, not a new deployment decision path.
+If EdgeEnv also exposes
+`edgeenv_report_summary.orchestrator_policy_pressure_summary_run_ids`, the gate
+compares those run ids with AIGuard's
+`edgeenv_orchestrator_policy_pressure_summary` raw context so policy-pressure
+handoff traceability stays aligned after EdgeEnv validates the direct/timeline
+mirror.
 AIGuard does not recompute comparability; if EdgeEnv marks the report as
 non-comparable or not same-condition, AIGuard emits
 `edgeenv_comparability_guardrail` as skipped evidence.

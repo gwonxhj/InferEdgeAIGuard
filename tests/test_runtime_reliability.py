@@ -889,6 +889,9 @@ def edgeenv_runtime_intelligence_lab_handoff() -> dict:
                 "label=short 96-frame-class replay (96 frames), "
                 "class=short_96_frame_class, frames=96",
             ],
+            "orchestrator_policy_pressure_summary_run_ids": [
+                "edgeenv-smoke-candidate"
+            ],
         },
         "lab_bundle_alignment": {
             "external_aiguard_required_evidence_types": [
@@ -4741,6 +4744,13 @@ def test_validate_edgeenv_handoff_guard_evidence_alignment_passes():
     assert alignment["guard_analysis_producer_lineage_guard_alignment_run_ids"] == [
         "edgeenv-smoke-candidate",
     ]
+    assert alignment["handoff_policy_pressure_summary_run_ids"] == [
+        "edgeenv-smoke-candidate"
+    ]
+    assert alignment["guard_analysis_policy_pressure_summary_run_ids"] == [
+        "edgeenv-smoke-candidate"
+    ]
+    assert alignment["policy_pressure_summary_errors"] == []
     assert alignment["lab_expected_report_markers"] == LAB_EXPECTED_REPORT_MARKERS
     assert alignment["lab_expected_report_marker_count"] == len(
         LAB_EXPECTED_REPORT_MARKERS
@@ -4905,6 +4915,29 @@ def test_validate_edgeenv_handoff_guard_evidence_alignment_fails_summary_mismatc
     ]
 
 
+def test_validate_edgeenv_handoff_alignment_fails_policy_pressure_mismatch():
+    guard_analysis = edgeenv_handoff_guard_analysis_with_remote_fallback()
+    handoff = edgeenv_runtime_intelligence_lab_handoff()
+    handoff["edgeenv_report_summary"][
+        "orchestrator_policy_pressure_summary_run_ids"
+    ] = []
+
+    alignment = validate_edgeenv_handoff_guard_evidence_alignment(
+        handoff,
+        guard_analysis,
+    )
+
+    assert alignment["status"] == "failed"
+    assert "policy_pressure_summary_run_id_mismatch" in alignment["errors"]
+    assert alignment["policy_pressure_summary_errors"] == [
+        {
+            "field": "orchestrator_policy_pressure_summary_run_ids",
+            "expected": ["edgeenv-smoke-candidate"],
+            "observed": [],
+        }
+    ]
+
+
 def test_check_edgeenv_handoff_alignment_cli_exports_gate_summary(tmp_path):
     guard_analysis = edgeenv_handoff_guard_analysis_with_remote_fallback()
     handoff_path = tmp_path / "edgeenv_handoff.json"
@@ -4963,9 +4996,18 @@ def test_check_edgeenv_handoff_alignment_cli_exports_gate_summary(tmp_path):
         "label=short 96-frame-class replay (96 frames), "
         "class=short_96_frame_class, frames=96",
     ]
+    assert saved["handoff_policy_pressure_summary_run_ids"] == [
+        "edgeenv-smoke-candidate"
+    ]
+    assert saved["guard_analysis_policy_pressure_summary_run_ids"] == [
+        "edgeenv-smoke-candidate"
+    ]
+    assert saved["policy_pressure_summary_errors"] == []
     assert "handoff_duration_scope_labels" in result.stdout
     assert "optional_aiguard_evidence_types" in result.stdout
     assert "read_only_optional_guard_context" in result.stdout
+    assert "handoff_policy_pressure_summary_run_ids" in result.stdout
+    assert "guard_analysis_policy_pressure_summary_run_ids" in result.stdout
     assert "EdgeEnv fixture matrix coverage" in result.stdout
     assert "Reviewer operation quick scan" in result.stdout
 
