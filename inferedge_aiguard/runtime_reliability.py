@@ -89,15 +89,22 @@ EDGEENV_ORCHESTRATOR_SCHEDULER_FAIRNESS_SCHEMA_VERSION = (
 ORCHESTRATOR_OPERATION_TIMELINE_SUMMARY_EVIDENCE_TYPE = (
     "operation_timeline_summary"
 )
+ORCHESTRATOR_POLICY_PRESSURE_EVIDENCE_TYPE = "policy_pressure_context"
 ORCHESTRATOR_STALE_FRAME_RISK_EVIDENCE_TYPE = "stale_frame_risk"
 EDGEENV_ORCHESTRATOR_OPERATION_TIMELINE_SUMMARY_EVIDENCE_TYPE = (
     "edgeenv_orchestrator_operation_timeline_summary"
+)
+EDGEENV_ORCHESTRATOR_POLICY_PRESSURE_EVIDENCE_TYPE = (
+    "edgeenv_orchestrator_policy_pressure_summary"
 )
 EDGEENV_ORCHESTRATOR_STALE_DROP_SUMMARY_EVIDENCE_TYPE = (
     "edgeenv_orchestrator_stale_drop_summary"
 )
 EDGEENV_ORCHESTRATOR_OPERATION_TIMELINE_SUMMARY_SCHEMA_VERSION = (
     "inferedge-orchestrator-operation-timeline-summary-v1"
+)
+EDGEENV_ORCHESTRATOR_POLICY_PRESSURE_SCHEMA_VERSION = (
+    "inferedge-orchestrator-policy-pressure-summary-v1"
 )
 EDGEENV_ORCHESTRATOR_OPERATION_EVIDENCE_CANDIDATES = (
     "runtime_queue_overload",
@@ -150,6 +157,7 @@ DEFAULT_RUNTIME_RELIABILITY_THRESHOLDS = {
     "worker_operation_risk_count_blocked": 3,
     "scheduler_starvation_risk_count_review": 1,
     "scheduler_starvation_risk_count_blocked": 3,
+    "policy_pressure_marker_count_review": 1,
     "device_local_event_count_review": 1,
     "edgeenv_mean_delta_pct_review": 15.0,
     "edgeenv_p99_delta_pct_review": 25.0,
@@ -495,6 +503,13 @@ def analyze_orchestration_summary(
     )
     if operation_timeline_evidence is not None:
         evidence.append(operation_timeline_evidence)
+    policy_pressure_evidence = _policy_pressure_context_evidence(
+        metrics,
+        totals,
+        policy,
+    )
+    if policy_pressure_evidence is not None:
+        evidence.append(policy_pressure_evidence)
     scheduler_fairness_evidence = _scheduler_fairness_risk_evidence(
         metrics,
         totals,
@@ -773,6 +788,9 @@ def compute_runtime_reliability_metrics(summary: dict[str, Any]) -> dict[str, An
     operation_timeline_queue = _mapping(operation_timeline_summary.get("queue"))
     operation_timeline_latency = _mapping(operation_timeline_summary.get("latency"))
     operation_timeline_policy = _mapping(operation_timeline_summary.get("policy"))
+    operation_timeline_policy_pressure = _mapping(
+        operation_timeline_summary.get("policy_pressure")
+    )
     operation_timeline_affected_tasks = _mapping(
         operation_timeline_summary.get("affected_tasks")
     )
@@ -824,6 +842,18 @@ def compute_runtime_reliability_metrics(summary: dict[str, Any]) -> dict[str, An
     )
     operation_timeline_policy_decision_reasons = _string_list(
         operation_timeline_policy.get("decision_reasons")
+    )
+    policy_pressure_limited_tasks = _string_list(
+        operation_timeline_policy_pressure.get("limited_tasks")
+    )
+    policy_pressure_protected_tasks = _string_list(
+        operation_timeline_policy_pressure.get("protected_tasks")
+    )
+    policy_pressure_fallback_tasks = _string_list(
+        operation_timeline_policy_pressure.get("fallback_tasks")
+    )
+    policy_pressure_markers = _string_list(
+        operation_timeline_policy_pressure.get("pressure_markers")
     )
     operation_timeline_max_queue_wait_ms = _optional_non_negative_number(
         operation_timeline_latency.get("max_queue_wait_ms")
@@ -1001,6 +1031,52 @@ def compute_runtime_reliability_metrics(summary: dict[str, Any]) -> dict[str, An
         ),
         "operation_timeline_policy_decision_reasons": (
             operation_timeline_policy_decision_reasons
+        ),
+        "operation_timeline_policy_pressure_summary": dict(
+            operation_timeline_policy_pressure
+        ),
+        "operation_timeline_policy_pressure_present": bool(
+            operation_timeline_policy_pressure
+        ),
+        "operation_timeline_policy_pressure_schema_version": (
+            operation_timeline_policy_pressure.get("schema_version")
+        ),
+        "operation_timeline_policy_pressure_decision_count": (
+            _optional_non_negative_number(
+                operation_timeline_policy_pressure.get("decision_count")
+            )
+        ),
+        "operation_timeline_policy_pressure_decision_reason_counts": (
+            _count_mapping(
+                operation_timeline_policy_pressure.get("decision_reason_counts")
+            )
+        ),
+        "operation_timeline_policy_pressure_limited_tasks": (
+            policy_pressure_limited_tasks
+        ),
+        "operation_timeline_policy_pressure_protected_tasks": (
+            policy_pressure_protected_tasks
+        ),
+        "operation_timeline_policy_pressure_fallback_tasks": (
+            policy_pressure_fallback_tasks
+        ),
+        "operation_timeline_policy_pressure_markers": policy_pressure_markers,
+        "operation_timeline_policy_pressure_marker_count": float(
+            len(policy_pressure_markers)
+        ),
+        "operation_timeline_policy_pressure_max_backlog_over_threshold": (
+            _optional_non_negative_number(
+                operation_timeline_policy_pressure.get("max_backlog_over_threshold")
+            )
+        ),
+        "operation_timeline_policy_pressure_decision_owner": (
+            operation_timeline_policy_pressure.get("decision_owner")
+        ),
+        "operation_timeline_policy_pressure_scheduler_owner": (
+            operation_timeline_policy_pressure.get("scheduler_owner")
+        ),
+        "operation_timeline_policy_pressure_not_a_deployment_decision": (
+            operation_timeline_policy_pressure.get("not_a_deployment_decision")
         ),
         "operation_timeline_affected_deadline_missed_tasks": (
             operation_timeline_deadline_missed_tasks
@@ -1245,6 +1321,11 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
     )
     candidate_operation_timeline_policy = _mapping(
         candidate_operation_timeline_summary.get("policy")
+    )
+    candidate_operation_timeline_policy_pressure = _mapping(
+        candidate_orchestrator_operation.get("policy_pressure_summary")
+        or candidate_operation_timeline_summary.get("policy_pressure")
+        or candidate_orchestrator_context.get("policy_pressure_summary")
     )
     candidate_operation_timeline_affected_tasks = _mapping(
         candidate_operation_timeline_summary.get("affected_tasks")
@@ -1962,6 +2043,74 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
         ),
         "orchestrator_operation_timeline_policy_decision_reasons": (
             _string_list(candidate_operation_timeline_policy.get("decision_reasons"))
+        ),
+        "orchestrator_policy_pressure_summary": dict(
+            candidate_operation_timeline_policy_pressure
+        ),
+        "orchestrator_policy_pressure_summary_present": bool(
+            candidate_operation_timeline_policy_pressure
+        ),
+        "orchestrator_policy_pressure_summary_schema_version": (
+            candidate_operation_timeline_policy_pressure.get("schema_version")
+        ),
+        "orchestrator_policy_pressure_decision_count": (
+            _optional_non_negative_number(
+                candidate_operation_timeline_policy_pressure.get("decision_count")
+            )
+        ),
+        "orchestrator_policy_pressure_decision_reason_counts": (
+            _count_mapping(
+                candidate_operation_timeline_policy_pressure.get(
+                    "decision_reason_counts"
+                )
+            )
+        ),
+        "orchestrator_policy_pressure_limited_tasks": (
+            _string_list(
+                candidate_operation_timeline_policy_pressure.get("limited_tasks")
+            )
+        ),
+        "orchestrator_policy_pressure_protected_tasks": (
+            _string_list(
+                candidate_operation_timeline_policy_pressure.get("protected_tasks")
+            )
+        ),
+        "orchestrator_policy_pressure_fallback_tasks": (
+            _string_list(
+                candidate_operation_timeline_policy_pressure.get("fallback_tasks")
+            )
+        ),
+        "orchestrator_policy_pressure_markers": (
+            _string_list(
+                candidate_operation_timeline_policy_pressure.get("pressure_markers")
+            )
+        ),
+        "orchestrator_policy_pressure_marker_count": float(
+            len(
+                _string_list(
+                    candidate_operation_timeline_policy_pressure.get(
+                        "pressure_markers"
+                    )
+                )
+            )
+        ),
+        "orchestrator_policy_pressure_max_backlog_over_threshold": (
+            _optional_non_negative_number(
+                candidate_operation_timeline_policy_pressure.get(
+                    "max_backlog_over_threshold"
+                )
+            )
+        ),
+        "orchestrator_policy_pressure_decision_owner": (
+            candidate_operation_timeline_policy_pressure.get("decision_owner")
+        ),
+        "orchestrator_policy_pressure_scheduler_owner": (
+            candidate_operation_timeline_policy_pressure.get("scheduler_owner")
+        ),
+        "orchestrator_policy_pressure_not_a_deployment_decision": (
+            candidate_operation_timeline_policy_pressure.get(
+                "not_a_deployment_decision"
+            )
         ),
         "orchestrator_operation_timeline_affected_deadline_missed_tasks": (
             _string_list(
@@ -2997,19 +3146,110 @@ def _operation_timeline_summary_evidence(
             "max_pressure_task": metrics.get("operation_timeline_max_pressure_task"),
             "max_queue_wait_ms": metrics.get("operation_timeline_max_queue_wait_ms"),
             "max_latency_ms": metrics.get("operation_timeline_max_latency_ms"),
-            "policy_decision_count": metrics.get(
-                "operation_timeline_policy_decision_count"
-            ),
-            "policy_decision_reasons": policy_reasons,
-            "stale_drop_summary": metrics.get(
-                "operation_timeline_stale_drop_summary"
-            ),
+                "policy_decision_count": metrics.get(
+                    "operation_timeline_policy_decision_count"
+                ),
+                "policy_decision_reasons": policy_reasons,
+                "policy_pressure_summary": metrics.get(
+                    "operation_timeline_policy_pressure_summary"
+                ),
+                "policy_pressure_markers": metrics.get(
+                    "operation_timeline_policy_pressure_markers"
+                ),
+                "stale_drop_summary": metrics.get(
+                    "operation_timeline_stale_drop_summary"
+                ),
             "stale_drop_count": metrics.get("operation_timeline_stale_drop_count"),
             "stale_drop_rate": metrics.get("operation_timeline_stale_drop_rate"),
             "tasks_with_stale_drop": metrics.get(
                 "operation_timeline_affected_stale_drop_tasks"
             ),
             "review_markers": review_markers,
+        },
+    )
+
+
+def _policy_pressure_context_evidence(
+    metrics: dict[str, Any],
+    totals: dict[str, Any],
+    thresholds: dict[str, float],
+) -> dict[str, Any] | None:
+    if not metrics.get("operation_timeline_policy_pressure_present"):
+        return None
+
+    markers = _string_list(metrics.get("operation_timeline_policy_pressure_markers"))
+    marker_count = _non_negative_number(
+        metrics.get("operation_timeline_policy_pressure_marker_count")
+    )
+    review_threshold = thresholds["policy_pressure_marker_count_review"]
+    status = "warning" if marker_count >= review_threshold else "passed"
+    severity = "medium" if status != "passed" else "low"
+    limited_tasks = _string_list(
+        metrics.get("operation_timeline_policy_pressure_limited_tasks")
+    )
+    protected_tasks = _string_list(
+        metrics.get("operation_timeline_policy_pressure_protected_tasks")
+    )
+    fallback_tasks = _string_list(
+        metrics.get("operation_timeline_policy_pressure_fallback_tasks")
+    )
+    suspected_causes = _policy_pressure_suspected_causes(markers)
+
+    return build_evidence_item(
+        evidence_type=ORCHESTRATOR_POLICY_PRESSURE_EVIDENCE_TYPE,
+        metric_name="policy_pressure_marker_count",
+        observed_value=marker_count,
+        baseline_value=0,
+        threshold=review_threshold,
+        delta=None,
+        delta_pct=None,
+        increase_factor=None,
+        severity=severity,
+        status=status,
+        explanation=(
+            "Orchestrator policy_pressure summary reports "
+            f"{int(marker_count)} policy pressure marker(s)."
+        ),
+        why_it_matters=(
+            "Policy pressure context shows which workloads were limited, which "
+            "high-priority work was protected, and whether fallback or backlog "
+            "threshold pressure influenced scheduler decisions."
+        ),
+        suspected_causes=suspected_causes,
+        recommendation=(
+            "Review policy_pressure with queue pressure, stale drop, scheduler "
+            "fairness, and worker health before treating the operation profile as "
+            "stable. Lab remains the final deployment decision owner."
+            if status != "passed"
+            else "Policy pressure summary is present without review markers."
+        ),
+        raw_context={
+            "totals": totals,
+            "policy_pressure_summary": metrics.get(
+                "operation_timeline_policy_pressure_summary"
+            ),
+            "decision_count": metrics.get(
+                "operation_timeline_policy_pressure_decision_count"
+            ),
+            "decision_reason_counts": metrics.get(
+                "operation_timeline_policy_pressure_decision_reason_counts"
+            ),
+            "limited_tasks": limited_tasks,
+            "protected_tasks": protected_tasks,
+            "fallback_tasks": fallback_tasks,
+            "max_backlog_over_threshold": metrics.get(
+                "operation_timeline_policy_pressure_max_backlog_over_threshold"
+            ),
+            "pressure_markers": markers,
+            "decision_owner": metrics.get(
+                "operation_timeline_policy_pressure_decision_owner"
+            ),
+            "scheduler_owner": metrics.get(
+                "operation_timeline_policy_pressure_scheduler_owner"
+            ),
+            "not_a_deployment_decision": metrics.get(
+                "operation_timeline_policy_pressure_not_a_deployment_decision"
+            ),
         },
     )
 
@@ -3518,6 +3758,9 @@ def _edgeenv_regression_evidence(
     )
     if operation_timeline_evidence is not None:
         evidence.append(operation_timeline_evidence)
+    policy_pressure_evidence = _edgeenv_orchestrator_policy_pressure_evidence(metrics)
+    if policy_pressure_evidence is not None:
+        evidence.append(policy_pressure_evidence)
     scheduler_fairness_evidence = (
         _edgeenv_orchestrator_scheduler_fairness_evidence(metrics)
     )
@@ -4749,6 +4992,12 @@ def _edgeenv_orchestrator_operation_timeline_summary_evidence(
                     "orchestrator_operation_timeline_policy_decision_count"
                 ),
                 "policy_decision_reasons": policy_reasons,
+                "policy_pressure_summary": metrics.get(
+                    "orchestrator_policy_pressure_summary"
+                ),
+                "policy_pressure_markers": metrics.get(
+                    "orchestrator_policy_pressure_markers"
+                ),
                 "stale_drop_summary": metrics.get("orchestrator_stale_drop_summary"),
                 "stale_drop_count": metrics.get("orchestrator_stale_drop_count"),
                 "stale_drop_rate": metrics.get("orchestrator_stale_drop_rate"),
@@ -4759,6 +5008,103 @@ def _edgeenv_orchestrator_operation_timeline_summary_evidence(
                 "decision_owner": "lab",
                 "scheduler_owner": "orchestrator",
                 "not_a_deployment_decision": True,
+            },
+        },
+    )
+
+
+def _edgeenv_orchestrator_policy_pressure_evidence(
+    metrics: dict[str, Any],
+) -> dict[str, Any] | None:
+    if not metrics.get("runtime_telemetry_context_present"):
+        return None
+    if not metrics.get("orchestrator_policy_pressure_summary_present"):
+        return None
+
+    markers = _string_list(metrics.get("orchestrator_policy_pressure_markers"))
+    boundary_ok = (
+        metrics.get("orchestrator_policy_pressure_summary_schema_version")
+        == EDGEENV_ORCHESTRATOR_POLICY_PRESSURE_SCHEMA_VERSION
+        and metrics.get("orchestrator_policy_pressure_decision_owner") == "lab"
+        and metrics.get("orchestrator_policy_pressure_scheduler_owner")
+        == "orchestrator"
+        and metrics.get("orchestrator_policy_pressure_not_a_deployment_decision")
+        is True
+    )
+    review_markers = list(markers)
+    if not boundary_ok:
+        review_markers.append("policy_pressure_boundary_marker_gap")
+    review_markers = _unique_string_values(review_markers)
+
+    observed_value = len(review_markers)
+    status = "warning" if observed_value else "passed"
+    severity = "medium" if status != "passed" else "low"
+    suspected_causes = _policy_pressure_suspected_causes(review_markers)
+    if "policy_pressure_boundary_marker_gap" in review_markers:
+        suspected_causes.append("policy_pressure_boundary_marker_gap")
+    suspected_causes = _unique_string_values(suspected_causes)
+    limited_tasks = _string_list(metrics.get("orchestrator_policy_pressure_limited_tasks"))
+    protected_tasks = _string_list(
+        metrics.get("orchestrator_policy_pressure_protected_tasks")
+    )
+    fallback_tasks = _string_list(metrics.get("orchestrator_policy_pressure_fallback_tasks"))
+
+    return build_evidence_item(
+        evidence_type=EDGEENV_ORCHESTRATOR_POLICY_PRESSURE_EVIDENCE_TYPE,
+        metric_name="orchestrator_policy_pressure_marker_count",
+        observed_value=observed_value,
+        baseline_value=0,
+        threshold=1,
+        delta=None,
+        delta_pct=None,
+        increase_factor=None,
+        severity=severity,
+        status=status,
+        explanation=(
+            "EdgeEnv preserved Orchestrator policy_pressure summary with "
+            f"{observed_value} deterministic review marker(s)."
+        ),
+        why_it_matters=(
+            "The preserved policy pressure summary shows which workloads were "
+            "limited, protected, or routed through fallback under backlog "
+            "pressure without making AIGuard the final deployment owner."
+        ),
+        suspected_causes=suspected_causes,
+        recommendation=(
+            "Review policy_pressure in Lab alongside operation_timeline_summary, "
+            "scheduler_fairness_summary, stale_drop_summary, and queue pressure "
+            "before treating the operation profile as stable."
+            if status != "passed"
+            else "Preserved policy pressure summary is present without "
+            "deterministic review markers."
+        ),
+        raw_context={
+            "edgeenv_regression": metrics,
+            "policy_pressure_summary": {
+                "summary": metrics.get("orchestrator_policy_pressure_summary"),
+                "boundary_markers_valid": boundary_ok,
+                "decision_count": metrics.get(
+                    "orchestrator_policy_pressure_decision_count"
+                ),
+                "decision_reason_counts": metrics.get(
+                    "orchestrator_policy_pressure_decision_reason_counts"
+                ),
+                "limited_tasks": limited_tasks,
+                "protected_tasks": protected_tasks,
+                "fallback_tasks": fallback_tasks,
+                "max_backlog_over_threshold": metrics.get(
+                    "orchestrator_policy_pressure_max_backlog_over_threshold"
+                ),
+                "review_markers": review_markers,
+                "decision_owner": metrics.get(
+                    "orchestrator_policy_pressure_decision_owner"
+                ),
+                "scheduler_owner": metrics.get(
+                    "orchestrator_policy_pressure_scheduler_owner"
+                ),
+                "not_a_deployment_decision": metrics.get(
+                    "orchestrator_policy_pressure_not_a_deployment_decision"
+                ),
             },
         },
     )
@@ -6487,6 +6833,22 @@ def _stale_drop_suspected_causes(
         if "backlog" in reason and "queue_backlog_context" not in suspected:
             suspected.append("queue_backlog_context")
     return suspected or ["stale_drop_context"]
+
+
+def _policy_pressure_suspected_causes(markers: list[str]) -> list[str]:
+    suspected: list[str] = []
+    marker_set = set(markers)
+    if "policy_decision_present" in marker_set:
+        suspected.append("policy_decision_context")
+    if "backlog_exceeded_threshold" in marker_set:
+        suspected.append("queue_pressure_context")
+    if "fallback_policy_used" in marker_set:
+        suspected.append("fallback_policy_context")
+    if "workload_limited_by_policy" in marker_set:
+        suspected.append("load_shedding_context")
+    if "scheduler_delay_present" in marker_set:
+        suspected.append("scheduler_delay_context")
+    return suspected or ["policy_pressure_context"]
 
 
 def _queue_pressure_reason_is_concerning(reason: Any) -> bool:

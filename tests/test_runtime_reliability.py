@@ -297,6 +297,41 @@ def multi_workload_sustained_summary() -> dict:
                     "decision_reason": "queue_backlog_threshold_exceeded",
                 },
             },
+            "policy_pressure": {
+                "schema_version": (
+                    "inferedge-orchestrator-policy-pressure-summary-v1"
+                ),
+                "operation_context_role": "supplemental",
+                "scheduler_owner": "orchestrator",
+                "decision_owner": "lab",
+                "not_a_deployment_decision": True,
+                "source": "policy_decision_log+runtime_event_summary",
+                "first_read": "review_policy_pressure_context",
+                "decision_count": 1,
+                "decision_reason_counts": {
+                    "queue_backlog_threshold_exceeded": 1,
+                },
+                "limited_tasks": ["voice_command_agent"],
+                "protected_tasks": ["safety_monitor_agent"],
+                "fallback_tasks": ["voice_command_agent"],
+                "fallback_decision_count": 1,
+                "backlog_thresholds": [3],
+                "max_total_backlog_before": 6,
+                "max_backlog_over_threshold": 3,
+                "pressure_markers": [
+                    "policy_decision_present",
+                    "backlog_exceeded_threshold",
+                    "fallback_policy_used",
+                    "workload_limited_by_policy",
+                    "scheduler_delay_present",
+                ],
+                "interpretation": (
+                    "Policy pressure is supplemental operation evidence showing "
+                    "which scheduler decisions limited or protected work under "
+                    "backlog pressure; Lab remains the final deployment decision "
+                    "owner."
+                ),
+            },
             "affected_tasks": {
                 "deadline_missed": ["vision_agent"],
                 "fallback": ["voice_command_agent"],
@@ -1252,6 +1287,44 @@ def edgeenv_regression_report_with_orchestrator_feed_context() -> dict:
                             ),
                         },
                     },
+                    "policy_pressure": {
+                        "schema_version": (
+                            "inferedge-orchestrator-policy-pressure-summary-v1"
+                        ),
+                        "operation_context_role": "supplemental",
+                        "scheduler_owner": "orchestrator",
+                        "decision_owner": "lab",
+                        "not_a_deployment_decision": True,
+                        "source": "policy_decision_log+runtime_event_summary",
+                        "first_read": "review_policy_pressure_context",
+                        "decision_count": 2,
+                        "decision_reason_counts": {
+                            "queue_backlog_threshold_exceeded": 2,
+                        },
+                        "limited_tasks": [
+                            "vision_agent",
+                            "voice_command_agent",
+                        ],
+                        "protected_tasks": ["safety_monitor_agent"],
+                        "fallback_tasks": ["voice_command_agent"],
+                        "fallback_decision_count": 1,
+                        "backlog_thresholds": [3],
+                        "max_total_backlog_before": 7,
+                        "max_backlog_over_threshold": 4,
+                        "pressure_markers": [
+                            "policy_decision_present",
+                            "backlog_exceeded_threshold",
+                            "fallback_policy_used",
+                            "workload_limited_by_policy",
+                            "scheduler_delay_present",
+                        ],
+                        "interpretation": (
+                            "Policy pressure is supplemental operation evidence "
+                            "showing which scheduler decisions limited or "
+                            "protected work under backlog pressure; Lab remains "
+                            "the final deployment decision owner."
+                        ),
+                    },
                     "affected_tasks": {
                         "deadline_missed": ["vision_agent"],
                         "fallback": ["voice_command_agent"],
@@ -1855,6 +1928,31 @@ def test_multi_workload_sustained_summary_adds_profile_and_thermal_metrics():
     assert metrics["operation_timeline_policy_decision_reasons"] == [
         "queue_backlog_threshold_exceeded"
     ]
+    assert metrics["operation_timeline_policy_pressure_present"] is True
+    assert metrics["operation_timeline_policy_pressure_schema_version"] == (
+        "inferedge-orchestrator-policy-pressure-summary-v1"
+    )
+    assert metrics["operation_timeline_policy_pressure_decision_count"] == 1.0
+    assert metrics["operation_timeline_policy_pressure_decision_reason_counts"] == {
+        "queue_backlog_threshold_exceeded": 1
+    }
+    assert metrics["operation_timeline_policy_pressure_limited_tasks"] == [
+        "voice_command_agent"
+    ]
+    assert metrics["operation_timeline_policy_pressure_protected_tasks"] == [
+        "safety_monitor_agent"
+    ]
+    assert metrics["operation_timeline_policy_pressure_fallback_tasks"] == [
+        "voice_command_agent"
+    ]
+    assert metrics["operation_timeline_policy_pressure_marker_count"] == 5.0
+    assert metrics["operation_timeline_policy_pressure_max_backlog_over_threshold"] == 3.0
+    assert metrics["operation_timeline_policy_pressure_decision_owner"] == "lab"
+    assert (
+        metrics["operation_timeline_policy_pressure_scheduler_owner"]
+        == "orchestrator"
+    )
+    assert metrics["operation_timeline_policy_pressure_not_a_deployment_decision"] is True
     assert metrics["operation_timeline_affected_scheduler_delay_tasks"] == [
         "voice_command_agent"
     ]
@@ -2325,6 +2423,29 @@ def test_compute_edgeenv_regression_metrics_extracts_orchestrator_feed_context()
     assert metrics["orchestrator_operation_timeline_policy_decision_reasons"] == [
         "queue_backlog_threshold_exceeded"
     ]
+    assert metrics["orchestrator_policy_pressure_summary_present"] is True
+    assert metrics["orchestrator_policy_pressure_summary_schema_version"] == (
+        "inferedge-orchestrator-policy-pressure-summary-v1"
+    )
+    assert metrics["orchestrator_policy_pressure_decision_count"] == 2.0
+    assert metrics["orchestrator_policy_pressure_decision_reason_counts"] == {
+        "queue_backlog_threshold_exceeded": 2
+    }
+    assert metrics["orchestrator_policy_pressure_limited_tasks"] == [
+        "vision_agent",
+        "voice_command_agent",
+    ]
+    assert metrics["orchestrator_policy_pressure_protected_tasks"] == [
+        "safety_monitor_agent"
+    ]
+    assert metrics["orchestrator_policy_pressure_fallback_tasks"] == [
+        "voice_command_agent"
+    ]
+    assert metrics["orchestrator_policy_pressure_marker_count"] == 5.0
+    assert metrics["orchestrator_policy_pressure_max_backlog_over_threshold"] == 4.0
+    assert metrics["orchestrator_policy_pressure_decision_owner"] == "lab"
+    assert metrics["orchestrator_policy_pressure_scheduler_owner"] == "orchestrator"
+    assert metrics["orchestrator_policy_pressure_not_a_deployment_decision"] is True
     assert metrics[
         "orchestrator_operation_timeline_affected_scheduler_delay_tasks"
     ] == ["vision_agent"]
@@ -2674,6 +2795,7 @@ def test_analyze_edgeenv_regression_report_warns_on_orchestrator_feed_context():
     assert "edgeenv_orchestrator_task_event_rollup" in evidence_types
     assert "edgeenv_orchestrator_latency_budget_protection" in evidence_types
     assert "edgeenv_orchestrator_operation_timeline_summary" in evidence_types
+    assert "edgeenv_orchestrator_policy_pressure_summary" in evidence_types
     assert "edgeenv_orchestrator_scheduler_fairness_summary" in evidence_types
     assert "edgeenv_orchestrator_stale_drop_summary" in evidence_types
     assert "runtime_thermal_instability" in evidence_types
@@ -2935,7 +3057,40 @@ def test_analyze_edgeenv_regression_report_warns_on_orchestrator_feed_context():
     assert timeline_context["policy_decision_reasons"] == [
         "queue_backlog_threshold_exceeded"
     ]
+    assert timeline_context["policy_pressure_markers"] == [
+        "policy_decision_present",
+        "backlog_exceeded_threshold",
+        "fallback_policy_used",
+        "workload_limited_by_policy",
+        "scheduler_delay_present",
+    ]
     assert timeline_context["decision_owner"] == "lab"
+    policy_pressure = next(
+        item
+        for item in report["evidence"]
+        if item["type"] == "edgeenv_orchestrator_policy_pressure_summary"
+    )
+    assert policy_pressure["status"] == "warning"
+    assert policy_pressure["observed_value"] == 5
+    assert policy_pressure["threshold"] == 1
+    assert "policy_decision_context" in policy_pressure["suspected_causes"]
+    assert "queue_pressure_context" in policy_pressure["suspected_causes"]
+    assert "fallback_policy_context" in policy_pressure["suspected_causes"]
+    assert "load_shedding_context" in policy_pressure["suspected_causes"]
+    assert "scheduler_delay_context" in policy_pressure["suspected_causes"]
+    policy_pressure_context = policy_pressure["raw_context"][
+        "policy_pressure_summary"
+    ]
+    assert policy_pressure_context["boundary_markers_valid"] is True
+    assert policy_pressure_context["limited_tasks"] == [
+        "vision_agent",
+        "voice_command_agent",
+    ]
+    assert policy_pressure_context["protected_tasks"] == ["safety_monitor_agent"]
+    assert policy_pressure_context["fallback_tasks"] == ["voice_command_agent"]
+    assert policy_pressure_context["decision_owner"] == "lab"
+    assert policy_pressure_context["scheduler_owner"] == "orchestrator"
+    assert policy_pressure_context["not_a_deployment_decision"] is True
     scheduler_fairness = next(
         item
         for item in report["evidence"]
@@ -3304,6 +3459,7 @@ def test_analyze_multi_workload_sustained_summary_adds_runtime_evidence():
     assert "profiled_workload_pressure" in evidence_types
     assert "thermal_resource_pressure" in evidence_types
     assert "operation_timeline_summary" in evidence_types
+    assert "policy_pressure_context" in evidence_types
     assert "scheduler_fairness_risk" in evidence_types
     assert "stale_frame_risk" in evidence_types
     profile_evidence = next(
@@ -3352,6 +3508,36 @@ def test_analyze_multi_workload_sustained_summary_adds_runtime_evidence():
     assert timeline_evidence["raw_context"]["policy_decision_reasons"] == [
         "queue_backlog_threshold_exceeded"
     ]
+    assert timeline_evidence["raw_context"]["policy_pressure_markers"] == [
+        "policy_decision_present",
+        "backlog_exceeded_threshold",
+        "fallback_policy_used",
+        "workload_limited_by_policy",
+        "scheduler_delay_present",
+    ]
+    policy_pressure = next(
+        item for item in report["evidence"] if item["type"] == "policy_pressure_context"
+    )
+    assert policy_pressure["status"] == "warning"
+    assert policy_pressure["observed_value"] == 5.0
+    assert policy_pressure["threshold"] == 1
+    assert "policy_decision_context" in policy_pressure["suspected_causes"]
+    assert "queue_pressure_context" in policy_pressure["suspected_causes"]
+    assert "fallback_policy_context" in policy_pressure["suspected_causes"]
+    assert "load_shedding_context" in policy_pressure["suspected_causes"]
+    assert "scheduler_delay_context" in policy_pressure["suspected_causes"]
+    assert policy_pressure["raw_context"]["limited_tasks"] == [
+        "voice_command_agent"
+    ]
+    assert policy_pressure["raw_context"]["protected_tasks"] == [
+        "safety_monitor_agent"
+    ]
+    assert policy_pressure["raw_context"]["fallback_tasks"] == [
+        "voice_command_agent"
+    ]
+    assert policy_pressure["raw_context"]["decision_owner"] == "lab"
+    assert policy_pressure["raw_context"]["scheduler_owner"] == "orchestrator"
+    assert policy_pressure["raw_context"]["not_a_deployment_decision"] is True
     fairness_evidence = next(
         item for item in report["evidence"] if item["type"] == "scheduler_fairness_risk"
     )
@@ -4194,10 +4380,11 @@ def test_runtime_intelligence_example_exports_lab_ready_guard_analysis(tmp_path)
         "edgeenv_orchestrator_producer_lineage",
         "edgeenv_orchestrator_operation_risk_summary",
         "edgeenv_orchestrator_task_event_rollup",
-        "edgeenv_orchestrator_latency_budget_protection",
-        "edgeenv_orchestrator_operation_timeline_summary",
-        "edgeenv_orchestrator_scheduler_fairness_summary",
-        "runtime_history_seed_run_config_traceability",
+            "edgeenv_orchestrator_latency_budget_protection",
+            "edgeenv_orchestrator_operation_timeline_summary",
+            "edgeenv_orchestrator_policy_pressure_summary",
+            "edgeenv_orchestrator_scheduler_fairness_summary",
+            "runtime_history_seed_run_config_traceability",
         "runtime_thermal_instability",
         "runtime_queue_overload",
     }

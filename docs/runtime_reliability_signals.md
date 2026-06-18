@@ -109,6 +109,7 @@ production retry proof, or Lab-owned deployment decisions.
 | `worker_health_degradation` | `degraded_or_constrained_worker_count` | `>= 1` | `>= 3` degraded workers or any constrained worker | Worker health snapshot explains degraded/constrained runtime loops |
 | `scheduler_delay_pattern` | `scheduler_delay_event_count` | `>= 1` | `>= 3` | Runtime event timeline shows tasks delayed across scheduler cycles |
 | `operation_timeline_summary` | `operation_timeline_review_marker_count` | `>= 1` review marker | n/a | Orchestrator compact operation timeline links queue pressure, latency wait, policy decisions, and affected tasks |
+| `policy_pressure_context` | `policy_pressure_marker_count` | `>= 1` pressure marker | n/a | Orchestrator policy pressure summary identifies limited, protected, and fallback tasks under backlog pressure |
 | `scheduler_fairness_risk` | `scheduler_starvation_risk_count` | `>= 1` | `>= 3` | Orchestrator scheduler fairness summary identifies protected high-priority tasks and workloads with starvation, delay, or degradation risk |
 | `queue_pressure_context` | `queue_pressure_reason_count` | `>= 1` concerning reason | n/a | Queue pressure reason explains whether backlog was near or beyond the overload threshold |
 | `worker_operation_risk_summary` | `worker_operation_risk_count` | `>= 1` | `>= 3` | Worker operation risk summary identifies latency/fallback/drop/queue-pressure risk labels |
@@ -129,6 +130,7 @@ production retry proof, or Lab-owned deployment decisions.
 | `edgeenv_orchestrator_operation_risk_rollup` | `orchestrator_operation_risk_rollup_marker_count` | `>= 1` risk/queue/task/boundary marker | n/a | EdgeEnv preserved Orchestrator operation risk rollup as compact deterministic operation warning context |
 | `edgeenv_orchestrator_latency_budget_protection` | `orchestrator_latency_budget_protection_marker_count` | `>= 1` risk/boundary marker | n/a | EdgeEnv preserved Orchestrator latency-budget protection context for protected high-priority tasks and budget-risk tasks |
 | `edgeenv_orchestrator_operation_timeline_summary` | `orchestrator_operation_timeline_review_marker_count` | `>= 1` review/boundary marker | n/a | EdgeEnv preserved Orchestrator operation timeline summary as compact queue/latency/policy navigation evidence |
+| `edgeenv_orchestrator_policy_pressure_summary` | `orchestrator_policy_pressure_marker_count` | `>= 1` pressure/boundary marker | n/a | EdgeEnv preserved Orchestrator policy pressure summary as limited/protected/fallback task context |
 | `edgeenv_orchestrator_scheduler_fairness_summary` | `orchestrator_scheduler_fairness_marker_count` | `>= 1` starvation/delay/degradation/boundary marker | n/a | EdgeEnv preserved Orchestrator scheduler fairness summary as supplemental fairness context for Lab review |
 | `edgeenv_orchestrator_stale_drop_summary` | `orchestrator_stale_drop_rate` | `>= 0.20` or any stale drop | `>= 0.50` | EdgeEnv preserved Orchestrator stale-drop summary as affected-agent stale/backlog context |
 | `runtime_thermal_instability` | `candidate_max_temperature_c` / `candidate_throttling_detected` | temperature `>= 70.0` or throttling `true` | temperature `>= 85.0` | EdgeEnv telemetry or attached Orchestrator feed indicates thermal/throttling pressure |
@@ -199,6 +201,7 @@ reasons over:
 - `multi_workload_sustained_summary.operation_timeline_summary.review_hints`
 - `multi_workload_sustained_summary.operation_timeline_summary.affected_tasks`
 - `multi_workload_sustained_summary.operation_timeline_summary.stale_drop`
+- `multi_workload_sustained_summary.operation_timeline_summary.policy_pressure`
 - `multi_workload_sustained_summary.operation_timeline_summary.scheduler_fairness`
 - `multi_workload_sustained_summary.scheduler_fairness_summary`
 - `multi_workload_sustained_summary.operation_timeline_summary.latency.max_queue_wait_ms`
@@ -220,6 +223,12 @@ fallback, or another scheduler reason.
 queue pressure reason, such as threshold exceeded or elevated pressure. AIGuard
 preserves the pressure reason, max pressure task, policy reason counts, and drop
 reason counts as review evidence without inferring a root cause.
+
+`policy_pressure_context` is emitted when Orchestrator reports
+`operation_timeline_summary.policy_pressure`. AIGuard preserves limited tasks,
+protected tasks, fallback tasks, decision reason counts, and pressure markers as
+deterministic operation evidence. This explains scheduler pressure without
+making AIGuard the scheduler or Lab deployment decision owner.
 
 `stale_frame_risk` is emitted when Orchestrator reports stale/backlog drops in
 `operation_timeline_summary.stale_drop`. AIGuard preserves stale drop rate,
