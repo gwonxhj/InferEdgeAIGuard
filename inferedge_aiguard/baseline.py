@@ -30,6 +30,7 @@ DEFAULT_BASELINE_THRESHOLDS = {
     "score_saturation_factor_blocked": 10.0,
     "detection_count_drop_pct_review": 0.50,
     "detection_count_drop_pct_blocked": 0.80,
+    "detection_disappearance_blocked": 1.0,
 }
 
 
@@ -273,6 +274,7 @@ def _build_comparison_report(
             raw_context=metrics["comparison"],
         ),
         _detection_count_drift_evidence(metrics, policy),
+        _detection_disappearance_evidence(metrics, policy),
     ]
 
     latency_item = _latency_quality_tradeoff_evidence(metrics, evidence)
@@ -336,6 +338,10 @@ def compute_baseline_comparison_metrics(
         "detection_count_delta": detection_delta,
         "detection_count_delta_pct": signed_delta_pct,
         "detection_count_drop_pct": max(0.0, detection_drop_pct),
+        "detection_disappeared": _detection_disappeared(
+            baseline_count=baseline_count,
+            candidate_count=candidate_count,
+        ),
         "invalid_bbox_rate_factor": _factor(
             candidate_bbox["invalid_bbox_rate"],
             baseline_bbox["invalid_bbox_rate"],
@@ -450,6 +456,10 @@ def _comparison_metrics(
         "detection_count_delta": detection_delta,
         "detection_count_delta_pct": signed_delta_pct,
         "detection_count_drop_pct": max(0.0, detection_drop_pct),
+        "detection_disappeared": _detection_disappeared(
+            baseline_count=baseline_count,
+            candidate_count=candidate_count,
+        ),
         "invalid_bbox_rate_factor": _factor(
             candidate_bbox["invalid_bbox_rate"],
             baseline_bbox["invalid_bbox_rate"],
@@ -564,6 +574,51 @@ def _detection_count_drift_evidence(
     )
 
 
+def _detection_disappearance_evidence(
+    metrics: dict[str, Any],
+    thresholds: dict[str, float],
+) -> dict[str, Any]:
+    comparison = metrics["comparison"]
+    observed = 1.0 if comparison["detection_disappeared"] else 0.0
+    threshold = thresholds["detection_disappearance_blocked"]
+    severity = "high" if observed >= threshold else "low"
+    status = _status_from_severity(severity)
+    return build_evidence_item(
+        evidence_type="detection_disappearance",
+        metric_name="detection_disappearance_flag",
+        observed_value=observed,
+        baseline_value=comparison["baseline_detection_count"],
+        threshold=threshold,
+        delta=comparison["detection_count_delta"],
+        delta_pct=comparison["detection_count_delta_pct"],
+        severity=severity,
+        status=status,
+        explanation=(
+            "Candidate produced zero detections while the baseline had "
+            f"{comparison['baseline_detection_count']} detections."
+            if status != "passed"
+            else "Candidate did not fully disappear relative to the baseline."
+        ),
+        why_it_matters=(
+            "A complete detection disappearance can make a faster candidate look "
+            "deployable even though it stopped detecting objects."
+        ),
+        suspected_causes=[
+            "Confidence threshold mismatch",
+            "Quantization artifact",
+            "Postprocess class/filter mismatch",
+        ]
+        if status != "passed"
+        else [],
+        recommendation=(
+            "Block deployment until candidate disappearance is explained."
+            if status != "passed"
+            else "Detection disappearance is not present for this comparison."
+        ),
+        raw_context=comparison,
+    )
+
+
 def _latency_quality_tradeoff_evidence(
     metrics: dict[str, Any],
     evidence: list[dict[str, Any]],
@@ -667,6 +722,10 @@ def _drop_severity(drop_pct: float, thresholds: dict[str, float]) -> str:
     if drop_pct > thresholds["detection_count_drop_pct_review"]:
         return "medium"
     return "low"
+
+
+def _detection_disappeared(*, baseline_count: int, candidate_count: int) -> bool:
+    return baseline_count > 0 and candidate_count == 0
 
 
 def _status_from_severity(severity: str) -> str:

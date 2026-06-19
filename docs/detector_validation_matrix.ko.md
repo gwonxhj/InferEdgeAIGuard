@@ -40,7 +40,7 @@ Runtime / Lab / EdgeEnv / Orchestrator evidence
 | bbox validity | `invalid_bbox_rate` | invalid box 비율이 높으면 review/block |
 | bbox collapse | `bbox_collapse_ratio` | baseline 대비 collapse 증가 시 review/block |
 | confidence saturation | `saturation_ratio` | confidence가 극단값에 몰리면 review/block |
-| detection disappearance | `detection_count_drop_pct`, `zero_detection_frame_ratio` | detection이 사라지면 review/block |
+| detection disappearance | `detection_count_drop_pct`, `detection_disappearance_flag`, `zero_detection_frame_ratio` | candidate zero detection이나 반복 disappearance가 있으면 review/block |
 | baseline deviation | invalid/collapse/saturation factor | baseline 대비 급격한 변화 시 review/block |
 | temporal consistency | count CV, bbox jump, class flip | frame 간 instability가 크면 review |
 | provenance consistency | source/artifact/backend/precision identity | identity mismatch 시 warning/error |

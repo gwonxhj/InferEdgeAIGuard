@@ -539,15 +539,16 @@ latency, accuracy, contract, and runtime evidence before producing the final
 | bbox collapse | `bbox_collapse_ratio` | `<= 0.05` | `> 0.05` or baseline factor `> 5x` | severe collapse or baseline factor `> 10x` | `evidence[].observed_value` |
 | confidence score range | `score_range_violation_count` | `0` | n/a | `> 0` | `evidence[].severity` |
 | confidence saturation | `saturation_ratio` | `< 0.70` | `>= 0.70` | `>= 0.85` with quality drift | `evidence[].observed_value` |
-| detection disappearance | `detection_count_drop_pct`, `zero_detection_frame_ratio` | stable count | drop `>= 50%` | drop `>= 80%` or zero-frame ratio `> 0.30` | `candidate_summary.comparison` |
+| detection disappearance | `detection_count_drop_pct`, `detection_disappearance_flag`, `zero_detection_frame_ratio` | stable count | drop `>= 50%` | drop `>= 80%`, candidate zero detections, or zero-frame ratio `> 0.30` | `candidate_summary.comparison` |
 | baseline deviation | invalid/collapse/saturation factor | near baseline | factor `> 5x` | factor `> 10x` | `evidence[].increase_factor` |
 | temporal consistency | count CV, bbox jump, class flip | stable sequence | count CV `> 1.0`, class flip `> 0.30`, or large center jump | zero-frame ratio `> 0.30` | `candidate_summary.temporal` |
 | provenance consistency | source/artifact/backend identity | exact handoff match | warning mismatch | error mismatch | `guard_analysis.anomalies` |
 
-Planned detector extensions are intentionally still deterministic: per-class
-detection drift, stronger detection disappearance summaries, calibration drift
-for score distributions, and baseline profile stability. These are documented
-as roadmap items, not as implemented automatic root-cause proof.
+Implemented detector hardening now includes explicit baseline-vs-candidate
+`detection_disappearance` evidence for candidate zero-detection collapse.
+Remaining planned extensions are still deterministic: per-class detection drift,
+calibration drift for score distributions, and baseline profile stability. These
+are documented as roadmap items, not as automatic root-cause proof.
 
 The full matrix is maintained in [docs/detector_validation_matrix.md](docs/detector_validation_matrix.md) ([한국어: detector validation matrix quick guide](docs/detector_validation_matrix.ko.md)).
 

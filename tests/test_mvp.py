@@ -2101,6 +2101,50 @@ def test_baseline_comparison_detects_detection_count_drop():
     assert drift_item["status"] == "failed"
 
 
+def test_baseline_comparison_blocks_detection_disappearance():
+    baseline = {
+        "model": "yolov8n",
+        "precision": "fp32",
+        "detections": [
+            {"class_id": 0, "confidence": 0.5, "bbox": [idx, idx, 10, 10]}
+            for idx in range(4)
+        ],
+    }
+    candidate = {
+        "model": "yolov8n",
+        "precision": "int8",
+        "detections": [],
+    }
+
+    metrics = compute_baseline_comparison_metrics(baseline, candidate)
+    report = compare_detection_quality(
+        baseline,
+        candidate,
+        baseline_latency_ms=45.43,
+        candidate_latency_ms=8.0,
+    )
+
+    validate_diagnosis_report(report)
+    assert metrics["comparison"]["detection_disappeared"] is True
+    assert report["guard_verdict"] == "blocked"
+    assert report["candidate_summary"]["comparison"]["detection_disappeared"] is True
+    disappeared_item = next(
+        item
+        for item in report["evidence"]
+        if item["type"] == "detection_disappearance"
+    )
+    assert disappeared_item["metric_name"] == "detection_disappearance_flag"
+    assert disappeared_item["observed_value"] == 1.0
+    assert disappeared_item["status"] == "failed"
+    assert "zero detections" in disappeared_item["explanation"]
+    tradeoff_item = next(
+        item
+        for item in report["evidence"]
+        if item["type"] == "latency_quality_tradeoff"
+    )
+    assert tradeoff_item["status"] == "failed"
+
+
 def test_baseline_comparison_explains_latency_quality_tradeoff():
     baseline = {
         "model": "yolov8n",
