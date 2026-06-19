@@ -83,6 +83,30 @@ root-cause inference.
 | calibration drift | detect score distribution shift against a known-good baseline | score histogram delta, mean/std shift, saturation delta | review when confidence scale changes without accuracy explanation |
 | baseline profile stability | document whether a baseline itself is stable enough to trust | baseline variance, repeated-run p95, profile sample count | warn when comparison baseline is too noisy |
 
+## Calibration Drift Policy Candidate
+
+Calibration drift is intentionally kept as a candidate until the evidence policy
+is implemented and fixture-gated. It should compare a candidate score
+distribution against a known-good baseline profile, not infer root cause from a
+single output.
+
+| Policy item | Deterministic evidence | Review trigger | Boundary |
+|---|---|---|---|
+| histogram shift | fixed-bin score histogram distance | histogram distance `>= 0.30` across the same output schema and class scope | not a calibrated probability proof |
+| mean score shift | `mean_score_delta` from baseline profile to candidate | absolute mean score delta `>= 0.20` without matching accuracy or threshold explanation | not accuracy replacement |
+| spread collapse or expansion | `std_score_delta` and candidate `std_score` | score std drops below `0.05` or changes by `>= 0.20` | not model-wide calibration certification |
+| saturation drift | candidate saturation ratio minus baseline saturation ratio | saturation delta `>= 0.30` or candidate saturation ratio crosses implemented saturation thresholds | reuse confidence saturation evidence when it already blocks |
+
+Expected implementation shape:
+
+- Additive `evidence[].type=calibration_drift`; do not change the diagnosis report schema.
+- Preserve `baseline_summary.score`, `candidate_summary.score`, histogram bin
+  policy, thresholds, and raw metric deltas.
+- Emit `review_required` unless the same evidence also triggers an existing
+  blocking detector such as score range violation or confidence saturation.
+- Keep `suspected_causes` as review candidates, not automatic root-cause proof.
+- Do not make AIGuard a Lab `deployment_decision` owner.
+
 ## Report Contract Fields
 
 Each evidence item should preserve enough numeric context for a reviewer to

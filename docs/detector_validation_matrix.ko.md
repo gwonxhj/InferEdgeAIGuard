@@ -48,6 +48,24 @@ Runtime / Lab / EdgeEnv / Orchestrator evidence
 | EdgeEnv runtime regression | p99/mean/FPS/memory delta | comparability-first regression evidence만 해석 |
 | remote dispatch starter | worker selection, starter/fallback status | starter evidence로만 해석 |
 
+## Calibration drift 후보 policy
+
+Calibration drift는 아직 구현 완료 detector가 아니라, 후속 구현 전에 고정해야
+하는 deterministic evidence policy입니다. 단일 output만 보고 root-cause를
+확정하지 않고, known-good baseline profile과 candidate score distribution을
+비교하는 방식으로만 다룹니다.
+
+| Policy item | Deterministic evidence | Review trigger | 경계 |
+|---|---|---|---|
+| histogram shift | 고정 bin score histogram distance | 같은 output schema/class scope에서 histogram distance `>= 0.30` | calibrated probability 증명이 아님 |
+| mean score shift | baseline profile 대비 `mean_score_delta` | accuracy 또는 threshold 설명 없이 absolute mean score delta `>= 0.20` | accuracy 대체 지표가 아님 |
+| spread collapse or expansion | `std_score_delta`, candidate `std_score` | candidate std `< 0.05` 또는 std 변화 `>= 0.20` | model-wide calibration certification이 아님 |
+| saturation drift | candidate saturation ratio - baseline saturation ratio | saturation delta `>= 0.30` 또는 기존 saturation threshold 진입 | 기존 confidence saturation block과 중복되면 그 evidence를 재사용 |
+
+후속 구현 시에는 `evidence[].type=calibration_drift`를 additive로 추가하고,
+diagnosis report schema, Lab `deployment_decision`, Runtime result contract는
+변경하지 않아야 합니다.
+
 ## 반드시 유지할 경계
 
 - AIGuard `guard_verdict`는 Lab `deployment_decision`이 아닙니다.
