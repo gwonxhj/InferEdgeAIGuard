@@ -552,6 +552,10 @@ total detection count stays stable. Remaining planned extensions are still
 deterministic: calibration drift for score distributions and baseline profile
 stability. These are documented as roadmap items, not as automatic root-cause
 proof.
+The calibration drift policy candidate is now bounded in the detector matrix:
+it should compare fixed-bin score histogram, mean score, std score, and
+saturation deltas against a known-good baseline profile before any future
+implementation.
 
 The full matrix is maintained in [docs/detector_validation_matrix.md](docs/detector_validation_matrix.md) ([한국어: detector validation matrix quick guide](docs/detector_validation_matrix.ko.md)).
 
