@@ -34,6 +34,7 @@ not the final Lab deployment policy.
 | confidence score range | `score_range_violation_count` | `0` | n/a | `> 0` | `evidence[].severity` |
 | confidence saturation | `saturation_ratio` | `< 0.70` | `>= 0.70` | `>= 0.85` with quality drift | `evidence[].observed_value` |
 | detection disappearance | `detection_count_drop_pct`, `detection_disappearance_flag`, `zero_detection_frame_ratio` | stable count | drop `>= 50%` | drop `>= 80%`, candidate zero detections, or zero-frame ratio `> 0.30` | `candidate_summary.comparison`, `candidate_summary.temporal` |
+| per-class detection drift | `per_class_detection_drop_pct`, dropped class IDs | stable class counts | one baseline class drops `>= 50%` | one baseline class drops `100%` | `candidate_summary.comparison.per_class_detection_drift` |
 | baseline deviation | invalid/collapse/saturation factor | near baseline | factor `> 5x` | factor `> 10x` | `evidence[].increase_factor` |
 | temporal consistency | count CV, bbox center jump, class flip | stable sequence | count CV `> 1.0`, class flip `> 0.30`, or center jump p95 `> 0.50` image diagonal | zero-frame ratio `> 0.30` | `candidate_summary.temporal` |
 | provenance consistency | source/artifact/backend/target/precision identity | exact handoff match | warning mismatch | error mismatch | `guard_analysis.anomalies`, `guard_analysis.status` |
@@ -50,6 +51,7 @@ not the final Lab deployment policy.
 | score distribution | `saturation_ratio` | review `0.70`, high `0.85` | `pass` | `review_required` / `blocked` | `evidence[].observed_value` |
 | detection count drift | `detection_count_drop_pct` | review `0.50`, blocked `0.80` | `pass` | `review_required` / `blocked` | `evidence[].delta_pct`, `candidate_summary.comparison` |
 | detection disappearance | `detection_disappearance_flag` | blocked `1.0` | `pass` | `blocked` | `evidence[].type=detection_disappearance`, `candidate_summary.comparison` |
+| per-class detection drift | `per_class_detection_drop_pct` | review `0.50`, blocked `1.0` | `pass` | `review_required` / `blocked` | `evidence[].type=per_class_detection_drift`, `candidate_summary.comparison.per_class_detection_drift` |
 | baseline deviation | `invalid_bbox_rate_factor` | review `5x`, blocked `10x` | `pass` | `review_required` / `blocked` | `evidence[].increase_factor` |
 | baseline deviation | `bbox_collapse_ratio_factor` | review `5x`, blocked `10x` | `pass` | `review_required` / `blocked` | `evidence[].increase_factor` |
 | baseline deviation | `score_saturation_factor` | review `5x`, blocked `10x` | `pass` | `review_required` / `blocked` | `evidence[].increase_factor` |
@@ -77,7 +79,6 @@ root-cause inference.
 
 | Candidate | Purpose | Suggested evidence | Expected use |
 |---|---|---|---|
-| per-class detection drift | catch class-specific disappearance even when total count looks stable | per-class count delta, per-class zero ratio | review when one important class collapses against baseline |
 | detection disappearance hardening | extend the implemented zero-candidate evidence into sequence-level summaries | zero-detection frame streak, zero-frame ratio, first missing frame | review/block depending on repeated disappearance |
 | calibration drift | detect score distribution shift against a known-good baseline | score histogram delta, mean/std shift, saturation delta | review when confidence scale changes without accuracy explanation |
 | baseline profile stability | document whether a baseline itself is stable enough to trust | baseline variance, repeated-run p95, profile sample count | warn when comparison baseline is too noisy |

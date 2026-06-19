@@ -180,9 +180,10 @@ InferEdgeAIGuard는 다음을 직접 수행하지 않습니다.
 | score range | `score_range_violation_count` | n/a | `> 0` |
 | score saturation | `saturation_ratio` | `>= 0.70` | `>= 0.85` with quality drift |
 | detection disappearance | `detection_count_drop_pct`, `detection_disappearance_flag`, `zero_detection_frame_ratio` | drop `>= 50%` | drop `>= 80%`, candidate zero detections, or zero-frame ratio `> 0.30` |
+| per-class detection drift | `per_class_detection_drop_pct`, dropped class IDs | one baseline class drops `>= 50%` | one baseline class drops `100%` |
 | temporal consistency | count CV, bbox jump, class flip | unstable sequence signal | zero-frame ratio `> 0.30` |
 
-세부 threshold, report field, 향후 후보 detector는 `docs/detector_validation_matrix.md`에 정리되어 있습니다. candidate zero-detection disappearance hardening은 baseline comparison evidence로 구현되었고, 다음 후보는 per-class detection drift, sequence-level disappearance hardening, calibration drift, baseline profile stability입니다.
+세부 threshold, report field, 향후 후보 detector는 `docs/detector_validation_matrix.md`에 정리되어 있습니다. candidate zero-detection disappearance hardening과 per-class detection drift는 baseline comparison evidence로 구현되었고, 다음 후보는 sequence-level disappearance hardening, calibration drift, baseline profile stability입니다.
 
 ## 10. 다음 단계
 

@@ -31,6 +31,9 @@ DEFAULT_BASELINE_THRESHOLDS = {
     "detection_count_drop_pct_review": 0.50,
     "detection_count_drop_pct_blocked": 0.80,
     "detection_disappearance_blocked": 1.0,
+    "per_class_detection_drop_pct_review": 0.50,
+    "per_class_detection_drop_pct_blocked": 1.0,
+    "per_class_drift_min_baseline_count": 1.0,
 }
 
 
@@ -63,6 +66,7 @@ def build_baseline_profile(
         baseline_output,
         thresholds=policy,
     )
+    class_distribution = compute_class_distribution_metrics(baseline_output)
     return {
         "schema_version": BASELINE_PROFILE_SCHEMA_VERSION,
         "label": label,
@@ -72,6 +76,7 @@ def build_baseline_profile(
         "image_id": baseline_output.get("image_id"),
         "bbox": bbox_metrics,
         "score": score_metrics,
+        "class_distribution": class_distribution,
         "latency_ms": latency_ms,
         "accuracy": accuracy,
         "thresholds": policy,
@@ -114,6 +119,7 @@ def compare_detection_quality(
         "precision": baseline_output.get("precision"),
         "bbox": metrics["baseline"]["bbox"],
         "score": metrics["baseline"]["score"],
+        "class_distribution": metrics["baseline"]["class_distribution"],
         "latency_ms": baseline_latency_ms,
         "accuracy": baseline_accuracy,
     }
@@ -123,6 +129,7 @@ def compare_detection_quality(
         "precision": candidate_output.get("precision"),
         "bbox": metrics["candidate"]["bbox"],
         "score": metrics["candidate"]["score"],
+        "class_distribution": metrics["candidate"]["class_distribution"],
         "latency_ms": candidate_latency_ms,
         "accuracy": candidate_accuracy,
         "comparison": metrics["comparison"],
@@ -175,6 +182,7 @@ def compare_guard_analysis(
         "precision": baseline_profile.get("precision"),
         "bbox": metrics["baseline"]["bbox"],
         "score": metrics["baseline"]["score"],
+        "class_distribution": metrics["baseline"].get("class_distribution", {}),
         "latency_ms": metrics["baseline"].get("latency_ms"),
         "accuracy": metrics["baseline"].get("accuracy"),
         "profile_schema_version": baseline_profile.get("schema_version"),
@@ -185,6 +193,7 @@ def compare_guard_analysis(
         "precision": candidate_output.get("precision"),
         "bbox": metrics["candidate"]["bbox"],
         "score": metrics["candidate"]["score"],
+        "class_distribution": metrics["candidate"]["class_distribution"],
         "latency_ms": candidate_latency_ms,
         "accuracy": candidate_accuracy,
         "comparison": metrics["comparison"],
@@ -196,6 +205,26 @@ def compare_guard_analysis(
         baseline_summary=baseline_summary,
         candidate_summary=candidate_summary,
     )
+
+
+def compute_class_distribution_metrics(output: dict[str, Any]) -> dict[str, Any]:
+    """Compute per-class detection counts using JSON-stable class IDs."""
+
+    class_counts: dict[str, int] = {}
+    for detection in output.get("detections", []):
+        if not isinstance(detection, dict):
+            continue
+        class_id = detection.get("class_id")
+        if not isinstance(class_id, int) or isinstance(class_id, bool):
+            continue
+        key = str(class_id)
+        class_counts[key] = class_counts.get(key, 0) + 1
+
+    return {
+        "class_counts": dict(sorted(class_counts.items(), key=_class_count_sort_key)),
+        "class_count": len(class_counts),
+        "total_predictions": sum(class_counts.values()),
+    }
 
 
 def _build_comparison_report(
@@ -275,6 +304,7 @@ def _build_comparison_report(
         ),
         _detection_count_drift_evidence(metrics, policy),
         _detection_disappearance_evidence(metrics, policy),
+        _per_class_detection_drift_evidence(metrics, policy),
     ]
 
     latency_item = _latency_quality_tradeoff_evidence(metrics, evidence)
@@ -325,6 +355,8 @@ def compute_baseline_comparison_metrics(
         candidate_output,
         thresholds=policy,
     )
+    baseline_class_distribution = compute_class_distribution_metrics(baseline_output)
+    candidate_class_distribution = compute_class_distribution_metrics(candidate_output)
 
     baseline_count = baseline_bbox["total_predictions"]
     candidate_count = candidate_bbox["total_predictions"]
@@ -359,18 +391,25 @@ def compute_baseline_comparison_metrics(
             baseline_latency_ms,
         ),
         "accuracy_delta_pp": _optional_delta(candidate_accuracy, baseline_accuracy),
+        "per_class_detection_drift": _per_class_detection_drift_metrics(
+            baseline_class_distribution=baseline_class_distribution,
+            candidate_class_distribution=candidate_class_distribution,
+            thresholds=policy,
+        ),
     }
 
     return {
         "baseline": {
             "bbox": baseline_bbox,
             "score": baseline_score,
+            "class_distribution": baseline_class_distribution,
             "latency_ms": baseline_latency_ms,
             "accuracy": baseline_accuracy,
         },
         "candidate": {
             "bbox": candidate_bbox,
             "score": candidate_score,
+            "class_distribution": candidate_class_distribution,
             "latency_ms": candidate_latency_ms,
             "accuracy": candidate_accuracy,
         },
@@ -398,6 +437,7 @@ def compute_candidate_against_baseline_profile(
     }
     baseline_bbox = dict(baseline_profile["bbox"])
     baseline_score = dict(baseline_profile["score"])
+    baseline_class_distribution = _class_distribution_from_profile(baseline_profile)
     candidate_bbox = compute_bbox_validity_metrics(
         candidate_output,
         image_width=image_width,
@@ -407,11 +447,15 @@ def compute_candidate_against_baseline_profile(
         candidate_output,
         thresholds=policy,
     )
+    candidate_class_distribution = compute_class_distribution_metrics(candidate_output)
     comparison = _comparison_metrics(
         baseline_bbox=baseline_bbox,
         candidate_bbox=candidate_bbox,
         baseline_score=baseline_score,
         candidate_score=candidate_score,
+        baseline_class_distribution=baseline_class_distribution,
+        candidate_class_distribution=candidate_class_distribution,
+        thresholds=policy,
         baseline_latency_ms=baseline_profile.get("latency_ms"),
         candidate_latency_ms=candidate_latency_ms,
         baseline_accuracy=baseline_profile.get("accuracy"),
@@ -421,12 +465,14 @@ def compute_candidate_against_baseline_profile(
         "baseline": {
             "bbox": baseline_bbox,
             "score": baseline_score,
+            "class_distribution": baseline_class_distribution,
             "latency_ms": baseline_profile.get("latency_ms"),
             "accuracy": baseline_profile.get("accuracy"),
         },
         "candidate": {
             "bbox": candidate_bbox,
             "score": candidate_score,
+            "class_distribution": candidate_class_distribution,
             "latency_ms": candidate_latency_ms,
             "accuracy": candidate_accuracy,
         },
@@ -440,6 +486,9 @@ def _comparison_metrics(
     candidate_bbox: dict[str, Any],
     baseline_score: dict[str, Any],
     candidate_score: dict[str, Any],
+    baseline_class_distribution: dict[str, Any],
+    candidate_class_distribution: dict[str, Any],
+    thresholds: dict[str, float],
     baseline_latency_ms: float | None,
     candidate_latency_ms: float | None,
     baseline_accuracy: float | None,
@@ -477,6 +526,11 @@ def _comparison_metrics(
             baseline_latency_ms,
         ),
         "accuracy_delta_pp": _optional_delta(candidate_accuracy, baseline_accuracy),
+        "per_class_detection_drift": _per_class_detection_drift_metrics(
+            baseline_class_distribution=baseline_class_distribution,
+            candidate_class_distribution=candidate_class_distribution,
+            thresholds=thresholds,
+        ),
     }
 
 
@@ -619,6 +673,51 @@ def _detection_disappearance_evidence(
     )
 
 
+def _per_class_detection_drift_evidence(
+    metrics: dict[str, Any],
+    thresholds: dict[str, float],
+) -> dict[str, Any]:
+    comparison = metrics["comparison"]["per_class_detection_drift"]
+    drop_pct = comparison["max_drop_pct"]
+    severity = _per_class_drop_severity(drop_pct, thresholds)
+    status = _status_from_severity(severity)
+    max_drop_class_id = comparison.get("max_drop_class_id")
+    return build_evidence_item(
+        evidence_type="per_class_detection_drift",
+        metric_name="per_class_detection_drop_pct",
+        observed_value=drop_pct,
+        baseline_value=comparison.get("max_drop_baseline_count"),
+        threshold=thresholds["per_class_detection_drop_pct_review"],
+        delta=comparison.get("max_drop_delta"),
+        delta_pct=-drop_pct if drop_pct else 0.0,
+        severity=severity,
+        status=status,
+        explanation=(
+            f"Class {max_drop_class_id} detection count dropped by "
+            f"{_fmt(drop_pct)} relative to baseline."
+            if status != "passed"
+            else "Per-class detection counts are within threshold."
+        ),
+        why_it_matters=(
+            "Total detection count can remain stable while a safety- or "
+            "accuracy-relevant class disappears."
+        ),
+        suspected_causes=[
+            "Class mapping mismatch",
+            "Class-specific confidence threshold mismatch",
+            "Quantization artifact affecting one class",
+        ]
+        if status != "passed"
+        else [],
+        recommendation=(
+            "Review per-class outputs against the baseline before deployment."
+            if status != "passed"
+            else "Per-class detection drift is within threshold."
+        ),
+        raw_context=comparison,
+    )
+
+
 def _latency_quality_tradeoff_evidence(
     metrics: dict[str, Any],
     evidence: list[dict[str, Any]],
@@ -724,8 +823,109 @@ def _drop_severity(drop_pct: float, thresholds: dict[str, float]) -> str:
     return "low"
 
 
+def _per_class_drop_severity(
+    drop_pct: float,
+    thresholds: dict[str, float],
+) -> str:
+    if drop_pct >= thresholds["per_class_detection_drop_pct_blocked"]:
+        return "high"
+    if drop_pct >= thresholds["per_class_detection_drop_pct_review"]:
+        return "medium"
+    return "low"
+
+
 def _detection_disappeared(*, baseline_count: int, candidate_count: int) -> bool:
     return baseline_count > 0 and candidate_count == 0
+
+
+def _per_class_detection_drift_metrics(
+    *,
+    baseline_class_distribution: dict[str, Any],
+    candidate_class_distribution: dict[str, Any],
+    thresholds: dict[str, float],
+) -> dict[str, Any]:
+    baseline_counts = _normalized_class_counts(baseline_class_distribution)
+    candidate_counts = _normalized_class_counts(candidate_class_distribution)
+    min_baseline_count = int(thresholds["per_class_drift_min_baseline_count"])
+    class_ids = sorted(set(baseline_counts) | set(candidate_counts), key=_class_sort_key)
+    classes = []
+    dropped_class_ids = []
+    max_drop_pct = 0.0
+    max_drop_class_id: str | None = None
+    max_drop_delta = 0
+    max_drop_baseline_count = 0
+
+    for class_id in class_ids:
+        baseline_count = baseline_counts.get(class_id, 0)
+        candidate_count = candidate_counts.get(class_id, 0)
+        delta = candidate_count - baseline_count
+        drop_count = max(0, baseline_count - candidate_count)
+        eligible = baseline_count >= min_baseline_count
+        drop_pct = _ratio_float(drop_count, baseline_count) if eligible else 0.0
+        if eligible and drop_pct > max_drop_pct:
+            max_drop_pct = drop_pct
+            max_drop_class_id = class_id
+            max_drop_delta = delta
+            max_drop_baseline_count = baseline_count
+        if eligible and baseline_count > 0 and candidate_count == 0:
+            dropped_class_ids.append(class_id)
+        classes.append(
+            {
+                "class_id": class_id,
+                "baseline_count": baseline_count,
+                "candidate_count": candidate_count,
+                "delta": delta,
+                "drop_pct": drop_pct,
+            }
+        )
+
+    return {
+        "max_drop_class_id": max_drop_class_id,
+        "max_drop_pct": max_drop_pct,
+        "max_drop_delta": max_drop_delta,
+        "max_drop_baseline_count": max_drop_baseline_count,
+        "dropped_class_ids": dropped_class_ids,
+        "min_baseline_count": min_baseline_count,
+        "classes": classes,
+    }
+
+
+def _class_distribution_from_profile(profile: dict[str, Any]) -> dict[str, Any]:
+    distribution = profile.get("class_distribution")
+    if isinstance(distribution, dict):
+        class_counts = _normalized_class_counts(distribution)
+        return {
+            "class_counts": class_counts,
+            "class_count": len(class_counts),
+            "total_predictions": sum(class_counts.values()),
+        }
+    return {
+        "class_counts": {},
+        "class_count": 0,
+        "total_predictions": profile["bbox"]["total_predictions"],
+    }
+
+
+def _normalized_class_counts(distribution: dict[str, Any]) -> dict[str, int]:
+    raw_counts = distribution.get("class_counts", {})
+    if not isinstance(raw_counts, dict):
+        return {}
+    counts: dict[str, int] = {}
+    for class_id, count in raw_counts.items():
+        if isinstance(count, int) and not isinstance(count, bool) and count >= 0:
+            counts[str(class_id)] = count
+    return dict(sorted(counts.items(), key=_class_count_sort_key))
+
+
+def _class_count_sort_key(item: tuple[str, int]) -> tuple[int, Any]:
+    return _class_sort_key(item[0])
+
+
+def _class_sort_key(class_id: Any) -> tuple[int, Any]:
+    try:
+        return (0, int(class_id))
+    except (TypeError, ValueError):
+        return (1, str(class_id))
 
 
 def _status_from_severity(severity: str) -> str:

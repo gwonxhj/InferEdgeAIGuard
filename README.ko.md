@@ -280,12 +280,13 @@ AIGuard detector는 deterministic evidence provider입니다. `guard_verdict`는
 | confidence score range | `score_range_violation_count` | `0` | n/a | `> 0` |
 | confidence saturation | `saturation_ratio` | `< 0.70` | `>= 0.70` | `>= 0.85` and quality drift |
 | detection disappearance | `detection_count_drop_pct`, `zero_detection_frame_ratio` | stable count | drop `>= 50%` | drop `>= 80%` 또는 zero-frame ratio `> 0.30` |
+| per-class detection drift | `per_class_detection_drop_pct`, dropped class IDs | class count 안정 | baseline class 하나가 `>= 50%` 감소 | baseline class 하나가 `100%` 감소 |
 | baseline deviation | invalid/collapse/saturation factor | near baseline | factor `> 5x` | factor `> 10x` |
 | temporal consistency | count CV, bbox jump, class flip | stable sequence | count CV `> 1.0`, class flip `> 0.30`, 큰 center jump | zero-frame ratio `> 0.30` |
 | provenance consistency | source/artifact/backend identity | exact handoff match | warning mismatch | error mismatch |
 | runtime reliability | deadline miss, drop/fallback, queue backlog | stable scheduling | deadline/drop/fallback threshold 초과 | excessive drop/fallback 또는 repeated deadline miss |
 
-다음 후보 detector는 deterministic evidence 기반 roadmap입니다: per-class detection drift, detection disappearance hardening, calibration drift, baseline profile stability.
+구현된 detector hardening에는 candidate zero-detection collapse를 잡는 `detection_disappearance`와, 총 detection 수가 유지되어도 특정 class가 사라지는 `per_class_detection_drift`가 포함됩니다. 다음 후보 detector는 deterministic evidence 기반 roadmap입니다: detection disappearance hardening, calibration drift, baseline profile stability.
 
 전체 detector별 threshold, expected verdict, report field는 [Detector Validation Matrix](docs/detector_validation_matrix.ko.md)에 정리되어 있습니다. 대표/canonical 문서는 [English matrix](docs/detector_validation_matrix.md)입니다.
 Orchestrator summary 기반 runtime reliability mapping은 [docs/runtime_reliability_signals.ko.md](docs/runtime_reliability_signals.ko.md)에 정리되어 있습니다.
