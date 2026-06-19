@@ -8,6 +8,7 @@ from inferedge_aiguard.adapters import normalize_lab_compare_result
 from inferedge_aiguard.batch import analyze_directory, compare_directories
 from inferedge_aiguard.baseline import (
     BASELINE_PROFILE_SCHEMA_VERSION,
+    BASELINE_PROFILE_STABILITY_SCHEMA_VERSION,
     build_baseline_profile,
     compare_guard_analysis,
     compare_detection_quality,
@@ -1985,8 +1986,37 @@ def test_phase2_builds_json_serializable_baseline_profile():
     assert profile["score"]["score_range_violation_count"] == 0
     assert profile["score"]["score_histogram"]["total_scores"] == 2
     assert profile["class_distribution"]["class_counts"] == {"0": 2}
+    assert profile["profile_stability"]["schema_version"] == (
+        BASELINE_PROFILE_STABILITY_SCHEMA_VERSION
+    )
+    assert profile["profile_stability"]["status"] == "passed"
+    assert profile["profile_stability"]["sample_count"] == 1
+    assert profile["profile_stability"]["compatibility_status"] == "current_profile"
     assert profile["latency_ms"] == 45.43
     assert profile["accuracy"] == 0.71
+
+
+def test_phase2_baseline_profile_stability_flags_weak_sample_count():
+    baseline = {
+        "model": "yolov8n",
+        "precision": "fp32",
+        "image_id": "baseline",
+        "detections": [
+            {"class_id": 0, "confidence": 0.61, "bbox": [10, 10, 20, 30]},
+            {"class_id": 0, "confidence": 0.52, "bbox": [50, 10, 25, 35]},
+        ],
+    }
+
+    profile = build_baseline_profile(
+        baseline,
+        thresholds={"baseline_profile_min_sample_count_review": 2},
+        sample_count=1,
+    )
+
+    stability = profile["profile_stability"]
+    assert stability["status"] == "review"
+    assert stability["min_sample_count_review"] == 2
+    assert "sample_count_below_review_threshold" in stability["triggered_policy_items"]
 
 
 def test_phase2_compare_guard_analysis_uses_saved_baseline_profile():
@@ -2032,6 +2062,7 @@ def test_phase2_compare_guard_analysis_uses_saved_baseline_profile():
     assert guard_analysis["baseline_summary"]["profile_schema_version"] == (
         BASELINE_PROFILE_SCHEMA_VERSION
     )
+    assert guard_analysis["baseline_summary"]["profile_stability"]["status"] == "passed"
     assert guard_analysis["baseline_summary"]["class_distribution"]["class_counts"] == {
         "0": 2
     }
@@ -2041,6 +2072,43 @@ def test_phase2_compare_guard_analysis_uses_saved_baseline_profile():
         item["type"] == "latency_quality_tradeoff"
         for item in guard_analysis["evidence"]
     )
+
+
+def test_phase2_compare_guard_analysis_backfills_legacy_profile_stability():
+    baseline = {
+        "model": "yolov8n",
+        "precision": "fp32",
+        "image_id": "baseline",
+        "detections": [
+            {"class_id": 0, "confidence": 0.64, "bbox": [0, 0, 10, 10]},
+            {"class_id": 0, "confidence": 0.58, "bbox": [20, 20, 12, 12]},
+        ],
+    }
+    candidate = {
+        "model": "yolov8n",
+        "precision": "fp32",
+        "image_id": "candidate",
+        "detections": [
+            {"class_id": 0, "confidence": 0.63, "bbox": [0, 0, 10, 10]},
+            {"class_id": 0, "confidence": 0.57, "bbox": [20, 20, 12, 12]},
+        ],
+    }
+    profile = build_baseline_profile(baseline)
+    del profile["profile_stability"]
+    del profile["score"]["score_histogram"]
+
+    metrics = compute_candidate_against_baseline_profile(profile, candidate)
+    guard_analysis = compare_guard_analysis(profile, candidate)
+
+    assert metrics["baseline"]["score"]["score_histogram"] == {}
+    stability = guard_analysis["baseline_summary"]["profile_stability"]
+    assert stability["schema_version"] == BASELINE_PROFILE_STABILITY_SCHEMA_VERSION
+    assert stability["compatibility_status"] == (
+        "legacy_profile_missing_profile_stability"
+    )
+    assert stability["status"] == "review"
+    assert "score_histogram_total_mismatch" in stability["triggered_policy_items"]
+    assert guard_analysis["guard_verdict"] == "pass"
 
 
 def test_baseline_comparison_blocks_bbox_collapse_drift():

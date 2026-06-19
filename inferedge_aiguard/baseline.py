@@ -19,6 +19,9 @@ from .evidence_detectors import (
 
 
 BASELINE_PROFILE_SCHEMA_VERSION = "inferedge-aiguard-baseline-profile-v1"
+BASELINE_PROFILE_STABILITY_SCHEMA_VERSION = (
+    "inferedge-aiguard-baseline-profile-stability-v1"
+)
 
 DEFAULT_BASELINE_THRESHOLDS = {
     **DEFAULT_EVIDENCE_THRESHOLDS,
@@ -39,6 +42,7 @@ DEFAULT_BASELINE_THRESHOLDS = {
     "calibration_std_score_delta_review": 0.20,
     "calibration_std_score_floor_review": 0.05,
     "calibration_saturation_delta_review": 0.30,
+    "baseline_profile_min_sample_count_review": 1.0,
 }
 
 SCORE_HISTOGRAM_BINS = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
@@ -55,6 +59,7 @@ def build_baseline_profile(
     thresholds: dict[str, float] | None = None,
     source: dict[str, Any] | None = None,
     created_at: str | None = None,
+    sample_count: int | None = None,
 ) -> dict[str, Any]:
     """Build a JSON-serializable known-good baseline profile.
 
@@ -71,6 +76,14 @@ def build_baseline_profile(
     )
     score_metrics = _score_metrics_with_histogram(baseline_output, policy)
     class_distribution = compute_class_distribution_metrics(baseline_output)
+    profile_stability = _build_baseline_profile_stability(
+        bbox_metrics=bbox_metrics,
+        score_metrics=score_metrics,
+        class_distribution=class_distribution,
+        thresholds=policy,
+        sample_count=sample_count,
+        compatibility_status="current_profile",
+    )
     return {
         "schema_version": BASELINE_PROFILE_SCHEMA_VERSION,
         "label": label,
@@ -81,6 +94,7 @@ def build_baseline_profile(
         "bbox": bbox_metrics,
         "score": score_metrics,
         "class_distribution": class_distribution,
+        "profile_stability": profile_stability,
         "latency_ms": latency_ms,
         "accuracy": accuracy,
         "thresholds": policy,
@@ -187,6 +201,7 @@ def compare_guard_analysis(
         "bbox": metrics["baseline"]["bbox"],
         "score": metrics["baseline"]["score"],
         "class_distribution": metrics["baseline"].get("class_distribution", {}),
+        "profile_stability": metrics["baseline"].get("profile_stability", {}),
         "latency_ms": metrics["baseline"].get("latency_ms"),
         "accuracy": metrics["baseline"].get("accuracy"),
         "profile_schema_version": baseline_profile.get("schema_version"),
@@ -480,6 +495,10 @@ def compute_candidate_against_baseline_profile(
     baseline_bbox = dict(baseline_profile["bbox"])
     baseline_score = dict(baseline_profile["score"])
     baseline_class_distribution = _class_distribution_from_profile(baseline_profile)
+    baseline_profile_stability = _ensure_baseline_profile_stability(
+        baseline_profile,
+        thresholds=policy,
+    )
     candidate_bbox = compute_bbox_validity_metrics(
         candidate_output,
         image_width=image_width,
@@ -506,6 +525,7 @@ def compute_candidate_against_baseline_profile(
             "bbox": baseline_bbox,
             "score": baseline_score,
             "class_distribution": baseline_class_distribution,
+            "profile_stability": baseline_profile_stability,
             "latency_ms": baseline_profile.get("latency_ms"),
             "accuracy": baseline_profile.get("accuracy"),
         },
@@ -1079,6 +1099,99 @@ def _ensure_score_histogram(score_metrics: dict[str, Any]) -> dict[str, Any]:
     return metrics
 
 
+def _build_baseline_profile_stability(
+    *,
+    bbox_metrics: dict[str, Any],
+    score_metrics: dict[str, Any],
+    class_distribution: dict[str, Any],
+    thresholds: dict[str, float],
+    sample_count: int | None,
+    compatibility_status: str,
+) -> dict[str, Any]:
+    normalized_sample_count = _positive_int_or_default(sample_count, 1)
+    min_sample_count = int(thresholds["baseline_profile_min_sample_count_review"])
+    total_predictions = _non_negative_int(bbox_metrics.get("total_predictions"))
+    score_histogram = score_metrics.get("score_histogram")
+    histogram_total = 0
+    if isinstance(score_histogram, dict):
+        histogram_total = _non_negative_int(score_histogram.get("total_scores"))
+    class_total = _non_negative_int(class_distribution.get("total_predictions"))
+
+    triggered = []
+    if normalized_sample_count < min_sample_count:
+        triggered.append("sample_count_below_review_threshold")
+    if total_predictions <= 0:
+        triggered.append("empty_baseline_predictions")
+    if histogram_total != total_predictions:
+        triggered.append("score_histogram_total_mismatch")
+    if class_total != total_predictions:
+        triggered.append("class_distribution_total_mismatch")
+
+    status = "review" if triggered else "passed"
+    return {
+        "schema_version": BASELINE_PROFILE_STABILITY_SCHEMA_VERSION,
+        "status": status,
+        "compatibility_status": compatibility_status,
+        "sample_count": normalized_sample_count,
+        "min_sample_count_review": min_sample_count,
+        "total_predictions": total_predictions,
+        "score_histogram_total_scores": histogram_total,
+        "class_distribution_total_predictions": class_total,
+        "triggered_policy_items": triggered,
+        "recommendation": _baseline_profile_stability_recommendation(triggered),
+    }
+
+
+def _ensure_baseline_profile_stability(
+    profile: dict[str, Any],
+    *,
+    thresholds: dict[str, float],
+) -> dict[str, Any]:
+    stability = profile.get("profile_stability")
+    if isinstance(stability, dict):
+        normalized = dict(stability)
+        normalized.setdefault(
+            "schema_version",
+            BASELINE_PROFILE_STABILITY_SCHEMA_VERSION,
+        )
+        normalized.setdefault("compatibility_status", "current_profile")
+        normalized.setdefault("sample_count", 1)
+        normalized.setdefault(
+            "min_sample_count_review",
+            int(thresholds["baseline_profile_min_sample_count_review"]),
+        )
+        normalized.setdefault("triggered_policy_items", [])
+        normalized.setdefault(
+            "status",
+            "review" if normalized["triggered_policy_items"] else "passed",
+        )
+        normalized.setdefault(
+            "recommendation",
+            _baseline_profile_stability_recommendation(
+                normalized["triggered_policy_items"]
+            ),
+        )
+        return normalized
+
+    return _build_baseline_profile_stability(
+        bbox_metrics=profile["bbox"],
+        score_metrics=_ensure_score_histogram(dict(profile["score"])),
+        class_distribution=_class_distribution_from_profile(profile),
+        thresholds=thresholds,
+        sample_count=None,
+        compatibility_status="legacy_profile_missing_profile_stability",
+    )
+
+
+def _baseline_profile_stability_recommendation(triggered: list[str]) -> str:
+    if not triggered:
+        return "Baseline profile stability metadata is present for audit."
+    return (
+        "Review baseline sample count, score histogram coverage, and class "
+        "distribution coverage before treating calibration drift as stable."
+    )
+
+
 def _class_distribution_from_profile(profile: dict[str, Any]) -> dict[str, Any]:
     distribution = profile.get("class_distribution")
     if isinstance(distribution, dict):
@@ -1104,6 +1217,18 @@ def _normalized_class_counts(distribution: dict[str, Any]) -> dict[str, int]:
         if isinstance(count, int) and not isinstance(count, bool) and count >= 0:
             counts[str(class_id)] = count
     return dict(sorted(counts.items(), key=_class_count_sort_key))
+
+
+def _positive_int_or_default(value: Any, default: int) -> int:
+    if isinstance(value, int) and not isinstance(value, bool) and value > 0:
+        return value
+    return default
+
+
+def _non_negative_int(value: Any) -> int:
+    if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
+        return value
+    return 0
 
 
 def _class_count_sort_key(item: tuple[str, int]) -> tuple[int, Any]:

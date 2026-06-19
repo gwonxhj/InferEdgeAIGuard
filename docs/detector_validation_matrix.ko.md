@@ -49,6 +49,26 @@ Runtime / Lab / EdgeEnv / Orchestrator evidence
 | EdgeEnv runtime regression | p99/mean/FPS/memory delta | comparability-first regression evidence만 해석 |
 | remote dispatch starter | worker selection, starter/fallback status | starter evidence로만 해석 |
 
+## Baseline profile stability metadata
+
+Saved baseline profile에는 additive `profile_stability` audit metadata가
+포함됩니다. 이 metadata는 calibration drift 같은 baseline-comparison evidence를
+신뢰하기 전에 baseline profile의 sample count와 histogram/class coverage를
+확인하기 위한 것입니다. Lab `deployment_decision`이나 diagnosis report
+schema는 변경하지 않습니다.
+
+| Field | 의미 | 경계 |
+|---|---|---|
+| `profile_stability.sample_count` | saved baseline profile이 대표하는 sample 수 | single-output profile은 기본 `1` |
+| `profile_stability.min_sample_count_review` | review policy에서 요구하는 최소 sample 수 | 기본 `1`; 더 엄격한 review workflow는 높일 수 있음 |
+| `profile_stability.score_histogram_total_scores` | saved score histogram이 대표하는 confidence score 수 | calibration drift coverage audit용 |
+| `profile_stability.class_distribution_total_predictions` | class-count metadata가 대표하는 detection 수 | per-class drift coverage audit용 |
+| `profile_stability.compatibility_status` | current profile metadata인지 legacy backfill인지 표시 | legacy backfill은 audit metadata이며 schema break가 아님 |
+
+기존 saved profile에 stability metadata가 없으면 AIGuard는 baseline summary에
+`compatibility_status=legacy_profile_missing_profile_stability`를 backfill해서
+reviewer가 profile 생성 시점을 구분할 수 있게 합니다.
+
 ## Calibration drift evidence policy
 
 Calibration drift는 additive baseline-comparison evidence로 구현되어 있습니다.

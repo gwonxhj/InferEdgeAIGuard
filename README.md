@@ -550,10 +550,14 @@ Implemented detector hardening now includes explicit baseline-vs-candidate
 `per_class_detection_drift` evidence for class-specific disappearance even when
 total detection count stays stable. Calibration drift (`calibration_drift`) is
 now implemented as additive baseline-comparison evidence for fixed-bin score
-histogram, mean score, std score, and saturation deltas. Remaining planned extensions are still
-deterministic: sequence-level disappearance hardening and baseline profile
-stability. These are documented as roadmap items, not as automatic root-cause
-proof.
+histogram, mean score, std score, and saturation deltas. Baseline profile
+stability metadata (`profile_stability`) is also recorded for saved baseline
+profiles so reviewers can see sample count and histogram/class coverage before
+trusting calibration drift. Remaining planned extensions are still
+deterministic: sequence-level disappearance hardening. These are documented as
+roadmap items, not as automatic root-cause proof.
+Baseline profile stability metadata (`profile_stability`) is audit metadata,
+not a Lab deployment decision.
 This calibration drift evidence remains a review signal, not a Lab deployment
 decision.
 
