@@ -539,23 +539,24 @@ latency, accuracy, contract, and runtime evidence before producing the final
 | bbox collapse | `bbox_collapse_ratio` | `<= 0.05` | `> 0.05` or baseline factor `> 5x` | severe collapse or baseline factor `> 10x` | `evidence[].observed_value` |
 | confidence score range | `score_range_violation_count` | `0` | n/a | `> 0` | `evidence[].severity` |
 | confidence saturation | `saturation_ratio` | `< 0.70` | `>= 0.70` | `>= 0.85` with quality drift | `evidence[].observed_value` |
-| detection disappearance | `detection_count_drop_pct`, `detection_disappearance_flag`, `zero_detection_frame_ratio` | stable count | drop `>= 50%` | drop `>= 80%`, candidate zero detections, or zero-frame ratio `> 0.30` | `candidate_summary.comparison` |
+| detection disappearance | `detection_count_drop_pct`, `detection_disappearance_flag`, `zero_detection_frame_ratio`, `max_zero_detection_streak` | stable count | drop `>= 50%` or repeated zero-frame streak | drop `>= 80%`, candidate zero detections, zero-frame ratio `> 0.30`, or long zero-frame streak | `candidate_summary.comparison`, `candidate_summary.temporal` |
 | per-class detection drift | `per_class_detection_drop_pct`, dropped class IDs | stable class counts | one baseline class drops `>= 50%` | one baseline class drops `100%` | `candidate_summary.comparison.per_class_detection_drift` |
 | baseline deviation | invalid/collapse/saturation factor | near baseline | factor `> 5x` | factor `> 10x` | `evidence[].increase_factor` |
-| temporal consistency | count CV, bbox jump, class flip | stable sequence | count CV `> 1.0`, class flip `> 0.30`, or large center jump | zero-frame ratio `> 0.30` | `candidate_summary.temporal` |
+| temporal consistency | count CV, bbox jump, class flip, disappearance streak | stable sequence | count CV `> 1.0`, class flip `> 0.30`, large center jump, or zero-frame streak `>= 2` | zero-frame ratio `> 0.30` or zero-frame streak `>= 3` | `candidate_summary.temporal` |
 | provenance consistency | source/artifact/backend identity | exact handoff match | warning mismatch | error mismatch | `guard_analysis.anomalies` |
 
 Implemented detector hardening now includes explicit baseline-vs-candidate
 `detection_disappearance` evidence for candidate zero-detection collapse and
+sequence-level `sequence_disappearance` evidence for repeated zero-detection
+frame streaks. It also includes
 `per_class_detection_drift` evidence for class-specific disappearance even when
 total detection count stays stable. Calibration drift (`calibration_drift`) is
 now implemented as additive baseline-comparison evidence for fixed-bin score
 histogram, mean score, std score, and saturation deltas. Baseline profile
 stability metadata (`profile_stability`) is also recorded for saved baseline
 profiles so reviewers can see sample count and histogram/class coverage before
-trusting calibration drift. Remaining planned extensions are still
-deterministic: sequence-level disappearance hardening. These are documented as
-roadmap items, not as automatic root-cause proof.
+trusting calibration drift. These detector extensions are deterministic
+evidence, not automatic root-cause proof.
 Baseline profile stability metadata (`profile_stability`) is audit metadata,
 not a Lab deployment decision.
 This calibration drift evidence remains a review signal, not a Lab deployment

@@ -279,14 +279,14 @@ AIGuard detector는 deterministic evidence provider입니다. `guard_verdict`는
 | bbox collapse | `bbox_collapse_ratio` | `<= 0.05` | `> 0.05` 또는 baseline factor `> 5x` | severe collapse 또는 baseline factor `> 10x` |
 | confidence score range | `score_range_violation_count` | `0` | n/a | `> 0` |
 | confidence saturation | `saturation_ratio` | `< 0.70` | `>= 0.70` | `>= 0.85` and quality drift |
-| detection disappearance | `detection_count_drop_pct`, `zero_detection_frame_ratio` | stable count | drop `>= 50%` | drop `>= 80%` 또는 zero-frame ratio `> 0.30` |
+| detection disappearance | `detection_count_drop_pct`, `zero_detection_frame_ratio`, `max_zero_detection_streak` | stable count | drop `>= 50%` 또는 zero-frame streak `>= 2` | drop `>= 80%`, zero-frame ratio `> 0.30`, 또는 zero-frame streak `>= 3` |
 | per-class detection drift | `per_class_detection_drop_pct`, dropped class IDs | class count 안정 | baseline class 하나가 `>= 50%` 감소 | baseline class 하나가 `100%` 감소 |
 | baseline deviation | invalid/collapse/saturation factor | near baseline | factor `> 5x` | factor `> 10x` |
-| temporal consistency | count CV, bbox jump, class flip | stable sequence | count CV `> 1.0`, class flip `> 0.30`, 큰 center jump | zero-frame ratio `> 0.30` |
+| temporal consistency | count CV, bbox jump, class flip, disappearance streak | stable sequence | count CV `> 1.0`, class flip `> 0.30`, 큰 center jump, zero-frame streak `>= 2` | zero-frame ratio `> 0.30` 또는 zero-frame streak `>= 3` |
 | provenance consistency | source/artifact/backend identity | exact handoff match | warning mismatch | error mismatch |
 | runtime reliability | deadline miss, drop/fallback, queue backlog | stable scheduling | deadline/drop/fallback threshold 초과 | excessive drop/fallback 또는 repeated deadline miss |
 
-구현된 detector hardening에는 candidate zero-detection collapse를 잡는 `detection_disappearance`, 총 detection 수가 유지되어도 특정 class가 사라지는 `per_class_detection_drift`, fixed-bin score histogram / mean score / std score / saturation delta를 baseline과 비교하는 `calibration_drift`, saved baseline profile의 sample count와 histogram/class coverage를 기록하는 `profile_stability` audit metadata가 포함됩니다. 다음 후보 detector는 deterministic evidence 기반 roadmap입니다: sequence-level detection disappearance hardening.
+구현된 detector hardening에는 candidate zero-detection collapse를 잡는 `detection_disappearance`, 반복 zero-detection frame streak를 잡는 `sequence_disappearance`, 총 detection 수가 유지되어도 특정 class가 사라지는 `per_class_detection_drift`, fixed-bin score histogram / mean score / std score / saturation delta를 baseline과 비교하는 `calibration_drift`, saved baseline profile의 sample count와 histogram/class coverage를 기록하는 `profile_stability` audit metadata가 포함됩니다.
 `calibration_drift`가 포함됩니다. `profile_stability` audit metadata는 Lab deployment decision이 아니라 saved baseline profile 검토용 metadata입니다.
 
 전체 detector별 threshold, expected verdict, report field는 [Detector Validation Matrix](docs/detector_validation_matrix.ko.md)에 정리되어 있습니다. 대표/canonical 문서는 [English matrix](docs/detector_validation_matrix.md)입니다.

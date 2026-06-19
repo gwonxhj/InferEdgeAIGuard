@@ -2378,6 +2378,7 @@ def test_temporal_consistency_passes_for_stable_sequence():
     validate_guard_analysis(report)
     assert report["guard_verdict"] == "pass"
     assert report["candidate_summary"]["temporal"]["frame_count"] == 4
+    assert report["candidate_summary"]["temporal"]["max_zero_detection_streak"] == 0
     assert all(item["status"] == "passed" for item in report["evidence"])
 
 
@@ -2420,6 +2421,47 @@ def test_temporal_consistency_detects_count_variance_review():
     assert count_item["status"] == "warning"
 
 
+def test_temporal_consistency_reviews_sequence_disappearance_streak():
+    sequence = {
+        "sequence_id": "short-dropout-streak",
+        "frames": [
+            {"frame_id": "0", "detections": [{"class_id": 0, "bbox": [0, 0, 10, 10]}]},
+            {"frame_id": "1", "detections": []},
+            {"frame_id": "2", "detections": []},
+            {"frame_id": "3", "detections": [{"class_id": 0, "bbox": [1, 1, 10, 10]}]},
+        ],
+    }
+
+    metrics = compute_temporal_consistency_metrics(sequence)
+    report = analyze_temporal_consistency(
+        sequence,
+        thresholds={"zero_detection_frame_ratio_blocked": 1.0},
+    )
+
+    validate_guard_analysis(report)
+    assert metrics["max_zero_detection_streak"] == 2
+    assert metrics["first_zero_detection_frame_id"] == "1"
+    assert metrics["zero_detection_streaks"] == [
+        {
+            "start_index": 1,
+            "end_index": 2,
+            "length": 2,
+            "start_frame_id": "1",
+            "end_frame_id": "2",
+        }
+    ]
+    assert report["guard_verdict"] == "review_required"
+    disappearance_item = next(
+        item
+        for item in report["evidence"]
+        if item["type"] == "sequence_disappearance"
+    )
+    assert disappearance_item["metric_name"] == "max_zero_detection_streak"
+    assert disappearance_item["observed_value"] == 2
+    assert disappearance_item["status"] == "warning"
+    assert "first_zero_detection_frame_id" in disappearance_item["recommendation"]
+
+
 def test_temporal_consistency_blocks_zero_detection_frames():
     sequence = {
         "sequence_id": "dropout",
@@ -2442,6 +2484,43 @@ def test_temporal_consistency_blocks_zero_detection_frames():
     )
     assert zero_item["observed_value"] == 0.5
     assert zero_item["status"] == "failed"
+    disappearance_item = next(
+        item
+        for item in report["evidence"]
+        if item["type"] == "sequence_disappearance"
+    )
+    assert disappearance_item["observed_value"] == 2
+    assert disappearance_item["status"] == "warning"
+
+
+def test_temporal_consistency_blocks_long_sequence_disappearance_streak():
+    sequence = {
+        "sequence_id": "long-dropout-streak",
+        "frames": [
+            {"frame_id": "0", "detections": [{"class_id": 0, "bbox": [0, 0, 10, 10]}]},
+            {"frame_id": "1", "detections": []},
+            {"frame_id": "2", "detections": []},
+            {"frame_id": "3", "detections": []},
+            {"frame_id": "4", "detections": [{"class_id": 0, "bbox": [1, 1, 10, 10]}]},
+        ],
+    }
+
+    report = analyze_temporal_consistency(
+        sequence,
+        thresholds={"zero_detection_frame_ratio_blocked": 1.0},
+    )
+
+    validate_guard_analysis(report)
+    assert report["guard_verdict"] == "blocked"
+    disappearance_item = next(
+        item
+        for item in report["evidence"]
+        if item["type"] == "sequence_disappearance"
+    )
+    assert disappearance_item["observed_value"] == 3
+    assert disappearance_item["threshold"] == 3
+    assert disappearance_item["status"] == "failed"
+    assert report["candidate_summary"]["temporal"]["first_zero_detection_frame_id"] == "1"
 
 
 def test_temporal_consistency_detects_center_jump_and_class_flip():
