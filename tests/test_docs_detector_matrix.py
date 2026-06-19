@@ -16,6 +16,7 @@ def test_readme_exposes_detector_verdict_matrix():
     assert "InferEdgeLab remains the final" in readme
     assert "detection disappearance" in readme
     assert "sequence_disappearance" in readme
+    assert "temporal profile continuity/blocked" in readme
     assert "calibration drift" in readme
     assert "Baseline profile stability metadata" in readme
 

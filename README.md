@@ -63,7 +63,7 @@ Implemented today:
 - initial temporal consistency evidence for detection count variance, bbox center movement, class flip rate, and track-free temporal instability signals
 - runtime reliability evidence from Orchestrator `orchestration_summary` files: deadline miss, drop/fallback, queue backlog, queue pressure reasons, worker operation risk summaries, device-local producer/event coverage, sustained workload profile pressure, local profile adapter signals, and optional tegrastats thermal/resource signals
 - remote dispatch starter evidence from Orchestrator `inferedge-remote-dispatch-result-v1` files: worker selection, explicit HTTP/SSH starter status, bounded fallback recovery, compact runtime event summaries, and `operation_boundary=remote dispatch starter evidence only`
-- portfolio demo diagnosis bundle covering normal/pass, bbox collapse/blocked, score saturation/blocked, temporal instability/review_required, and provenance mismatch cases
+- portfolio demo diagnosis bundle covering normal/pass, bbox collapse/blocked, score saturation/blocked, temporal instability/review_required, and temporal profile continuity/blocked cases
 - artifact and source model provenance mismatch detection
 - Forge summary vs Runtime worker_response provenance mismatch coverage
 - `guard_analysis` schema compatibility with Lab deployment decision handoff
