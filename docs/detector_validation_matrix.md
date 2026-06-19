@@ -33,6 +33,7 @@ not the final Lab deployment policy.
 | bbox collapse | `bbox_collapse_ratio` | `<= 0.05` | `> 0.05` or baseline factor `> 5x` | severe collapse or baseline factor `> 10x` | `evidence[].observed_value` |
 | confidence score range | `score_range_violation_count` | `0` | n/a | `> 0` | `evidence[].severity` |
 | confidence saturation | `saturation_ratio` | `< 0.70` | `>= 0.70` | `>= 0.85` with quality drift | `evidence[].observed_value` |
+| calibration drift | `histogram_distance`, `mean_score_delta`, `std_score_delta`, `saturation_delta` | stable score distribution | bounded score-distribution shift | blocked only through existing score range or saturation evidence | `candidate_summary.comparison.calibration_drift` |
 | detection disappearance | `detection_count_drop_pct`, `detection_disappearance_flag`, `zero_detection_frame_ratio` | stable count | drop `>= 50%` | drop `>= 80%`, candidate zero detections, or zero-frame ratio `> 0.30` | `candidate_summary.comparison`, `candidate_summary.temporal` |
 | per-class detection drift | `per_class_detection_drop_pct`, dropped class IDs | stable class counts | one baseline class drops `>= 50%` | one baseline class drops `100%` | `candidate_summary.comparison.per_class_detection_drift` |
 | baseline deviation | invalid/collapse/saturation factor | near baseline | factor `> 5x` | factor `> 10x` | `evidence[].increase_factor` |
@@ -49,6 +50,7 @@ not the final Lab deployment policy.
 | bbox collapse | `bbox_collapse_ratio` | review `0.05`, high `0.10` | `pass` | `review_required` / `blocked` | `evidence[].type`, `evidence[].observed_value` |
 | score range | `score_range_violation_count` | `> 0` | `pass` | `blocked` | `evidence[].metric_name`, `evidence[].severity` |
 | score distribution | `saturation_ratio` | review `0.70`, high `0.85` | `pass` | `review_required` / `blocked` | `evidence[].observed_value` |
+| calibration drift | `calibration_drift_trigger_count` | histogram `0.30`, mean `0.20`, std floor `0.05`, std delta `0.20`, saturation delta `0.30` | `pass` | `review_required` | `evidence[].type=calibration_drift`, `candidate_summary.comparison.calibration_drift` |
 | detection count drift | `detection_count_drop_pct` | review `0.50`, blocked `0.80` | `pass` | `review_required` / `blocked` | `evidence[].delta_pct`, `candidate_summary.comparison` |
 | detection disappearance | `detection_disappearance_flag` | blocked `1.0` | `pass` | `blocked` | `evidence[].type=detection_disappearance`, `candidate_summary.comparison` |
 | per-class detection drift | `per_class_detection_drop_pct` | review `0.50`, blocked `1.0` | `pass` | `review_required` / `blocked` | `evidence[].type=per_class_detection_drift`, `candidate_summary.comparison.per_class_detection_drift` |
@@ -80,15 +82,13 @@ root-cause inference.
 | Candidate | Purpose | Suggested evidence | Expected use |
 |---|---|---|---|
 | detection disappearance hardening | extend the implemented zero-candidate evidence into sequence-level summaries | zero-detection frame streak, zero-frame ratio, first missing frame | review/block depending on repeated disappearance |
-| calibration drift | detect score distribution shift against a known-good baseline | score histogram delta, mean/std shift, saturation delta | review when confidence scale changes without accuracy explanation |
 | baseline profile stability | document whether a baseline itself is stable enough to trust | baseline variance, repeated-run p95, profile sample count | warn when comparison baseline is too noisy |
 
-## Calibration Drift Policy Candidate
+## Calibration Drift Evidence Policy
 
-Calibration drift is intentionally kept as a candidate until the evidence policy
-is implemented and fixture-gated. It should compare a candidate score
-distribution against a known-good baseline profile, not infer root cause from a
-single output.
+Calibration drift is implemented as additive baseline-comparison evidence. It
+compares a candidate score distribution against a known-good baseline profile
+or direct baseline output. It does not infer root cause from a single output.
 
 | Policy item | Deterministic evidence | Review trigger | Boundary |
 |---|---|---|---|
@@ -97,13 +97,14 @@ single output.
 | spread collapse or expansion | `std_score_delta` and candidate `std_score` | score std drops below `0.05` or changes by `>= 0.20` | not model-wide calibration certification |
 | saturation drift | candidate saturation ratio minus baseline saturation ratio | saturation delta `>= 0.30` or candidate saturation ratio crosses implemented saturation thresholds | reuse confidence saturation evidence when it already blocks |
 
-Expected implementation shape:
+Implementation shape:
 
-- Additive `evidence[].type=calibration_drift`; do not change the diagnosis report schema.
+- Additive `evidence[].type=calibration_drift`; it does not change the diagnosis report schema.
 - Preserve `baseline_summary.score`, `candidate_summary.score`, histogram bin
   policy, thresholds, and raw metric deltas.
-- Emit `review_required` unless the same evidence also triggers an existing
-  blocking detector such as score range violation or confidence saturation.
+- Emit `review_required` for calibration drift unless the same output also
+  triggers an existing blocking detector such as score range violation or
+  confidence saturation.
 - Keep `suspected_causes` as review candidates, not automatic root-cause proof.
 - Do not make AIGuard a Lab `deployment_decision` owner.
 

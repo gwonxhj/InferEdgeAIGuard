@@ -548,14 +548,14 @@ latency, accuracy, contract, and runtime evidence before producing the final
 Implemented detector hardening now includes explicit baseline-vs-candidate
 `detection_disappearance` evidence for candidate zero-detection collapse and
 `per_class_detection_drift` evidence for class-specific disappearance even when
-total detection count stays stable. Remaining planned extensions are still
-deterministic: calibration drift for score distributions and baseline profile
+total detection count stays stable. Calibration drift (`calibration_drift`) is
+now implemented as additive baseline-comparison evidence for fixed-bin score
+histogram, mean score, std score, and saturation deltas. Remaining planned extensions are still
+deterministic: sequence-level disappearance hardening and baseline profile
 stability. These are documented as roadmap items, not as automatic root-cause
 proof.
-The calibration drift policy candidate is now bounded in the detector matrix:
-it should compare fixed-bin score histogram, mean score, std score, and
-saturation deltas against a known-good baseline profile before any future
-implementation.
+This calibration drift evidence remains a review signal, not a Lab deployment
+decision.
 
 The full matrix is maintained in [docs/detector_validation_matrix.md](docs/detector_validation_matrix.md) ([한국어: detector validation matrix quick guide](docs/detector_validation_matrix.ko.md)).
 

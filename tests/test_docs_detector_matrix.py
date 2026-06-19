@@ -67,14 +67,15 @@ def test_detector_matrix_documents_current_and_next_detectors():
     assert "not LLM" in matrix
 
 
-def test_detector_matrix_bounds_calibration_drift_policy_candidate():
+def test_detector_matrix_bounds_calibration_drift_evidence_policy():
     readme = _read("README.md")
     readme_ko = _read("README.ko.md")
     matrix = _read("docs/detector_validation_matrix.md")
     matrix_ko = _read("docs/detector_validation_matrix.ko.md")
 
     for required in [
-        "## Calibration Drift Policy Candidate",
+        "## Calibration Drift Evidence Policy",
+        "implemented as additive baseline-comparison evidence",
         "known-good baseline profile",
         "fixed-bin score histogram distance",
         "histogram distance `>= 0.30`",
@@ -84,14 +85,15 @@ def test_detector_matrix_bounds_calibration_drift_policy_candidate():
         "score std drops below `0.05`",
         "saturation delta `>= 0.30`",
         "evidence[].type=calibration_drift",
-        "do not change the diagnosis report schema",
+        "does not change the diagnosis report schema",
         "not automatic root-cause proof",
         "Do not make AIGuard a Lab `deployment_decision` owner.",
     ]:
         assert required in matrix
 
     for required in [
-        "Calibration drift 후보 policy",
+        "Calibration drift evidence policy",
+        "additive baseline-comparison evidence",
         "known-good baseline profile",
         "histogram distance `>= 0.30`",
         "absolute mean score delta `>= 0.20`",
@@ -103,8 +105,8 @@ def test_detector_matrix_bounds_calibration_drift_policy_candidate():
     ]:
         assert required in matrix_ko
 
-    assert "calibration drift policy candidate is now bounded" in readme
-    assert "Calibration drift 후보 policy" in readme_ko
+    assert "Calibration drift (`calibration_drift`) is" in readme
+    assert "`calibration_drift`가 포함됩니다" in readme_ko
 
 
 def test_detector_matrix_has_korean_quick_guide_and_boundaries():
