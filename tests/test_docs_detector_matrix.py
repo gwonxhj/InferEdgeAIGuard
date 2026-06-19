@@ -15,6 +15,7 @@ def test_readme_exposes_detector_verdict_matrix():
     assert "AIGuard detectors are deterministic evidence providers" in readme
     assert "InferEdgeLab remains the final" in readme
     assert "detection disappearance" in readme
+    assert "sequence_disappearance" in readme
     assert "calibration drift" in readme
     assert "Baseline profile stability metadata" in readme
 
@@ -55,6 +56,8 @@ def test_detector_matrix_documents_current_and_next_detectors():
         "bbox collapse",
         "confidence saturation",
         "detection disappearance",
+        "sequence disappearance",
+        "max_zero_detection_streak",
         "baseline deviation",
         "temporal consistency",
         "provenance consistency",
@@ -67,6 +70,39 @@ def test_detector_matrix_documents_current_and_next_detectors():
 
     assert "not the final Lab deployment policy" in matrix
     assert "not LLM" in matrix
+
+
+def test_detector_matrix_documents_sequence_disappearance_evidence():
+    readme = _read("README.md")
+    readme_ko = _read("README.ko.md")
+    matrix = _read("docs/detector_validation_matrix.md")
+    matrix_ko = _read("docs/detector_validation_matrix.ko.md")
+
+    for required in [
+        "## Sequence Disappearance Evidence",
+        "Sequence-level disappearance is implemented as additive temporal evidence",
+        "`max_zero_detection_streak`",
+        "review `>= 2`, blocked `>= 3`",
+        "`first_zero_detection_frame_id`",
+        "`first_zero_detection_frame_index`",
+        "`zero_detection_streaks[]`",
+        "not a Lab deployment decision",
+        "evidence[].type=sequence_disappearance",
+    ]:
+        assert required in matrix
+
+    for required in [
+        "Sequence disappearance evidence",
+        "`max_zero_detection_streak`",
+        "review `>= 2`, blocked `>= 3`",
+        "`first_zero_detection_frame_id`",
+        "`zero_detection_streaks[]`",
+        "Lab deployment decision이 아님",
+    ]:
+        assert required in matrix_ko
+
+    assert "`sequence_disappearance` evidence" in readme
+    assert "`sequence_disappearance`" in readme_ko
 
 
 def test_detector_matrix_bounds_calibration_drift_evidence_policy():

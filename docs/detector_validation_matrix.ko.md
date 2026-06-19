@@ -41,13 +41,25 @@ Runtime / Lab / EdgeEnv / Orchestrator evidence
 | bbox collapse | `bbox_collapse_ratio` | baseline 대비 collapse 증가 시 review/block |
 | confidence saturation | `saturation_ratio` | confidence가 극단값에 몰리면 review/block |
 | calibration drift | `histogram_distance`, `mean_score_delta`, `std_score_delta`, `saturation_delta` | baseline 대비 score distribution shift가 있으면 review |
-| detection disappearance | `detection_count_drop_pct`, `detection_disappearance_flag`, `zero_detection_frame_ratio` | candidate zero detection이나 반복 disappearance가 있으면 review/block |
+| detection disappearance | `detection_count_drop_pct`, `detection_disappearance_flag`, `zero_detection_frame_ratio`, `max_zero_detection_streak` | candidate zero detection이나 반복 disappearance streak가 있으면 review/block |
 | per-class detection drift | `per_class_detection_drop_pct`, dropped class IDs | 총 detection 수가 유지되어도 특정 class가 사라지면 review/block |
 | baseline deviation | invalid/collapse/saturation factor | baseline 대비 급격한 변화 시 review/block |
-| temporal consistency | count CV, bbox jump, class flip | frame 간 instability가 크면 review |
+| temporal consistency | count CV, bbox jump, class flip, disappearance streak | frame 간 instability나 zero-frame streak가 크면 review/block |
 | provenance consistency | source/artifact/backend/precision identity | identity mismatch 시 warning/error |
 | EdgeEnv runtime regression | p99/mean/FPS/memory delta | comparability-first regression evidence만 해석 |
 | remote dispatch starter | worker selection, starter/fallback status | starter evidence로만 해석 |
+
+## Sequence disappearance evidence
+
+Sequence-level disappearance은 additive temporal evidence로 구현되어 있습니다.
+tracking dependency 없이 반복 zero-detection frame streak를 기록하며,
+automatic root-cause를 주장하지 않습니다.
+
+| Policy item | Deterministic evidence | Review / block trigger | 경계 |
+|---|---|---|---|
+| repeated disappearance streak | `max_zero_detection_streak` | review `>= 2`, blocked `>= 3` | object tracking이 아님 |
+| first disappearance frame | `first_zero_detection_frame_id`, `first_zero_detection_frame_index` | reviewer navigation용으로 보존 | causal diagnosis가 아님 |
+| disappearance streak list | start/end frame ID와 length를 담은 `zero_detection_streaks[]` | 반복 zero detection 구간 보존 | Lab deployment decision이 아님 |
 
 ## Baseline profile stability metadata
 

@@ -34,10 +34,10 @@ not the final Lab deployment policy.
 | confidence score range | `score_range_violation_count` | `0` | n/a | `> 0` | `evidence[].severity` |
 | confidence saturation | `saturation_ratio` | `< 0.70` | `>= 0.70` | `>= 0.85` with quality drift | `evidence[].observed_value` |
 | calibration drift | `histogram_distance`, `mean_score_delta`, `std_score_delta`, `saturation_delta` | stable score distribution | bounded score-distribution shift | blocked only through existing score range or saturation evidence | `candidate_summary.comparison.calibration_drift` |
-| detection disappearance | `detection_count_drop_pct`, `detection_disappearance_flag`, `zero_detection_frame_ratio` | stable count | drop `>= 50%` | drop `>= 80%`, candidate zero detections, or zero-frame ratio `> 0.30` | `candidate_summary.comparison`, `candidate_summary.temporal` |
+| detection disappearance | `detection_count_drop_pct`, `detection_disappearance_flag`, `zero_detection_frame_ratio`, `max_zero_detection_streak` | stable count | drop `>= 50%` or zero-frame streak `>= 2` | drop `>= 80%`, candidate zero detections, zero-frame ratio `> 0.30`, or zero-frame streak `>= 3` | `candidate_summary.comparison`, `candidate_summary.temporal` |
 | per-class detection drift | `per_class_detection_drop_pct`, dropped class IDs | stable class counts | one baseline class drops `>= 50%` | one baseline class drops `100%` | `candidate_summary.comparison.per_class_detection_drift` |
 | baseline deviation | invalid/collapse/saturation factor | near baseline | factor `> 5x` | factor `> 10x` | `evidence[].increase_factor` |
-| temporal consistency | count CV, bbox center jump, class flip | stable sequence | count CV `> 1.0`, class flip `> 0.30`, or center jump p95 `> 0.50` image diagonal | zero-frame ratio `> 0.30` | `candidate_summary.temporal` |
+| temporal consistency | count CV, bbox center jump, class flip, disappearance streak | stable sequence | count CV `> 1.0`, class flip `> 0.30`, center jump p95 `> 0.50` image diagonal, or zero-frame streak `>= 2` | zero-frame ratio `> 0.30` or zero-frame streak `>= 3` | `candidate_summary.temporal` |
 | provenance consistency | source/artifact/backend/target/precision identity | exact handoff match | warning mismatch | error mismatch | `guard_analysis.anomalies`, `guard_analysis.status` |
 | EdgeEnv runtime regression | p99/mean/FPS/memory deltas, telemetry coverage, preserved Orchestrator operation context | comparable report without threshold breach | same-condition regression, telemetry gap, or operation risk summary marker | high tail-latency regression | `candidate_summary.edgeenv_regression` |
 | remote dispatch starter | worker-selection, plan-only/execution status, fallback recovery, compact event-summary consistency | starter success or consistent plan-only evidence | plan-only context, failed starter, fallback recovery, or summary mismatch | n/a | `candidate_summary.remote_dispatch` |
@@ -58,6 +58,7 @@ not the final Lab deployment policy.
 | baseline deviation | `bbox_collapse_ratio_factor` | review `5x`, blocked `10x` | `pass` | `review_required` / `blocked` | `evidence[].increase_factor` |
 | baseline deviation | `score_saturation_factor` | review `5x`, blocked `10x` | `pass` | `review_required` / `blocked` | `evidence[].increase_factor` |
 | temporal consistency | `frame_to_frame_detection_count_cv` | review `1.0` | `pass` | `review_required` | `evidence[].metric_name`, `candidate_summary.temporal` |
+| sequence disappearance | `max_zero_detection_streak` | review `2`, blocked `3` | `pass` | `review_required` / `blocked` | `evidence[].type=sequence_disappearance`, `candidate_summary.temporal.zero_detection_streaks` |
 | temporal consistency | `bbox_center_jump_p95` | review `0.50` image diagonal | `pass` | `review_required` | `evidence[].observed_value` |
 | temporal consistency | `class_flip_rate` | review `0.30` | `pass` | `review_required` | `evidence[].observed_value` |
 | temporal consistency | `zero_detection_frame_ratio` | blocked `0.30` | `pass` | `blocked` | `candidate_summary.temporal` |
@@ -73,15 +74,18 @@ not the final Lab deployment policy.
 | Remote dispatch fallback recovery | `fallback_recovered` | warning when fallback recovered after primary failure | `suspicious` | `evidence[].type=remote_execution_recovered_by_fallback` |
 | Remote dispatch event summary | `remote_runtime_event_summary_consistent` | warning when compact summary does not match producer events | `suspicious` | `evidence[].type=remote_runtime_event_summary_mismatch` |
 
-## Next Candidate Detectors
+## Sequence Disappearance Evidence
 
-These items are documented roadmap candidates for the remaining development
-window. They should stay deterministic and evidence based; they are not LLM
-root-cause inference.
+Sequence-level disappearance is implemented as additive temporal evidence. It
+records repeated zero-detection frame streaks without adding a tracking
+dependency and without claiming automatic root cause. It is not LLM root-cause
+inference.
 
-| Candidate | Purpose | Suggested evidence | Expected use |
+| Policy item | Deterministic evidence | Review / block trigger | Boundary |
 |---|---|---|---|
-| detection disappearance hardening | extend the implemented zero-candidate evidence into sequence-level summaries | zero-detection frame streak, zero-frame ratio, first missing frame | review/block depending on repeated disappearance |
+| repeated disappearance streak | `max_zero_detection_streak` | review `>= 2`, blocked `>= 3` | not object tracking |
+| first disappearance frame | `first_zero_detection_frame_id`, `first_zero_detection_frame_index` | preserved for reviewer navigation | not a causal diagnosis |
+| disappearance streak list | `zero_detection_streaks[]` with start/end frame IDs and length | preserves where repeated zero detections occurred | not a Lab deployment decision |
 
 ## Baseline Profile Stability Metadata
 
