@@ -13,6 +13,7 @@ from inferedge_aiguard.baseline import (
     compare_detection_quality,
     compute_candidate_against_baseline_profile,
     compute_baseline_comparison_metrics,
+    compute_class_distribution_metrics,
 )
 from inferedge_aiguard.compare import compare_outputs
 from inferedge_aiguard.detectors import get_detector_config, summarize_failures
@@ -1981,6 +1982,7 @@ def test_phase2_builds_json_serializable_baseline_profile():
     assert profile["label"] == "fp32-baseline"
     assert profile["bbox"]["total_predictions"] == 2
     assert profile["score"]["score_range_violation_count"] == 0
+    assert profile["class_distribution"]["class_counts"] == {"0": 2}
     assert profile["latency_ms"] == 45.43
     assert profile["accuracy"] == 0.71
 
@@ -2028,6 +2030,9 @@ def test_phase2_compare_guard_analysis_uses_saved_baseline_profile():
     assert guard_analysis["baseline_summary"]["profile_schema_version"] == (
         BASELINE_PROFILE_SCHEMA_VERSION
     )
+    assert guard_analysis["baseline_summary"]["class_distribution"]["class_counts"] == {
+        "0": 2
+    }
     assert guard_analysis["source"]["baseline_profile_path"] == "profiles/fp32.json"
     assert guard_analysis["source"]["candidate_result_path"] == "results/int8.json"
     assert any(
@@ -2143,6 +2148,55 @@ def test_baseline_comparison_blocks_detection_disappearance():
         if item["type"] == "latency_quality_tradeoff"
     )
     assert tradeoff_item["status"] == "failed"
+
+
+def test_baseline_comparison_detects_per_class_drift_with_stable_total_count():
+    baseline = {
+        "model": "yolov8n",
+        "precision": "fp32",
+        "detections": [
+            {"class_id": 0, "confidence": 0.7, "bbox": [0, 0, 10, 10]},
+            {"class_id": 0, "confidence": 0.6, "bbox": [20, 20, 12, 12]},
+            {"class_id": 1, "confidence": 0.8, "bbox": [40, 40, 14, 14]},
+            {"class_id": 1, "confidence": 0.7, "bbox": [60, 60, 16, 16]},
+        ],
+    }
+    candidate = {
+        "model": "yolov8n",
+        "precision": "int8",
+        "detections": [
+            {"class_id": 0, "confidence": 0.7, "bbox": [0, 0, 10, 10]},
+            {"class_id": 0, "confidence": 0.6, "bbox": [20, 20, 12, 12]},
+            {"class_id": 0, "confidence": 0.8, "bbox": [40, 40, 14, 14]},
+            {"class_id": 0, "confidence": 0.7, "bbox": [60, 60, 16, 16]},
+        ],
+    }
+
+    metrics = compute_baseline_comparison_metrics(baseline, candidate)
+    report = compare_detection_quality(baseline, candidate)
+
+    validate_diagnosis_report(report)
+    assert compute_class_distribution_metrics(baseline)["class_counts"] == {
+        "0": 2,
+        "1": 2,
+    }
+    assert metrics["comparison"]["detection_count_drop_pct"] == 0
+    assert metrics["comparison"]["per_class_detection_drift"]["max_drop_class_id"] == "1"
+    assert metrics["comparison"]["per_class_detection_drift"]["max_drop_pct"] == 1.0
+    assert metrics["comparison"]["per_class_detection_drift"]["dropped_class_ids"] == [
+        "1"
+    ]
+    assert report["guard_verdict"] == "blocked"
+    drift_item = next(
+        item
+        for item in report["evidence"]
+        if item["type"] == "per_class_detection_drift"
+    )
+    assert drift_item["metric_name"] == "per_class_detection_drop_pct"
+    assert drift_item["observed_value"] == 1.0
+    assert drift_item["baseline_value"] == 2
+    assert drift_item["status"] == "failed"
+    assert "Class 1" in drift_item["explanation"]
 
 
 def test_baseline_comparison_explains_latency_quality_tradeoff():
