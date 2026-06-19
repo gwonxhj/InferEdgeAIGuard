@@ -82,7 +82,28 @@ root-cause inference.
 | Candidate | Purpose | Suggested evidence | Expected use |
 |---|---|---|---|
 | detection disappearance hardening | extend the implemented zero-candidate evidence into sequence-level summaries | zero-detection frame streak, zero-frame ratio, first missing frame | review/block depending on repeated disappearance |
-| baseline profile stability | document whether a baseline itself is stable enough to trust | baseline variance, repeated-run p95, profile sample count | warn when comparison baseline is too noisy |
+
+## Baseline Profile Stability Metadata
+
+Saved baseline profiles include additive `profile_stability` audit metadata. It
+records whether the baseline profile has enough sample and coverage context to
+trust later baseline-comparison evidence such as calibration drift. This is not
+a Lab deployment decision and does not change the diagnosis report schema.
+This baseline profile stability layer is audit metadata, not automatic
+root-cause proof.
+
+| Field | Meaning | Boundary |
+|---|---|---|
+| `profile_stability.sample_count` | number of samples represented by the saved baseline profile | defaults to `1` for single-output profiles |
+| `profile_stability.min_sample_count_review` | configured minimum sample count for review policy | default is `1`; stricter review workflows can raise it |
+| `profile_stability.score_histogram_total_scores` | confidence scores represented by the saved score histogram | used to audit calibration drift coverage |
+| `profile_stability.class_distribution_total_predictions` | detections represented by class-count metadata | used to audit per-class drift coverage |
+| `profile_stability.compatibility_status` | whether the metadata came from a current profile or was backfilled for a legacy profile | legacy backfill is audit metadata, not a schema break |
+
+If a saved profile is missing stability metadata, AIGuard backfills
+`compatibility_status=legacy_profile_missing_profile_stability` in the
+baseline summary so reviewers can see that the profile predates this audit
+metadata.
 
 ## Calibration Drift Evidence Policy
 

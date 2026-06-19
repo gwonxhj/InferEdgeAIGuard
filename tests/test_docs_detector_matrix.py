@@ -16,6 +16,7 @@ def test_readme_exposes_detector_verdict_matrix():
     assert "InferEdgeLab remains the final" in readme
     assert "detection disappearance" in readme
     assert "calibration drift" in readme
+    assert "Baseline profile stability metadata" in readme
 
 
 def test_readmes_expose_optional_aiguard_role_boundaries():
@@ -60,6 +61,7 @@ def test_detector_matrix_documents_current_and_next_detectors():
         "per-class detection drift",
         "calibration drift",
         "baseline profile stability",
+        "profile_stability",
     ]:
         assert required in matrix
 
@@ -107,6 +109,39 @@ def test_detector_matrix_bounds_calibration_drift_evidence_policy():
 
     assert "Calibration drift (`calibration_drift`) is" in readme
     assert "`calibration_drift`가 포함됩니다" in readme_ko
+
+
+def test_detector_matrix_documents_baseline_profile_stability_metadata():
+    readme = _read("README.md")
+    readme_ko = _read("README.ko.md")
+    matrix = _read("docs/detector_validation_matrix.md")
+    matrix_ko = _read("docs/detector_validation_matrix.ko.md")
+
+    for required in [
+        "## Baseline Profile Stability Metadata",
+        "Saved baseline profiles include additive `profile_stability`",
+        "`profile_stability.sample_count`",
+        "`profile_stability.min_sample_count_review`",
+        "`profile_stability.score_histogram_total_scores`",
+        "`profile_stability.class_distribution_total_predictions`",
+        "`profile_stability.compatibility_status`",
+        "legacy_profile_missing_profile_stability",
+        "does not change the diagnosis report schema",
+    ]:
+        assert required in matrix
+
+    for required in [
+        "Baseline profile stability metadata",
+        "`profile_stability` audit metadata",
+        "`profile_stability.sample_count`",
+        "`profile_stability.compatibility_status`",
+        "legacy_profile_missing_profile_stability",
+        "schema는 변경하지 않습니다",
+    ]:
+        assert required in matrix_ko
+
+    assert "Baseline profile stability metadata (`profile_stability`)" in readme
+    assert "`profile_stability` audit metadata" in readme_ko
 
 
 def test_detector_matrix_has_korean_quick_guide_and_boundaries():
