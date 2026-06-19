@@ -286,10 +286,7 @@ AIGuard detector는 deterministic evidence provider입니다. `guard_verdict`는
 | provenance consistency | source/artifact/backend identity | exact handoff match | warning mismatch | error mismatch |
 | runtime reliability | deadline miss, drop/fallback, queue backlog | stable scheduling | deadline/drop/fallback threshold 초과 | excessive drop/fallback 또는 repeated deadline miss |
 
-구현된 detector hardening에는 candidate zero-detection collapse를 잡는 `detection_disappearance`와, 총 detection 수가 유지되어도 특정 class가 사라지는 `per_class_detection_drift`가 포함됩니다. 다음 후보 detector는 deterministic evidence 기반 roadmap입니다: detection disappearance hardening, calibration drift, baseline profile stability.
-Calibration drift 후보 policy는 detector matrix에서 fixed-bin score histogram,
-mean score, std score, saturation delta를 known-good baseline profile과 비교하는
-방식으로만 다루도록 경계를 고정했습니다.
+구현된 detector hardening에는 candidate zero-detection collapse를 잡는 `detection_disappearance`, 총 detection 수가 유지되어도 특정 class가 사라지는 `per_class_detection_drift`, fixed-bin score histogram / mean score / std score / saturation delta를 baseline과 비교하는 `calibration_drift`가 포함됩니다. 다음 후보 detector는 deterministic evidence 기반 roadmap입니다: detection disappearance hardening, baseline profile stability.
 
 전체 detector별 threshold, expected verdict, report field는 [Detector Validation Matrix](docs/detector_validation_matrix.ko.md)에 정리되어 있습니다. 대표/canonical 문서는 [English matrix](docs/detector_validation_matrix.md)입니다.
 Orchestrator summary 기반 runtime reliability mapping은 [docs/runtime_reliability_signals.ko.md](docs/runtime_reliability_signals.ko.md)에 정리되어 있습니다.

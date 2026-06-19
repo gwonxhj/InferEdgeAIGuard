@@ -14,6 +14,7 @@ from inferedge_aiguard.baseline import (
     compute_candidate_against_baseline_profile,
     compute_baseline_comparison_metrics,
     compute_class_distribution_metrics,
+    compute_score_histogram_metrics,
 )
 from inferedge_aiguard.compare import compare_outputs
 from inferedge_aiguard.detectors import get_detector_config, summarize_failures
@@ -1982,6 +1983,7 @@ def test_phase2_builds_json_serializable_baseline_profile():
     assert profile["label"] == "fp32-baseline"
     assert profile["bbox"]["total_predictions"] == 2
     assert profile["score"]["score_range_violation_count"] == 0
+    assert profile["score"]["score_histogram"]["total_scores"] == 2
     assert profile["class_distribution"]["class_counts"] == {"0": 2}
     assert profile["latency_ms"] == 45.43
     assert profile["accuracy"] == 0.71
@@ -2197,6 +2199,51 @@ def test_baseline_comparison_detects_per_class_drift_with_stable_total_count():
     assert drift_item["baseline_value"] == 2
     assert drift_item["status"] == "failed"
     assert "Class 1" in drift_item["explanation"]
+
+
+def test_baseline_comparison_detects_calibration_drift_without_count_change():
+    baseline = {
+        "model": "yolov8n",
+        "precision": "fp32",
+        "detections": [
+            {"class_id": 0, "confidence": 0.10, "bbox": [0, 0, 10, 10]},
+            {"class_id": 0, "confidence": 0.30, "bbox": [20, 20, 12, 12]},
+            {"class_id": 0, "confidence": 0.50, "bbox": [40, 40, 14, 14]},
+            {"class_id": 0, "confidence": 0.70, "bbox": [60, 60, 16, 16]},
+            {"class_id": 0, "confidence": 0.90, "bbox": [80, 80, 18, 18]},
+        ],
+    }
+    candidate = {
+        "model": "yolov8n",
+        "precision": "int8",
+        "detections": [
+            {"class_id": 0, "confidence": 0.70, "bbox": [0, 0, 10, 10]},
+            {"class_id": 0, "confidence": 0.75, "bbox": [20, 20, 12, 12]},
+            {"class_id": 0, "confidence": 0.80, "bbox": [40, 40, 14, 14]},
+            {"class_id": 0, "confidence": 0.85, "bbox": [60, 60, 16, 16]},
+            {"class_id": 0, "confidence": 0.90, "bbox": [80, 80, 18, 18]},
+        ],
+    }
+
+    metrics = compute_baseline_comparison_metrics(baseline, candidate)
+    report = compare_detection_quality(baseline, candidate)
+
+    validate_diagnosis_report(report)
+    assert compute_score_histogram_metrics(baseline)["total_scores"] == 5
+    assert metrics["comparison"]["detection_count_drop_pct"] == 0
+    calibration = metrics["comparison"]["calibration_drift"]
+    assert calibration["histogram_distance"] >= 0.30
+    assert calibration["mean_score_delta"] >= 0.20
+    assert "histogram_shift" in calibration["triggered_policy_items"]
+    assert "mean_score_shift" in calibration["triggered_policy_items"]
+    assert report["guard_verdict"] == "review_required"
+    calibration_item = next(
+        item for item in report["evidence"] if item["type"] == "calibration_drift"
+    )
+    assert calibration_item["metric_name"] == "calibration_drift_trigger_count"
+    assert calibration_item["severity"] == "medium"
+    assert calibration_item["status"] == "failed"
+    assert "known-good baseline" in calibration_item["recommendation"]
 
 
 def test_baseline_comparison_explains_latency_quality_tradeoff():

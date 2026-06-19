@@ -34,7 +34,14 @@ DEFAULT_BASELINE_THRESHOLDS = {
     "per_class_detection_drop_pct_review": 0.50,
     "per_class_detection_drop_pct_blocked": 1.0,
     "per_class_drift_min_baseline_count": 1.0,
+    "calibration_histogram_distance_review": 0.30,
+    "calibration_mean_score_delta_review": 0.20,
+    "calibration_std_score_delta_review": 0.20,
+    "calibration_std_score_floor_review": 0.05,
+    "calibration_saturation_delta_review": 0.30,
 }
+
+SCORE_HISTOGRAM_BINS = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
 
 
 def build_baseline_profile(
@@ -62,10 +69,7 @@ def build_baseline_profile(
         image_width=image_width,
         image_height=image_height,
     )
-    score_metrics = compute_score_distribution_metrics(
-        baseline_output,
-        thresholds=policy,
-    )
+    score_metrics = _score_metrics_with_histogram(baseline_output, policy)
     class_distribution = compute_class_distribution_metrics(baseline_output)
     return {
         "schema_version": BASELINE_PROFILE_SCHEMA_VERSION,
@@ -227,6 +231,44 @@ def compute_class_distribution_metrics(output: dict[str, Any]) -> dict[str, Any]
     }
 
 
+def compute_score_histogram_metrics(
+    output: dict[str, Any],
+    *,
+    bins: list[float] | None = None,
+) -> dict[str, Any]:
+    """Compute a fixed-bin score histogram for calibration drift evidence."""
+
+    histogram_bins = list(bins or SCORE_HISTOGRAM_BINS)
+    if len(histogram_bins) < 2:
+        raise ValueError("score histogram bins must contain at least two edges")
+    if histogram_bins != sorted(histogram_bins):
+        raise ValueError("score histogram bins must be sorted")
+
+    counts = [0 for _ in range(len(histogram_bins) - 1)]
+    for detection in _detections(output):
+        value = detection.get("confidence") if isinstance(detection, dict) else None
+        if not isinstance(value, (int, float)) or isinstance(value, bool):
+            continue
+        score = float(value)
+        if score < histogram_bins[0] or score > histogram_bins[-1]:
+            continue
+        for index in range(len(histogram_bins) - 1):
+            lower = histogram_bins[index]
+            upper = histogram_bins[index + 1]
+            is_last = index == len(histogram_bins) - 2
+            if lower <= score < upper or (is_last and score == upper):
+                counts[index] += 1
+                break
+
+    total = sum(counts)
+    return {
+        "bins": histogram_bins,
+        "counts": counts,
+        "ratios": [_ratio_float(count, total) for count in counts],
+        "total_scores": total,
+    }
+
+
 def _build_comparison_report(
     *,
     metrics: dict[str, Any],
@@ -305,6 +347,7 @@ def _build_comparison_report(
         _detection_count_drift_evidence(metrics, policy),
         _detection_disappearance_evidence(metrics, policy),
         _per_class_detection_drift_evidence(metrics, policy),
+        _calibration_drift_evidence(metrics, policy),
     ]
 
     latency_item = _latency_quality_tradeoff_evidence(metrics, evidence)
@@ -347,14 +390,8 @@ def compute_baseline_comparison_metrics(
         image_width=image_width,
         image_height=image_height,
     )
-    baseline_score = compute_score_distribution_metrics(
-        baseline_output,
-        thresholds=policy,
-    )
-    candidate_score = compute_score_distribution_metrics(
-        candidate_output,
-        thresholds=policy,
-    )
+    baseline_score = _score_metrics_with_histogram(baseline_output, policy)
+    candidate_score = _score_metrics_with_histogram(candidate_output, policy)
     baseline_class_distribution = compute_class_distribution_metrics(baseline_output)
     candidate_class_distribution = compute_class_distribution_metrics(candidate_output)
 
@@ -394,6 +431,11 @@ def compute_baseline_comparison_metrics(
         "per_class_detection_drift": _per_class_detection_drift_metrics(
             baseline_class_distribution=baseline_class_distribution,
             candidate_class_distribution=candidate_class_distribution,
+            thresholds=policy,
+        ),
+        "calibration_drift": _calibration_drift_metrics(
+            baseline_score=baseline_score,
+            candidate_score=candidate_score,
             thresholds=policy,
         ),
     }
@@ -443,10 +485,8 @@ def compute_candidate_against_baseline_profile(
         image_width=image_width,
         image_height=image_height,
     )
-    candidate_score = compute_score_distribution_metrics(
-        candidate_output,
-        thresholds=policy,
-    )
+    baseline_score = _ensure_score_histogram(baseline_score)
+    candidate_score = _score_metrics_with_histogram(candidate_output, policy)
     candidate_class_distribution = compute_class_distribution_metrics(candidate_output)
     comparison = _comparison_metrics(
         baseline_bbox=baseline_bbox,
@@ -529,6 +569,11 @@ def _comparison_metrics(
         "per_class_detection_drift": _per_class_detection_drift_metrics(
             baseline_class_distribution=baseline_class_distribution,
             candidate_class_distribution=candidate_class_distribution,
+            thresholds=thresholds,
+        ),
+        "calibration_drift": _calibration_drift_metrics(
+            baseline_score=baseline_score,
+            candidate_score=candidate_score,
             thresholds=thresholds,
         ),
     }
@@ -718,6 +763,51 @@ def _per_class_detection_drift_evidence(
     )
 
 
+def _calibration_drift_evidence(
+    metrics: dict[str, Any],
+    thresholds: dict[str, float],
+) -> dict[str, Any]:
+    comparison = metrics["comparison"]["calibration_drift"]
+    trigger_count = len(comparison["triggered_policy_items"])
+    status = "failed" if trigger_count else "passed"
+    severity = "medium" if trigger_count else "low"
+    return build_evidence_item(
+        evidence_type="calibration_drift",
+        metric_name="calibration_drift_trigger_count",
+        observed_value=trigger_count,
+        baseline_value=None,
+        threshold=1,
+        delta=None,
+        delta_pct=None,
+        severity=severity,
+        status=status,
+        explanation=(
+            "Candidate score distribution drift triggered calibration review "
+            f"items: {', '.join(comparison['triggered_policy_items'])}."
+            if status != "passed"
+            else "Calibration drift metrics are within threshold."
+        ),
+        why_it_matters=(
+            "Score distribution shifts can change threshold behavior even when "
+            "bbox geometry and detection count remain stable."
+        ),
+        suspected_causes=[
+            "Quantization calibration shift",
+            "Score decoder or sigmoid mismatch",
+            "Confidence threshold mismatch",
+        ]
+        if status != "passed"
+        else [],
+        recommendation=(
+            "Review score histogram, mean/std score deltas, and saturation delta "
+            "against the known-good baseline before deployment."
+            if status != "passed"
+            else "Calibration drift is within the bounded policy thresholds."
+        ),
+        raw_context=comparison,
+    )
+
+
 def _latency_quality_tradeoff_evidence(
     metrics: dict[str, Any],
     evidence: list[dict[str, Any]],
@@ -890,6 +980,105 @@ def _per_class_detection_drift_metrics(
     }
 
 
+def _calibration_drift_metrics(
+    *,
+    baseline_score: dict[str, Any],
+    candidate_score: dict[str, Any],
+    thresholds: dict[str, float],
+) -> dict[str, Any]:
+    histogram_distance = _score_histogram_distance(
+        baseline_score.get("score_histogram"),
+        candidate_score.get("score_histogram"),
+    )
+    mean_delta = _optional_delta(
+        candidate_score.get("mean_score"),
+        baseline_score.get("mean_score"),
+    )
+    std_delta = _optional_delta(
+        candidate_score.get("std_score"),
+        baseline_score.get("std_score"),
+    )
+    saturation_delta = _optional_delta(
+        candidate_score.get("saturation_ratio"),
+        baseline_score.get("saturation_ratio"),
+    )
+    triggered = []
+    if histogram_distance >= thresholds["calibration_histogram_distance_review"]:
+        triggered.append("histogram_shift")
+    if mean_delta is not None and abs(mean_delta) >= thresholds["calibration_mean_score_delta_review"]:
+        triggered.append("mean_score_shift")
+    candidate_std = candidate_score.get("std_score")
+    baseline_std = baseline_score.get("std_score")
+    if (
+        isinstance(candidate_std, (int, float))
+        and isinstance(baseline_std, (int, float))
+        and baseline_std >= thresholds["calibration_std_score_floor_review"]
+        and candidate_std < thresholds["calibration_std_score_floor_review"]
+    ) or (
+        std_delta is not None
+        and abs(std_delta) >= thresholds["calibration_std_score_delta_review"]
+    ):
+        triggered.append("spread_collapse_or_expansion")
+    if (
+        saturation_delta is not None
+        and saturation_delta >= thresholds["calibration_saturation_delta_review"]
+    ) or candidate_score.get("saturation_ratio", 0.0) >= thresholds["saturation_ratio_review"]:
+        triggered.append("saturation_drift")
+
+    return {
+        "histogram_distance": histogram_distance,
+        "mean_score_delta": mean_delta,
+        "std_score_delta": std_delta,
+        "saturation_delta": saturation_delta,
+        "triggered_policy_items": triggered,
+        "thresholds": {
+            "histogram_distance_review": thresholds["calibration_histogram_distance_review"],
+            "mean_score_delta_review": thresholds["calibration_mean_score_delta_review"],
+            "std_score_delta_review": thresholds["calibration_std_score_delta_review"],
+            "std_score_floor_review": thresholds["calibration_std_score_floor_review"],
+            "saturation_delta_review": thresholds["calibration_saturation_delta_review"],
+        },
+        "baseline_score_histogram": baseline_score.get("score_histogram", {}),
+        "candidate_score_histogram": candidate_score.get("score_histogram", {}),
+    }
+
+
+def _score_histogram_distance(
+    baseline_histogram: Any,
+    candidate_histogram: Any,
+) -> float:
+    if not isinstance(baseline_histogram, dict) or not isinstance(candidate_histogram, dict):
+        return 0.0
+    baseline_ratios = baseline_histogram.get("ratios", [])
+    candidate_ratios = candidate_histogram.get("ratios", [])
+    if not isinstance(baseline_ratios, list) or not isinstance(candidate_ratios, list):
+        return 0.0
+    if len(baseline_ratios) != len(candidate_ratios):
+        return 0.0
+    distance = sum(
+        abs(float(candidate) - float(baseline))
+        for baseline, candidate in zip(baseline_ratios, candidate_ratios)
+        if isinstance(baseline, (int, float)) and isinstance(candidate, (int, float))
+    )
+    return round(distance / 2.0, 6)
+
+
+def _score_metrics_with_histogram(
+    output: dict[str, Any],
+    thresholds: dict[str, float],
+) -> dict[str, Any]:
+    metrics = compute_score_distribution_metrics(output, thresholds=thresholds)
+    metrics["score_histogram"] = compute_score_histogram_metrics(output)
+    return metrics
+
+
+def _ensure_score_histogram(score_metrics: dict[str, Any]) -> dict[str, Any]:
+    metrics = dict(score_metrics)
+    if not isinstance(metrics.get("score_histogram"), dict):
+        metrics["score_histogram"] = {}
+    return metrics
+
+
 def _class_distribution_from_profile(profile: dict[str, Any]) -> dict[str, Any]:
     distribution = profile.get("class_distribution")
     if isinstance(distribution, dict):
@@ -926,6 +1115,11 @@ def _class_sort_key(class_id: Any) -> tuple[int, Any]:
         return (0, int(class_id))
     except (TypeError, ValueError):
         return (1, str(class_id))
+
+
+def _detections(output: dict[str, Any]) -> list[Any]:
+    detections = output.get("detections", [])
+    return detections if isinstance(detections, list) else []
 
 
 def _status_from_severity(severity: str) -> str:
