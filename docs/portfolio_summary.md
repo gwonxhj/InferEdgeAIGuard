@@ -171,6 +171,7 @@ InferEdgeAIGuard는 다음을 직접 수행하지 않습니다.
 | bbox collapse | near-zero area boxes 증가 | `blocked` | decoder/postprocess/quantization 문제 가능 |
 | score saturation | score가 0 또는 1 근처에 몰림 | `blocked` | score calibration 또는 postprocess 문제 가능 |
 | temporal instability | frame 간 detection count 변동 또는 bbox jump | `review_required` | output 안정성 검토 필요 |
+| temporal profile continuity | zero-detection streak, class flip, bbox jump가 함께 나타남 | `blocked` | tracking 없이도 반복 disappearance 구간을 검토 가능 |
 | provenance mismatch | source/artifact identity 불일치 | `blocked` / `error` | evidence가 검토 대상 artifact를 설명하지 못할 수 있음 |
 
 | Detector family | Primary evidence | Review trigger | Block trigger |

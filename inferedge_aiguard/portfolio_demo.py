@@ -30,6 +30,7 @@ def build_portfolio_demo_bundle() -> dict[str, Any]:
     - latency improvement with bbox collapse
     - confidence score saturation
     - temporal instability without tracking dependencies
+    - temporal continuity risk profile with disappearance, class flip, and jump
     """
 
     normal = _load_single("fp32_normal.json")
@@ -69,6 +70,11 @@ def build_portfolio_demo_bundle() -> dict[str, Any]:
         thresholds={"zero_detection_frame_ratio_blocked": 1.0},
         source={"sequence_path": "examples/portfolio_demo/temporal_instability"},
     )
+    temporal_continuity_report = analyze_temporal_consistency(
+        _temporal_profile_continuity_sequence(),
+        thresholds={"zero_detection_frame_ratio_blocked": 1.0},
+        source={"sequence_path": "examples/portfolio_demo/temporal_profile_continuity"},
+    )
 
     cases = [
         _case(
@@ -107,6 +113,16 @@ def build_portfolio_demo_bundle() -> dict[str, Any]:
                 "review before deployment."
             ),
             report=temporal_report,
+        ),
+        _case(
+            case_id="temporal_profile_continuity_blocked",
+            title="Temporal profile continuity risk",
+            category="temporal_consistency",
+            summary=(
+                "A repeated zero-detection streak, class flip, and bbox jump "
+                "make the sequence unsafe without a tracking dependency."
+            ),
+            report=temporal_continuity_report,
         ),
     ]
     for case in cases:
@@ -210,6 +226,38 @@ def _temporal_instability_sequence() -> dict[str, Any]:
                 ],
             },
             {"frame_id": "4", "timestamp_ms": 132, "detections": []},
+        ],
+    }
+
+
+def _temporal_profile_continuity_sequence() -> dict[str, Any]:
+    return {
+        "sequence_id": "temporal_profile_continuity_demo",
+        "frames": [
+            {
+                "frame_id": "0",
+                "timestamp_ms": 0,
+                "detections": [
+                    {"class_id": 0, "confidence": 0.74, "bbox": [0, 0, 10, 10]}
+                ],
+            },
+            {
+                "frame_id": "1",
+                "timestamp_ms": 33,
+                "detections": [
+                    {"class_id": 1, "confidence": 0.68, "bbox": [90, 90, 10, 10]}
+                ],
+            },
+            {"frame_id": "2", "timestamp_ms": 66, "detections": []},
+            {"frame_id": "3", "timestamp_ms": 99, "detections": []},
+            {"frame_id": "4", "timestamp_ms": 132, "detections": []},
+            {
+                "frame_id": "5",
+                "timestamp_ms": 165,
+                "detections": [
+                    {"class_id": 1, "confidence": 0.66, "bbox": [92, 92, 10, 10]}
+                ],
+            },
         ],
     }
 

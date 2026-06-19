@@ -179,4 +179,5 @@ python -m inferedge_aiguard.cli portfolio-demo \
 ```
 
 The portfolio demo should include the normal/pass, bbox collapse/blocked, score
-saturation/blocked, and temporal instability/review_required cases.
+saturation/blocked, temporal instability/review_required, and temporal profile
+continuity/blocked cases.

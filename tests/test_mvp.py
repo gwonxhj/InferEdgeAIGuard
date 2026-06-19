@@ -2559,13 +2559,14 @@ def test_phase6_portfolio_demo_bundle_contains_required_cases():
     bundle = build_portfolio_demo_bundle()
 
     assert bundle["schema_version"] == PORTFOLIO_DEMO_SCHEMA_VERSION
-    assert bundle["case_count"] == 4
+    assert bundle["case_count"] == 5
     cases = {case["case_id"]: case for case in bundle["cases"]}
     assert set(cases) == {
         "normal_pass",
         "bbox_collapse_blocked",
         "score_saturation_blocked",
         "temporal_instability_review",
+        "temporal_profile_continuity_blocked",
     }
     assert cases["normal_pass"]["guard_analysis"]["guard_verdict"] == "pass"
     assert cases["bbox_collapse_blocked"]["guard_analysis"]["guard_verdict"] == "blocked"
@@ -2576,6 +2577,26 @@ def test_phase6_portfolio_demo_bundle_contains_required_cases():
     assert (
         cases["temporal_instability_review"]["guard_analysis"]["guard_verdict"]
         == "review_required"
+    )
+    continuity_report = cases["temporal_profile_continuity_blocked"][
+        "guard_analysis"
+    ]
+    assert continuity_report["guard_verdict"] == "blocked"
+    temporal = continuity_report["candidate_summary"]["temporal"]
+    assert temporal["max_zero_detection_streak"] == 3
+    assert temporal["first_zero_detection_frame_id"] == "2"
+    continuity_evidence_types = {
+        item["type"] for item in continuity_report["evidence"]
+    }
+    assert "sequence_disappearance" in continuity_evidence_types
+    assert any(
+        item["metric_name"] == "bbox_center_jump_p95"
+        and item["status"] == "warning"
+        for item in continuity_report["evidence"]
+    )
+    assert any(
+        item["metric_name"] == "class_flip_rate" and item["status"] == "warning"
+        for item in continuity_report["evidence"]
     )
     for case in bundle["cases"]:
         validate_diagnosis_report(case["guard_analysis"])
@@ -2588,6 +2609,7 @@ def test_phase6_portfolio_demo_markdown_and_cli(tmp_path):
     assert "Portfolio Demo Cases" in markdown
     assert "Latency improvement with bbox collapse" in markdown
     assert "Temporal instability" in markdown
+    assert "Temporal profile continuity risk" in markdown
 
     json_path = tmp_path / "portfolio_demo.json"
     md_path = tmp_path / "portfolio_demo.md"
@@ -2611,4 +2633,5 @@ def test_phase6_portfolio_demo_markdown_and_cli(tmp_path):
     saved = json.loads(json_path.read_text(encoding="utf-8"))
     assert "portfolio demo cases" in result.stdout
     assert saved["schema_version"] == PORTFOLIO_DEMO_SCHEMA_VERSION
+    assert saved["case_count"] == 5
     assert "bbox collapse" in md_path.read_text(encoding="utf-8").lower()
