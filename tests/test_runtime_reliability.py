@@ -1368,12 +1368,56 @@ def edgeenv_regression_report_with_orchestrator_feed_context() -> dict:
                             "stale_drop_class": "stale_queue_overflow",
                         },
                     },
+                    "worker_health_trend": {
+                        "schema_version": (
+                            "inferedge-orchestrator-worker-health-trend-v1"
+                        ),
+                        "operation_context_role": "supplemental",
+                        "scheduler_owner": "orchestrator",
+                        "decision_owner": "lab",
+                        "not_a_deployment_decision": True,
+                        "source": "worker_health_snapshot+runtime_event_summary",
+                        "health_state_counts": {
+                            "healthy": 1,
+                            "degraded": 1,
+                            "constrained": 1,
+                        },
+                        "tasks_by_health_state": {
+                            "healthy": ["safety_monitor_agent"],
+                            "degraded": ["vision_agent"],
+                            "constrained": ["voice_command_agent"],
+                        },
+                        "task_health_context": {
+                            "vision_agent": {
+                                "worker_id": "worker-jetson-01",
+                                "health_state": "degraded",
+                                "primary_health_reason": "worker_queue_pressure",
+                            },
+                            "voice_command_agent": {
+                                "worker_id": "worker-jetson-02",
+                                "health_state": "constrained",
+                                "primary_health_reason": "fallback_overuse",
+                            },
+                        },
+                        "degraded_workers": ["worker-jetson-01"],
+                        "constrained_workers": ["worker-jetson-02"],
+                        "review_hints": [
+                            "review_worker_health_degradation",
+                            "review_worker_health_constraints",
+                        ],
+                        "interpretation": (
+                            "Worker health trend is supplemental operation "
+                            "evidence; Lab remains the final deployment "
+                            "decision owner."
+                        ),
+                    },
                     "review_hints": [
                         "review_queue_pressure",
                         "review_scheduler_delay",
                         "review_deadline_miss",
                         "review_fallback_use",
                         "review_stale_drop",
+                        "review_worker_health_trend",
                     ],
                 },
                 "stale_drop_summary": {
@@ -1450,6 +1494,7 @@ def edgeenv_regression_report_with_orchestrator_feed_context() -> dict:
                 "runtime_thermal_instability",
                 "edgeenv_orchestrator_latency_budget_protection",
                 "edgeenv_orchestrator_scheduler_fairness_summary",
+                "edgeenv_orchestrator_worker_health_trend",
             ],
         },
         "downstream_guard_alignment": {
@@ -1462,6 +1507,7 @@ def edgeenv_regression_report_with_orchestrator_feed_context() -> dict:
                 "runtime_thermal_instability",
                 "edgeenv_orchestrator_latency_budget_protection",
                 "edgeenv_orchestrator_scheduler_fairness_summary",
+                "edgeenv_orchestrator_worker_health_trend",
             ],
             "validated_by": [
                 "edgeenv runs telemetry inspect-history",
@@ -2247,6 +2293,7 @@ def test_compute_edgeenv_regression_metrics_extracts_orchestrator_feed_context()
         "runtime_thermal_instability",
         "edgeenv_orchestrator_latency_budget_protection",
         "edgeenv_orchestrator_scheduler_fairness_summary",
+        "edgeenv_orchestrator_worker_health_trend",
     }
     assert metrics["orchestrator_guard_alignment_declared_by"] == "orchestrator"
     assert metrics[
@@ -2259,6 +2306,7 @@ def test_compute_edgeenv_regression_metrics_extracts_orchestrator_feed_context()
         "runtime_thermal_instability",
         "edgeenv_orchestrator_latency_budget_protection",
         "edgeenv_orchestrator_scheduler_fairness_summary",
+        "edgeenv_orchestrator_worker_health_trend",
     }
     assert (
         metrics["orchestrator_guard_alignment_orchestrator_is_final_decision_owner"]
@@ -2414,6 +2462,7 @@ def test_compute_edgeenv_regression_metrics_extracts_orchestrator_feed_context()
         "review_deadline_miss",
         "review_fallback_use",
         "review_stale_drop",
+        "review_worker_health_trend",
     ]
     assert metrics["orchestrator_operation_timeline_queue_pressure_state"] == (
         "overloaded"
@@ -2486,6 +2535,39 @@ def test_compute_edgeenv_regression_metrics_extracts_orchestrator_feed_context()
         metrics["orchestrator_scheduler_fairness_not_a_deployment_decision"]
         is True
     )
+    assert metrics["orchestrator_worker_health_trend_present"] is True
+    assert metrics["orchestrator_worker_health_trend_schema_version"] == (
+        "inferedge-orchestrator-worker-health-trend-v1"
+    )
+    assert metrics["orchestrator_worker_health_trend_decision_owner"] == "lab"
+    assert (
+        metrics["orchestrator_worker_health_trend_scheduler_owner"]
+        == "orchestrator"
+    )
+    assert (
+        metrics["orchestrator_worker_health_trend_not_a_deployment_decision"]
+        is True
+    )
+    assert metrics["orchestrator_worker_health_trend_health_state_counts"] == {
+        "healthy": 1,
+        "degraded": 1,
+        "constrained": 1,
+    }
+    assert metrics["orchestrator_worker_health_trend_tasks_by_health_state"] == {
+        "healthy": ["safety_monitor_agent"],
+        "degraded": ["vision_agent"],
+        "constrained": ["voice_command_agent"],
+    }
+    assert metrics["orchestrator_worker_health_trend_degraded_workers"] == [
+        "worker-jetson-01"
+    ]
+    assert metrics["orchestrator_worker_health_trend_constrained_workers"] == [
+        "worker-jetson-02"
+    ]
+    assert metrics["orchestrator_worker_health_trend_review_hints"] == [
+        "review_worker_health_degradation",
+        "review_worker_health_constraints",
+    ]
     assert metrics["orchestrator_stale_drop_summary_present"] is True
     assert metrics["orchestrator_stale_drop_count"] == 1
     assert metrics["orchestrator_stale_drop_total_count"] == 4
@@ -2597,6 +2679,7 @@ def test_compute_edgeenv_regression_metrics_preserves_missing_orchestrator_conte
         "runtime_thermal_instability",
         "edgeenv_orchestrator_latency_budget_protection",
         "edgeenv_orchestrator_scheduler_fairness_summary",
+        "edgeenv_orchestrator_worker_health_trend",
     }
 
 
@@ -2790,7 +2873,7 @@ def test_analyze_edgeenv_regression_report_warns_on_orchestrator_feed_context():
 
     validate_diagnosis_report(report)
     assert report["guard_verdict"] == "suspicious"
-    assert report["severity"] == "medium"
+    assert report["severity"] == "high"
     evidence_types = {item["type"] for item in report["evidence"]}
     assert "edgeenv_orchestrator_producer_lineage" in evidence_types
     assert "edgeenv_orchestrator_operation_risk_summary" in evidence_types
@@ -2800,6 +2883,7 @@ def test_analyze_edgeenv_regression_report_warns_on_orchestrator_feed_context():
     assert "edgeenv_orchestrator_operation_timeline_summary" in evidence_types
     assert "edgeenv_orchestrator_policy_pressure_summary" in evidence_types
     assert "edgeenv_orchestrator_scheduler_fairness_summary" in evidence_types
+    assert "edgeenv_orchestrator_worker_health_trend" in evidence_types
     assert "edgeenv_orchestrator_stale_drop_summary" in evidence_types
     assert "runtime_thermal_instability" in evidence_types
     assert "runtime_queue_overload" in evidence_types
@@ -2829,6 +2913,7 @@ def test_analyze_edgeenv_regression_report_warns_on_orchestrator_feed_context():
         "runtime_thermal_instability",
         "edgeenv_orchestrator_latency_budget_protection",
         "edgeenv_orchestrator_scheduler_fairness_summary",
+        "edgeenv_orchestrator_worker_health_trend",
     }
     queue_context = queue_evidence["raw_context"]["edgeenv_regression"]
     assert queue_context["orchestrator_source_repository"] == "InferEdgeOrchestrator"
@@ -2899,6 +2984,7 @@ def test_analyze_edgeenv_regression_report_warns_on_orchestrator_feed_context():
         "runtime_thermal_instability",
         "edgeenv_orchestrator_latency_budget_protection",
         "edgeenv_orchestrator_scheduler_fairness_summary",
+        "edgeenv_orchestrator_worker_health_trend",
     }
     assert producer_lineage["raw_context"]["producer_lineage"][
         "candidate_remote_runtime_event_summary_evidence_role"
@@ -3040,13 +3126,14 @@ def test_analyze_edgeenv_regression_report_warns_on_orchestrator_feed_context():
         if item["type"] == "edgeenv_orchestrator_operation_timeline_summary"
     )
     assert operation_timeline["status"] == "warning"
-    assert operation_timeline["observed_value"] == 7
+    assert operation_timeline["observed_value"] == 8
     assert operation_timeline["threshold"] == 1
     assert "scheduler_delay_context" in operation_timeline["suspected_causes"]
     assert "deadline_miss_context" in operation_timeline["suspected_causes"]
     assert "fallback_policy_context" in operation_timeline["suspected_causes"]
     assert "queue_pressure_context" in operation_timeline["suspected_causes"]
     assert "stale_drop_context" in operation_timeline["suspected_causes"]
+    assert "worker_health_trend_context" in operation_timeline["suspected_causes"]
     timeline_context = operation_timeline["raw_context"][
         "operation_timeline_summary"
     ]
@@ -3124,6 +3211,37 @@ def test_analyze_edgeenv_regression_report_warns_on_orchestrator_feed_context():
     assert fairness_context["decision_owner"] == "lab"
     assert fairness_context["scheduler_owner"] == "orchestrator"
     assert fairness_context["not_a_deployment_decision"] is True
+    worker_health_trend = next(
+        item
+        for item in report["evidence"]
+        if item["type"] == "edgeenv_orchestrator_worker_health_trend"
+    )
+    assert worker_health_trend["status"] == "warning"
+    assert worker_health_trend["observed_value"] == 5
+    assert worker_health_trend["threshold"] == 1
+    assert "worker_health_degradation_context" in (
+        worker_health_trend["suspected_causes"]
+    )
+    assert "worker_health_constraint_context" in (
+        worker_health_trend["suspected_causes"]
+    )
+    trend_context = worker_health_trend["raw_context"]["worker_health_trend"]
+    assert trend_context["boundary_markers_valid"] is True
+    assert trend_context["health_state_counts"] == {
+        "healthy": 1,
+        "degraded": 1,
+        "constrained": 1,
+    }
+    assert trend_context["tasks_by_health_state"] == {
+        "healthy": ["safety_monitor_agent"],
+        "degraded": ["vision_agent"],
+        "constrained": ["voice_command_agent"],
+    }
+    assert trend_context["degraded_workers"] == ["worker-jetson-01"]
+    assert trend_context["constrained_workers"] == ["worker-jetson-02"]
+    assert trend_context["decision_owner"] == "lab"
+    assert trend_context["scheduler_owner"] == "orchestrator"
+    assert trend_context["not_a_deployment_decision"] is True
     stale_drop = next(
         item
         for item in report["evidence"]
@@ -3339,6 +3457,7 @@ def test_analyze_edgeenv_regression_report_preserves_missing_orchestrator_raw_co
         "runtime_thermal_instability",
         "edgeenv_orchestrator_latency_budget_protection",
         "edgeenv_orchestrator_scheduler_fairness_summary",
+        "edgeenv_orchestrator_worker_health_trend",
     }
     assert set(
         replay_context[
@@ -3349,6 +3468,7 @@ def test_analyze_edgeenv_regression_report_preserves_missing_orchestrator_raw_co
         "runtime_thermal_instability",
         "edgeenv_orchestrator_latency_budget_protection",
         "edgeenv_orchestrator_scheduler_fairness_summary",
+        "edgeenv_orchestrator_worker_health_trend",
     }
     assert report["candidate_summary"]["edgeenv_regression"][
         "history_missing_orchestrator_context_count"

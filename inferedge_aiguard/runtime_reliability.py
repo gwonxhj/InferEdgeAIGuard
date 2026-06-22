@@ -100,11 +100,17 @@ EDGEENV_ORCHESTRATOR_POLICY_PRESSURE_EVIDENCE_TYPE = (
 EDGEENV_ORCHESTRATOR_STALE_DROP_SUMMARY_EVIDENCE_TYPE = (
     "edgeenv_orchestrator_stale_drop_summary"
 )
+EDGEENV_ORCHESTRATOR_WORKER_HEALTH_TREND_EVIDENCE_TYPE = (
+    "edgeenv_orchestrator_worker_health_trend"
+)
 EDGEENV_ORCHESTRATOR_OPERATION_TIMELINE_SUMMARY_SCHEMA_VERSION = (
     "inferedge-orchestrator-operation-timeline-summary-v1"
 )
 EDGEENV_ORCHESTRATOR_POLICY_PRESSURE_SCHEMA_VERSION = (
     "inferedge-orchestrator-policy-pressure-summary-v1"
+)
+EDGEENV_ORCHESTRATOR_WORKER_HEALTH_TREND_SCHEMA_VERSION = (
+    "inferedge-orchestrator-worker-health-trend-v1"
 )
 EDGEENV_ORCHESTRATOR_OPERATION_EVIDENCE_CANDIDATES = (
     "runtime_queue_overload",
@@ -1410,6 +1416,11 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
     candidate_scheduler_fairness_task_context = _mapping(
         candidate_scheduler_fairness_summary.get("task_fairness")
     )
+    candidate_worker_health_trend = _mapping(
+        candidate_orchestrator_operation.get("worker_health_trend")
+        or candidate_operation_timeline_summary.get("worker_health_trend")
+        or candidate_orchestrator_context.get("worker_health_trend")
+    )
     candidate_stale_drop_summary = _mapping(
         candidate_orchestrator_operation.get("stale_drop_summary")
         or candidate_operation_timeline_summary.get("stale_drop")
@@ -2232,6 +2243,45 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
         ),
         "orchestrator_scheduler_fairness_not_a_deployment_decision": (
             candidate_scheduler_fairness_summary.get("not_a_deployment_decision")
+        ),
+        "orchestrator_worker_health_trend": dict(candidate_worker_health_trend),
+        "orchestrator_worker_health_trend_present": bool(
+            candidate_worker_health_trend
+        ),
+        "orchestrator_worker_health_trend_schema_version": (
+            candidate_worker_health_trend.get("schema_version")
+        ),
+        "orchestrator_worker_health_trend_operation_context_role": (
+            candidate_worker_health_trend.get("operation_context_role")
+        ),
+        "orchestrator_worker_health_trend_scheduler_owner": (
+            candidate_worker_health_trend.get("scheduler_owner")
+        ),
+        "orchestrator_worker_health_trend_decision_owner": (
+            candidate_worker_health_trend.get("decision_owner")
+        ),
+        "orchestrator_worker_health_trend_not_a_deployment_decision": (
+            candidate_worker_health_trend.get("not_a_deployment_decision")
+        ),
+        "orchestrator_worker_health_trend_health_state_counts": _count_mapping(
+            candidate_worker_health_trend.get("health_state_counts")
+        ),
+        "orchestrator_worker_health_trend_tasks_by_health_state": (
+            _string_list_mapping(
+                candidate_worker_health_trend.get("tasks_by_health_state")
+            )
+        ),
+        "orchestrator_worker_health_trend_task_health_context": _mapping(
+            candidate_worker_health_trend.get("task_health_context")
+        ),
+        "orchestrator_worker_health_trend_degraded_workers": _string_list(
+            candidate_worker_health_trend.get("degraded_workers")
+        ),
+        "orchestrator_worker_health_trend_constrained_workers": _string_list(
+            candidate_worker_health_trend.get("constrained_workers")
+        ),
+        "orchestrator_worker_health_trend_review_hints": _string_list(
+            candidate_worker_health_trend.get("review_hints")
         ),
         "orchestrator_operation_timeline_affected_stale_drop_tasks": (
             candidate_stale_drop_tasks
@@ -3826,6 +3876,11 @@ def _edgeenv_regression_evidence(
     )
     if scheduler_fairness_evidence is not None:
         evidence.append(scheduler_fairness_evidence)
+    worker_health_trend_evidence = (
+        _edgeenv_orchestrator_worker_health_trend_evidence(metrics)
+    )
+    if worker_health_trend_evidence is not None:
+        evidence.append(worker_health_trend_evidence)
     stale_drop_evidence = _edgeenv_orchestrator_stale_drop_summary_evidence(
         metrics,
         thresholds,
@@ -4996,6 +5051,11 @@ def _edgeenv_orchestrator_operation_timeline_summary_evidence(
         or metrics.get("orchestrator_stale_drop_count", 0.0) > 0
     ):
         suspected_causes.append("stale_drop_context")
+    if (
+        "review_worker_health_trend" in review_markers
+        or metrics.get("orchestrator_worker_health_trend_present")
+    ):
+        suspected_causes.append("worker_health_trend_context")
     if "operation_boundary_marker_gap" in review_markers:
         suspected_causes.append("operation_timeline_boundary_marker_gap")
 
@@ -5063,6 +5123,9 @@ def _edgeenv_orchestrator_operation_timeline_summary_evidence(
                 "stale_drop_rate": metrics.get("orchestrator_stale_drop_rate"),
                 "tasks_with_stale_drop": metrics.get(
                     "orchestrator_tasks_with_stale_drop"
+                ),
+                "worker_health_trend": metrics.get(
+                    "orchestrator_worker_health_trend"
                 ),
                 "review_markers": review_markers,
                 "decision_owner": "lab",
@@ -5278,6 +5341,129 @@ def _edgeenv_orchestrator_scheduler_fairness_evidence(
                 ),
                 "not_a_deployment_decision": metrics.get(
                     "orchestrator_scheduler_fairness_not_a_deployment_decision"
+                ),
+            },
+        },
+    )
+
+
+def _edgeenv_orchestrator_worker_health_trend_evidence(
+    metrics: dict[str, Any],
+) -> dict[str, Any] | None:
+    if not metrics.get("runtime_telemetry_context_present"):
+        return None
+    if not metrics.get("orchestrator_worker_health_trend_present"):
+        return None
+
+    health_state_counts = _count_mapping(
+        metrics.get("orchestrator_worker_health_trend_health_state_counts")
+    )
+    tasks_by_health_state = _string_list_mapping(
+        metrics.get("orchestrator_worker_health_trend_tasks_by_health_state")
+    )
+    degraded_workers = _string_list(
+        metrics.get("orchestrator_worker_health_trend_degraded_workers")
+    )
+    constrained_workers = _string_list(
+        metrics.get("orchestrator_worker_health_trend_constrained_workers")
+    )
+    review_hints = _string_list(
+        metrics.get("orchestrator_worker_health_trend_review_hints")
+    )
+    boundary_ok = (
+        metrics.get("orchestrator_worker_health_trend_schema_version")
+        == EDGEENV_ORCHESTRATOR_WORKER_HEALTH_TREND_SCHEMA_VERSION
+        and metrics.get("orchestrator_worker_health_trend_operation_context_role")
+        == "supplemental"
+        and metrics.get("orchestrator_worker_health_trend_scheduler_owner")
+        == "orchestrator"
+        and metrics.get("orchestrator_worker_health_trend_decision_owner") == "lab"
+        and metrics.get("orchestrator_worker_health_trend_not_a_deployment_decision")
+        is True
+    )
+
+    review_markers: list[str] = []
+    if degraded_workers:
+        review_markers.append("degraded_worker_context")
+    if constrained_workers:
+        review_markers.append("constrained_worker_context")
+    if health_state_counts.get("degraded", 0) or health_state_counts.get(
+        "constrained",
+        0,
+    ):
+        review_markers.append("health_state_count_context")
+    review_markers.extend(
+        hint for hint in review_hints if hint != "worker_health_trend_nominal"
+    )
+    if not boundary_ok:
+        review_markers.append("worker_health_trend_boundary_marker_gap")
+    review_markers = _unique_string_values(review_markers)
+
+    observed_value = len(review_markers)
+    status = "warning" if observed_value else "passed"
+    severity = "high" if constrained_workers else "medium" if status != "passed" else "low"
+    suspected_causes: list[str] = []
+    if "degraded_worker_context" in review_markers:
+        suspected_causes.append("worker_health_degradation_context")
+    if "constrained_worker_context" in review_markers:
+        suspected_causes.append("worker_health_constraint_context")
+    if "health_state_count_context" in review_markers:
+        suspected_causes.append("worker_health_state_trend_context")
+    if "worker_health_trend_boundary_marker_gap" in review_markers:
+        suspected_causes.append("worker_health_trend_boundary_marker_gap")
+    suspected_causes = _unique_string_values(suspected_causes)
+
+    return build_evidence_item(
+        evidence_type=EDGEENV_ORCHESTRATOR_WORKER_HEALTH_TREND_EVIDENCE_TYPE,
+        metric_name="orchestrator_worker_health_trend_marker_count",
+        observed_value=observed_value,
+        baseline_value=0,
+        threshold=1,
+        delta=None,
+        delta_pct=None,
+        increase_factor=None,
+        severity=severity,
+        status=status,
+        explanation=(
+            "EdgeEnv preserved Orchestrator worker_health_trend with "
+            f"{observed_value} deterministic review marker(s)."
+        ),
+        why_it_matters=(
+            "The preserved worker-health trend links degraded or constrained "
+            "worker context to Orchestrator scheduling evidence while keeping "
+            "Lab as the final deployment decision owner."
+        ),
+        suspected_causes=suspected_causes,
+        recommendation=(
+            "Review worker_health_trend in Lab alongside scheduler fairness, "
+            "queue pressure, and stale-drop evidence before treating the "
+            "operation profile as stable."
+            if status != "passed"
+            else "Preserved worker health trend is present without deterministic "
+            "review markers."
+        ),
+        raw_context={
+            "edgeenv_regression": metrics,
+            "worker_health_trend": {
+                "summary": metrics.get("orchestrator_worker_health_trend"),
+                "boundary_markers_valid": boundary_ok,
+                "health_state_counts": health_state_counts,
+                "tasks_by_health_state": tasks_by_health_state,
+                "task_health_context": metrics.get(
+                    "orchestrator_worker_health_trend_task_health_context"
+                ),
+                "degraded_workers": degraded_workers,
+                "constrained_workers": constrained_workers,
+                "review_hints": review_hints,
+                "review_markers": review_markers,
+                "decision_owner": metrics.get(
+                    "orchestrator_worker_health_trend_decision_owner"
+                ),
+                "scheduler_owner": metrics.get(
+                    "orchestrator_worker_health_trend_scheduler_owner"
+                ),
+                "not_a_deployment_decision": metrics.get(
+                    "orchestrator_worker_health_trend_not_a_deployment_decision"
                 ),
             },
         },
@@ -6877,6 +7063,17 @@ def _producer_sources_by_task(queue_state_summary: dict[str, Any]) -> dict[str, 
         if not isinstance(task_name, str) or not task_name:
             continue
         result[task_name] = _string_list(sources)
+    return result
+
+
+def _string_list_mapping(value: Any) -> dict[str, list[str]]:
+    if not isinstance(value, dict):
+        return {}
+    result: dict[str, list[str]] = {}
+    for key, raw_items in value.items():
+        if not isinstance(key, str) or not key:
+            continue
+        result[key] = _string_list(raw_items)
     return result
 
 

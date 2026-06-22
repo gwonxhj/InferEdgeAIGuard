@@ -132,6 +132,7 @@ production retry proof, or Lab-owned deployment decisions.
 | `edgeenv_orchestrator_operation_timeline_summary` | `orchestrator_operation_timeline_review_marker_count` | `>= 1` review/boundary marker | n/a | EdgeEnv preserved Orchestrator operation timeline summary as compact queue/latency/policy navigation evidence |
 | `edgeenv_orchestrator_policy_pressure_summary` | `orchestrator_policy_pressure_marker_count` | `>= 1` pressure/boundary marker | n/a | EdgeEnv preserved Orchestrator policy pressure summary as limited/protected/fallback task context |
 | `edgeenv_orchestrator_scheduler_fairness_summary` | `orchestrator_scheduler_fairness_marker_count` | `>= 1` starvation/delay/degradation/boundary marker | n/a | EdgeEnv preserved Orchestrator scheduler fairness summary as supplemental fairness context for Lab review |
+| `edgeenv_orchestrator_worker_health_trend` | `orchestrator_worker_health_trend_marker_count` | `>= 1` degraded/constrained worker or boundary marker | n/a | EdgeEnv preserved Orchestrator worker-health trend as supplemental degraded/constrained worker context |
 | `edgeenv_orchestrator_stale_drop_summary` | `orchestrator_stale_drop_rate` | `>= 0.20` or any stale drop | `>= 0.50` | EdgeEnv preserved Orchestrator stale-drop summary as affected-agent stale/backlog context |
 | `runtime_thermal_instability` | `candidate_max_temperature_c` / `candidate_throttling_detected` | temperature `>= 70.0` or throttling `true` | temperature `>= 85.0` | EdgeEnv telemetry or attached Orchestrator feed indicates thermal/throttling pressure |
 | `runtime_queue_overload` | `candidate_queue_depth` | `>= 3.0` | `>= 8.0` | EdgeEnv telemetry or attached Orchestrator feed indicates queue backlog pressure |
@@ -203,6 +204,7 @@ reasons over:
 - `multi_workload_sustained_summary.operation_timeline_summary.stale_drop`
 - `multi_workload_sustained_summary.operation_timeline_summary.policy_pressure`
 - `multi_workload_sustained_summary.operation_timeline_summary.scheduler_fairness`
+- `multi_workload_sustained_summary.operation_timeline_summary.worker_health_trend`
 - `multi_workload_sustained_summary.scheduler_fairness_summary`
 - `multi_workload_sustained_summary.operation_timeline_summary.latency.max_queue_wait_ms`
 - `multi_workload_sustained_summary.operation_timeline_summary.policy.decision_reasons`
@@ -497,6 +499,11 @@ high-priority tasks, starvation-risk tasks, scheduler-delay tasks, degraded
 tasks, and per-task fairness context. This is supplemental operation evidence
 for Lab review; it does not make AIGuard the scheduler or final deployment
 decision owner.
+When EdgeEnv also preserves Orchestrator `worker_health_trend`, AIGuard emits
+`edgeenv_orchestrator_worker_health_trend` to explain degraded workers,
+constrained workers, health-state counts, tasks by health state, and per-task
+health context while checking `scheduler_owner=orchestrator`,
+`decision_owner=lab`, and `not_a_deployment_decision=true` boundary markers.
 When EdgeEnv also preserves Orchestrator `stale_drop_summary`, AIGuard emits
 `edgeenv_orchestrator_stale_drop_summary` to explain stale/backlog drop rate,
 reason counts, reason classes, latest stale drop event, and affected tasks while
