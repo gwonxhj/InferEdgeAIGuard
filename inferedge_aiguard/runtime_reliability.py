@@ -103,6 +103,9 @@ EDGEENV_ORCHESTRATOR_STALE_DROP_SUMMARY_EVIDENCE_TYPE = (
 EDGEENV_ORCHESTRATOR_WORKER_HEALTH_TREND_EVIDENCE_TYPE = (
     "edgeenv_orchestrator_worker_health_trend"
 )
+EDGEENV_ORCHESTRATOR_PRESSURE_WINDOW_SUMMARY_EVIDENCE_TYPE = (
+    "edgeenv_orchestrator_pressure_window_summary"
+)
 EDGEENV_ORCHESTRATOR_OPERATION_TIMELINE_SUMMARY_SCHEMA_VERSION = (
     "inferedge-orchestrator-operation-timeline-summary-v1"
 )
@@ -111,6 +114,9 @@ EDGEENV_ORCHESTRATOR_POLICY_PRESSURE_SCHEMA_VERSION = (
 )
 EDGEENV_ORCHESTRATOR_WORKER_HEALTH_TREND_SCHEMA_VERSION = (
     "inferedge-orchestrator-worker-health-trend-v1"
+)
+EDGEENV_ORCHESTRATOR_PRESSURE_WINDOW_SCHEMA_VERSION = (
+    "inferedge-orchestrator-pressure-window-summary-v1"
 )
 EDGEENV_ORCHESTRATOR_OPERATION_EVIDENCE_CANDIDATES = (
     "runtime_queue_overload",
@@ -164,6 +170,7 @@ DEFAULT_RUNTIME_RELIABILITY_THRESHOLDS = {
     "scheduler_starvation_risk_count_review": 1,
     "scheduler_starvation_risk_count_blocked": 3,
     "policy_pressure_marker_count_review": 1,
+    "pressure_window_count_review": 1,
     "device_local_event_count_review": 1,
     "edgeenv_mean_delta_pct_review": 15.0,
     "edgeenv_p99_delta_pct_review": 25.0,
@@ -270,6 +277,10 @@ def validate_edgeenv_handoff_guard_evidence_alignment(
         evidence_items,
         EDGEENV_ORCHESTRATOR_POLICY_PRESSURE_EVIDENCE_TYPE,
     )
+    pressure_window_evidence = _first_evidence_item(
+        evidence_items,
+        EDGEENV_ORCHESTRATOR_PRESSURE_WINDOW_SUMMARY_EVIDENCE_TYPE,
+    )
     handoff_guard_alignment_run_ids = _unique_string_values(
         handoff_summary.get("producer_lineage_guard_alignment_run_ids")
     )
@@ -294,6 +305,17 @@ def validate_edgeenv_handoff_guard_evidence_alignment(
         handoff_summary,
         handoff_policy_pressure_run_ids=handoff_policy_pressure_run_ids,
         guard_analysis_policy_pressure_run_ids=guard_analysis_policy_pressure_run_ids,
+    )
+    handoff_pressure_window_run_ids = _unique_string_values(
+        handoff_summary.get("orchestrator_pressure_window_summary_run_ids")
+    )
+    guard_analysis_pressure_window_run_ids = (
+        _guard_analysis_pressure_window_summary_run_ids(pressure_window_evidence)
+    )
+    pressure_window_summary_errors = _pressure_window_summary_alignment_errors(
+        handoff_summary,
+        handoff_pressure_window_run_ids=handoff_pressure_window_run_ids,
+        guard_analysis_pressure_window_run_ids=guard_analysis_pressure_window_run_ids,
     )
 
     errors = []
@@ -320,6 +342,8 @@ def validate_edgeenv_handoff_guard_evidence_alignment(
         errors.append("producer_lineage_guard_alignment_summary_mismatch")
     if policy_pressure_summary_errors:
         errors.append("policy_pressure_summary_run_id_mismatch")
+    if pressure_window_summary_errors:
+        errors.append("pressure_window_summary_run_id_mismatch")
 
     status = "failed" if errors else "passed"
     recommendation = (
@@ -385,6 +409,11 @@ def validate_edgeenv_handoff_guard_evidence_alignment(
             guard_analysis_policy_pressure_run_ids
         ),
         "policy_pressure_summary_errors": policy_pressure_summary_errors,
+        "handoff_pressure_window_summary_run_ids": handoff_pressure_window_run_ids,
+        "guard_analysis_pressure_window_summary_run_ids": (
+            guard_analysis_pressure_window_run_ids
+        ),
+        "pressure_window_summary_errors": pressure_window_summary_errors,
         "errors": errors,
     }
     if _has_optional_stale_drop_full_evidence(optional_guard_evidence_types_present):
@@ -456,6 +485,22 @@ def _guard_analysis_policy_pressure_summary_run_ids(
     return []
 
 
+def _guard_analysis_pressure_window_summary_run_ids(
+    pressure_window_evidence: dict[str, Any] | None,
+) -> list[str]:
+    if not isinstance(pressure_window_evidence, dict):
+        return []
+    raw_context = _mapping(pressure_window_evidence.get("raw_context"))
+    edgeenv_context = _mapping(raw_context.get("edgeenv_regression"))
+    pressure_window = _mapping(raw_context.get("pressure_window_summary"))
+    if pressure_window.get("boundary_markers_valid") is not True:
+        return []
+    candidate_run_id = edgeenv_context.get("candidate_run_id")
+    if _non_empty_string(candidate_run_id):
+        return [candidate_run_id]
+    return []
+
+
 def _policy_pressure_summary_alignment_errors(
     handoff_summary: dict[str, Any],
     *,
@@ -474,6 +519,28 @@ def _policy_pressure_summary_alignment_errors(
             "field": "orchestrator_policy_pressure_summary_run_ids",
             "expected": guard_analysis_policy_pressure_run_ids,
             "observed": handoff_policy_pressure_run_ids,
+        }
+    ]
+
+
+def _pressure_window_summary_alignment_errors(
+    handoff_summary: dict[str, Any],
+    *,
+    handoff_pressure_window_run_ids: list[str],
+    guard_analysis_pressure_window_run_ids: list[str],
+) -> list[dict[str, Any]]:
+    if (
+        "orchestrator_pressure_window_summary_run_ids" not in handoff_summary
+        and not handoff_pressure_window_run_ids
+    ):
+        return []
+    if handoff_pressure_window_run_ids == guard_analysis_pressure_window_run_ids:
+        return []
+    return [
+        {
+            "field": "orchestrator_pressure_window_summary_run_ids",
+            "expected": guard_analysis_pressure_window_run_ids,
+            "observed": handoff_pressure_window_run_ids,
         }
     ]
 
@@ -1393,6 +1460,11 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
         or candidate_operation_timeline_summary.get("policy_pressure")
         or candidate_orchestrator_context.get("policy_pressure_summary")
     )
+    candidate_operation_timeline_pressure_window = _mapping(
+        candidate_operation_timeline_summary.get("pressure_window")
+        or candidate_orchestrator_operation.get("pressure_window_summary")
+        or candidate_orchestrator_context.get("pressure_window_summary")
+    )
     candidate_operation_timeline_affected_tasks = _mapping(
         candidate_operation_timeline_summary.get("affected_tasks")
     )
@@ -2181,6 +2253,86 @@ def compute_edgeenv_regression_metrics(regression_report: dict[str, Any]) -> dic
         "orchestrator_policy_pressure_not_a_deployment_decision": (
             candidate_operation_timeline_policy_pressure.get(
                 "not_a_deployment_decision"
+            )
+        ),
+        "orchestrator_pressure_window_summary": dict(
+            candidate_operation_timeline_pressure_window
+        ),
+        "orchestrator_pressure_window_summary_present": bool(
+            candidate_operation_timeline_pressure_window
+        ),
+        "orchestrator_pressure_window_summary_schema_version": (
+            candidate_operation_timeline_pressure_window.get("schema_version")
+        ),
+        "orchestrator_pressure_window_operation_context_role": (
+            candidate_operation_timeline_pressure_window.get(
+                "operation_context_role"
+            )
+        ),
+        "orchestrator_pressure_window_decision_owner": (
+            candidate_operation_timeline_pressure_window.get("decision_owner")
+        ),
+        "orchestrator_pressure_window_scheduler_owner": (
+            candidate_operation_timeline_pressure_window.get("scheduler_owner")
+        ),
+        "orchestrator_pressure_window_not_a_deployment_decision": (
+            candidate_operation_timeline_pressure_window.get(
+                "not_a_deployment_decision"
+            )
+        ),
+        "orchestrator_pressure_window_first_read": (
+            candidate_operation_timeline_pressure_window.get("first_read")
+        ),
+        "orchestrator_pressure_window_overload_backlog_threshold": (
+            _optional_non_negative_number(
+                candidate_operation_timeline_pressure_window.get(
+                    "overload_backlog_threshold"
+                )
+            )
+        ),
+        "orchestrator_pressure_window_count": _optional_non_negative_number(
+            candidate_operation_timeline_pressure_window.get("window_count")
+        ),
+        "orchestrator_pressure_window_longest_window_cycles": (
+            _optional_non_negative_number(
+                candidate_operation_timeline_pressure_window.get(
+                    "longest_window_cycles"
+                )
+            )
+        ),
+        "orchestrator_pressure_window_peak_total_queue_depth": (
+            _optional_non_negative_number(
+                candidate_operation_timeline_pressure_window.get(
+                    "peak_total_queue_depth"
+                )
+            )
+        ),
+        "orchestrator_pressure_window_peak_window": _mapping(
+            candidate_operation_timeline_pressure_window.get("peak_window")
+        ),
+        "orchestrator_pressure_window_longest_window": _mapping(
+            candidate_operation_timeline_pressure_window.get("longest_window")
+        ),
+        "orchestrator_pressure_window_windows": _list(
+            candidate_operation_timeline_pressure_window.get("windows")
+        ),
+        "orchestrator_pressure_window_limited_tasks": _string_list(
+            candidate_operation_timeline_pressure_window.get("limited_tasks")
+        ),
+        "orchestrator_pressure_window_protected_tasks": _string_list(
+            candidate_operation_timeline_pressure_window.get("protected_tasks")
+        ),
+        "orchestrator_pressure_window_fallback_tasks": _string_list(
+            candidate_operation_timeline_pressure_window.get("fallback_tasks")
+        ),
+        "orchestrator_pressure_window_pressure_reasons": _string_list(
+            candidate_operation_timeline_pressure_window.get("pressure_reasons")
+        ),
+        "orchestrator_pressure_window_policy_decision_count": (
+            _optional_non_negative_number(
+                candidate_operation_timeline_pressure_window.get(
+                    "policy_decision_count"
+                )
             )
         ),
         "orchestrator_operation_timeline_affected_deadline_missed_tasks": (
@@ -3871,6 +4023,9 @@ def _edgeenv_regression_evidence(
     policy_pressure_evidence = _edgeenv_orchestrator_policy_pressure_evidence(metrics)
     if policy_pressure_evidence is not None:
         evidence.append(policy_pressure_evidence)
+    pressure_window_evidence = _edgeenv_orchestrator_pressure_window_evidence(metrics)
+    if pressure_window_evidence is not None:
+        evidence.append(pressure_window_evidence)
     scheduler_fairness_evidence = (
         _edgeenv_orchestrator_scheduler_fairness_evidence(metrics)
     )
@@ -5056,6 +5211,11 @@ def _edgeenv_orchestrator_operation_timeline_summary_evidence(
         or metrics.get("orchestrator_worker_health_trend_present")
     ):
         suspected_causes.append("worker_health_trend_context")
+    if (
+        "review_sustained_pressure_window" in review_markers
+        or metrics.get("orchestrator_pressure_window_summary_present")
+    ):
+        suspected_causes.append("pressure_window_context")
     if "operation_boundary_marker_gap" in review_markers:
         suspected_causes.append("operation_timeline_boundary_marker_gap")
 
@@ -5126,6 +5286,9 @@ def _edgeenv_orchestrator_operation_timeline_summary_evidence(
                 ),
                 "worker_health_trend": metrics.get(
                     "orchestrator_worker_health_trend"
+                ),
+                "pressure_window_summary": metrics.get(
+                    "orchestrator_pressure_window_summary"
                 ),
                 "review_markers": review_markers,
                 "decision_owner": "lab",
@@ -5227,6 +5390,160 @@ def _edgeenv_orchestrator_policy_pressure_evidence(
                 ),
                 "not_a_deployment_decision": metrics.get(
                     "orchestrator_policy_pressure_not_a_deployment_decision"
+                ),
+            },
+        },
+    )
+
+
+def _edgeenv_orchestrator_pressure_window_evidence(
+    metrics: dict[str, Any],
+) -> dict[str, Any] | None:
+    if not metrics.get("runtime_telemetry_context_present"):
+        return None
+    if not metrics.get("orchestrator_pressure_window_summary_present"):
+        return None
+
+    window_count = _non_negative_number(
+        metrics.get("orchestrator_pressure_window_count")
+    )
+    peak_total_queue_depth = _non_negative_number(
+        metrics.get("orchestrator_pressure_window_peak_total_queue_depth")
+    )
+    longest_window_cycles = _non_negative_number(
+        metrics.get("orchestrator_pressure_window_longest_window_cycles")
+    )
+    pressure_reasons = _string_list(
+        metrics.get("orchestrator_pressure_window_pressure_reasons")
+    )
+    limited_tasks = _string_list(
+        metrics.get("orchestrator_pressure_window_limited_tasks")
+    )
+    protected_tasks = _string_list(
+        metrics.get("orchestrator_pressure_window_protected_tasks")
+    )
+    fallback_tasks = _string_list(
+        metrics.get("orchestrator_pressure_window_fallback_tasks")
+    )
+    boundary_ok = (
+        metrics.get("orchestrator_pressure_window_summary_schema_version")
+        == EDGEENV_ORCHESTRATOR_PRESSURE_WINDOW_SCHEMA_VERSION
+        and metrics.get("orchestrator_pressure_window_operation_context_role")
+        == "supplemental"
+        and metrics.get("orchestrator_pressure_window_scheduler_owner")
+        == "orchestrator"
+        and metrics.get("orchestrator_pressure_window_decision_owner") == "lab"
+        and metrics.get("orchestrator_pressure_window_not_a_deployment_decision")
+        is True
+    )
+
+    review_markers: list[str] = []
+    if window_count:
+        review_markers.append("pressure_window_present")
+    if peak_total_queue_depth:
+        review_markers.append("peak_queue_depth_context")
+    if longest_window_cycles:
+        review_markers.append("longest_window_context")
+    if pressure_reasons:
+        review_markers.append("pressure_reason_context")
+    if limited_tasks:
+        review_markers.append("limited_task_context")
+    if protected_tasks:
+        review_markers.append("protected_task_context")
+    if fallback_tasks:
+        review_markers.append("fallback_task_context")
+    first_read = metrics.get("orchestrator_pressure_window_first_read")
+    if first_read == "review_sustained_pressure_window":
+        review_markers.append("review_sustained_pressure_window")
+    if not boundary_ok:
+        review_markers.append("pressure_window_boundary_marker_gap")
+    review_markers = _unique_string_values(review_markers)
+
+    observed_value = int(window_count)
+    if observed_value == 0 and review_markers:
+        observed_value = len(review_markers)
+    status = "warning" if review_markers else "passed"
+    severity = "medium" if status != "passed" else "low"
+    suspected_causes: list[str] = []
+    if window_count:
+        suspected_causes.append("sustained_pressure_window_context")
+    if peak_total_queue_depth:
+        suspected_causes.append("queue_pressure_context")
+    if pressure_reasons:
+        suspected_causes.extend(_policy_pressure_suspected_causes(pressure_reasons))
+    if limited_tasks:
+        suspected_causes.append("workload_limited_by_policy")
+    if fallback_tasks:
+        suspected_causes.append("fallback_policy_context")
+    if "pressure_window_boundary_marker_gap" in review_markers:
+        suspected_causes.append("pressure_window_boundary_marker_gap")
+    suspected_causes = _unique_string_values(suspected_causes)
+
+    return build_evidence_item(
+        evidence_type=EDGEENV_ORCHESTRATOR_PRESSURE_WINDOW_SUMMARY_EVIDENCE_TYPE,
+        metric_name="orchestrator_pressure_window_count",
+        observed_value=observed_value,
+        baseline_value=0,
+        threshold=DEFAULT_RUNTIME_RELIABILITY_THRESHOLDS[
+            "pressure_window_count_review"
+        ],
+        delta=None,
+        delta_pct=None,
+        increase_factor=None,
+        severity=severity,
+        status=status,
+        explanation=(
+            "EdgeEnv preserved Orchestrator pressure_window summary with "
+            f"{int(window_count)} sustained overload window(s)."
+        ),
+        why_it_matters=(
+            "The preserved pressure-window summary identifies when backlog "
+            "pressure crossed the overload threshold and which workloads were "
+            "limited, protected, or sent to fallback, while Lab remains the "
+            "final deployment decision owner."
+        ),
+        suspected_causes=suspected_causes,
+        recommendation=(
+            "Review pressure_window in Lab alongside operation_timeline_summary, "
+            "policy_pressure, stale_drop, and worker_health_trend before "
+            "treating the operation profile as stable."
+            if status != "passed"
+            else "Preserved pressure window summary is present without "
+            "deterministic review markers."
+        ),
+        raw_context={
+            "edgeenv_regression": metrics,
+            "pressure_window_summary": {
+                "summary": metrics.get("orchestrator_pressure_window_summary"),
+                "boundary_markers_valid": boundary_ok,
+                "first_read": first_read,
+                "window_count": window_count,
+                "longest_window_cycles": longest_window_cycles,
+                "peak_total_queue_depth": peak_total_queue_depth,
+                "overload_backlog_threshold": metrics.get(
+                    "orchestrator_pressure_window_overload_backlog_threshold"
+                ),
+                "peak_window": metrics.get("orchestrator_pressure_window_peak_window"),
+                "longest_window": metrics.get(
+                    "orchestrator_pressure_window_longest_window"
+                ),
+                "windows": metrics.get("orchestrator_pressure_window_windows"),
+                "limited_tasks": limited_tasks,
+                "protected_tasks": protected_tasks,
+                "fallback_tasks": fallback_tasks,
+                "pressure_reasons": pressure_reasons,
+                "policy_decision_count": metrics.get(
+                    "orchestrator_pressure_window_policy_decision_count"
+                ),
+                "review_markers": review_markers,
+                "decision_owner": metrics.get(
+                    "orchestrator_pressure_window_decision_owner"
+                ),
+                "scheduler_owner": metrics.get(
+                    "orchestrator_pressure_window_scheduler_owner"
+                ),
+                "not_a_deployment_decision": metrics.get(
+                    "orchestrator_pressure_window_not_a_deployment_decision"
                 ),
             },
         },

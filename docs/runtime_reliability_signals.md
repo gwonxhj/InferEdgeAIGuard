@@ -131,6 +131,7 @@ production retry proof, or Lab-owned deployment decisions.
 | `edgeenv_orchestrator_latency_budget_protection` | `orchestrator_latency_budget_protection_marker_count` | `>= 1` risk/boundary marker | n/a | EdgeEnv preserved Orchestrator latency-budget protection context for protected high-priority tasks and budget-risk tasks |
 | `edgeenv_orchestrator_operation_timeline_summary` | `orchestrator_operation_timeline_review_marker_count` | `>= 1` review/boundary marker | n/a | EdgeEnv preserved Orchestrator operation timeline summary as compact queue/latency/policy navigation evidence |
 | `edgeenv_orchestrator_policy_pressure_summary` | `orchestrator_policy_pressure_marker_count` | `>= 1` pressure/boundary marker | n/a | EdgeEnv preserved Orchestrator policy pressure summary as limited/protected/fallback task context |
+| `edgeenv_orchestrator_pressure_window_summary` | `orchestrator_pressure_window_count` | `>= 1` sustained overload window | n/a | EdgeEnv preserved Orchestrator pressure-window summary as overload interval navigation context |
 | `edgeenv_orchestrator_scheduler_fairness_summary` | `orchestrator_scheduler_fairness_marker_count` | `>= 1` starvation/delay/degradation/boundary marker | n/a | EdgeEnv preserved Orchestrator scheduler fairness summary as supplemental fairness context for Lab review |
 | `edgeenv_orchestrator_worker_health_trend` | `orchestrator_worker_health_trend_marker_count` | `>= 1` degraded/constrained worker or boundary marker | n/a | EdgeEnv preserved Orchestrator worker-health trend as supplemental degraded/constrained worker context |
 | `edgeenv_orchestrator_stale_drop_summary` | `orchestrator_stale_drop_rate` | `>= 0.20` or any stale drop | `>= 0.50` | EdgeEnv preserved Orchestrator stale-drop summary as affected-agent stale/backlog context |
@@ -504,6 +505,11 @@ When EdgeEnv also preserves Orchestrator `worker_health_trend`, AIGuard emits
 constrained workers, health-state counts, tasks by health state, and per-task
 health context while checking `scheduler_owner=orchestrator`,
 `decision_owner=lab`, and `not_a_deployment_decision=true` boundary markers.
+When EdgeEnv also preserves Orchestrator `pressure_window`, AIGuard emits
+`edgeenv_orchestrator_pressure_window_summary` to explain overload-threshold
+window count, longest window, peak queue depth, limited/protected/fallback
+tasks, pressure reasons, and the `review_sustained_pressure_window` first-read
+marker while checking the same scheduler/Lab ownership boundaries.
 When EdgeEnv also preserves Orchestrator `stale_drop_summary`, AIGuard emits
 `edgeenv_orchestrator_stale_drop_summary` to explain stale/backlog drop rate,
 reason counts, reason classes, latest stale drop event, and affected tasks while
@@ -612,6 +618,12 @@ compares those run ids with AIGuard's
 `edgeenv_orchestrator_policy_pressure_summary` raw context so policy-pressure
 handoff traceability stays aligned after EdgeEnv validates the direct/timeline
 mirror.
+When EdgeEnv handoff exposes
+`edgeenv_report_summary.orchestrator_pressure_window_summary_run_ids`, the gate
+compares those run ids with AIGuard's
+`edgeenv_orchestrator_pressure_window_summary` raw context so pressure-window
+handoff traceability stays aligned after EdgeEnv preserves the optional
+operation timeline block.
 AIGuard does not recompute comparability; if EdgeEnv marks the report as
 non-comparable or not same-condition, AIGuard emits
 `edgeenv_comparability_guardrail` as skipped evidence.

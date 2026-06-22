@@ -487,7 +487,11 @@
               "degraded": [
                 "vision_agent"
               ],
-              "constrained": []
+              "constrained": [],
+              "pressure_window": [
+                "vision_agent",
+                "voice_command_agent"
+              ]
             },
             "stale_drop": {
               "schema_version": "inferedge-orchestrator-stale-drop-summary-v1",
@@ -572,7 +576,8 @@
               "review_deadline_miss",
               "review_fallback_use",
               "review_stale_drop",
-              "review_worker_health_trend"
+              "review_worker_health_trend",
+              "review_sustained_pressure_window"
             ],
             "policy_pressure": {
               "schema_version": "inferedge-orchestrator-policy-pressure-summary-v1",
@@ -610,6 +615,52 @@
                 "scheduler_delay_present"
               ],
               "interpretation": "Policy pressure is supplemental operation evidence showing which scheduler decisions limited or protected work under backlog pressure; Lab remains the final deployment decision owner."
+            },
+            "pressure_window": {
+              "schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+              "operation_context_role": "supplemental",
+              "scheduler_owner": "orchestrator",
+              "decision_owner": "lab",
+              "not_a_deployment_decision": true,
+              "source": "queue_depth_timeline+policy_decision_log",
+              "first_read": "review_sustained_pressure_window",
+              "overload_backlog_threshold": 3,
+              "window_count": 1,
+              "longest_window_cycles": 2,
+              "peak_total_queue_depth": 7,
+              "peak_window": {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "peak_total_queue_depth": 7
+              },
+              "longest_window": {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "duration_cycles": 2
+              },
+              "windows": [
+                {
+                  "start_cycle": 1,
+                  "end_cycle": 2,
+                  "duration_cycles": 2,
+                  "peak_total_queue_depth": 7
+                }
+              ],
+              "limited_tasks": [
+                "vision_agent",
+                "voice_command_agent"
+              ],
+              "protected_tasks": [
+                "safety_monitor_agent"
+              ],
+              "fallback_tasks": [
+                "voice_command_agent"
+              ],
+              "pressure_reasons": [
+                "queue_backlog_threshold_exceeded"
+              ],
+              "policy_decision_count": 2,
+              "interpretation": "Pressure window is supplemental operation evidence; Lab remains the final deployment decision owner."
             }
           },
           "orchestrator_operation_timeline_summary_present": true,
@@ -620,7 +671,8 @@
             "review_deadline_miss",
             "review_fallback_use",
             "review_stale_drop",
-            "review_worker_health_trend"
+            "review_worker_health_trend",
+            "review_sustained_pressure_window"
           ],
           "orchestrator_operation_timeline_queue_pressure_state": "overloaded",
           "orchestrator_operation_timeline_queue_pressure_reason": "queue_backlog_threshold_exceeded",
@@ -696,6 +748,95 @@
           "orchestrator_policy_pressure_decision_owner": "lab",
           "orchestrator_policy_pressure_scheduler_owner": "orchestrator",
           "orchestrator_policy_pressure_not_a_deployment_decision": true,
+          "orchestrator_pressure_window_summary": {
+            "schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+            "operation_context_role": "supplemental",
+            "scheduler_owner": "orchestrator",
+            "decision_owner": "lab",
+            "not_a_deployment_decision": true,
+            "source": "queue_depth_timeline+policy_decision_log",
+            "first_read": "review_sustained_pressure_window",
+            "overload_backlog_threshold": 3,
+            "window_count": 1,
+            "longest_window_cycles": 2,
+            "peak_total_queue_depth": 7,
+            "peak_window": {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "peak_total_queue_depth": 7
+            },
+            "longest_window": {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "duration_cycles": 2
+            },
+            "windows": [
+              {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "duration_cycles": 2,
+                "peak_total_queue_depth": 7
+              }
+            ],
+            "limited_tasks": [
+              "vision_agent",
+              "voice_command_agent"
+            ],
+            "protected_tasks": [
+              "safety_monitor_agent"
+            ],
+            "fallback_tasks": [
+              "voice_command_agent"
+            ],
+            "pressure_reasons": [
+              "queue_backlog_threshold_exceeded"
+            ],
+            "policy_decision_count": 2,
+            "interpretation": "Pressure window is supplemental operation evidence; Lab remains the final deployment decision owner."
+          },
+          "orchestrator_pressure_window_summary_present": true,
+          "orchestrator_pressure_window_summary_schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+          "orchestrator_pressure_window_operation_context_role": "supplemental",
+          "orchestrator_pressure_window_decision_owner": "lab",
+          "orchestrator_pressure_window_scheduler_owner": "orchestrator",
+          "orchestrator_pressure_window_not_a_deployment_decision": true,
+          "orchestrator_pressure_window_first_read": "review_sustained_pressure_window",
+          "orchestrator_pressure_window_overload_backlog_threshold": 3.0,
+          "orchestrator_pressure_window_count": 1.0,
+          "orchestrator_pressure_window_longest_window_cycles": 2.0,
+          "orchestrator_pressure_window_peak_total_queue_depth": 7.0,
+          "orchestrator_pressure_window_peak_window": {
+            "start_cycle": 1,
+            "end_cycle": 2,
+            "peak_total_queue_depth": 7
+          },
+          "orchestrator_pressure_window_longest_window": {
+            "start_cycle": 1,
+            "end_cycle": 2,
+            "duration_cycles": 2
+          },
+          "orchestrator_pressure_window_windows": [
+            {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "duration_cycles": 2,
+              "peak_total_queue_depth": 7
+            }
+          ],
+          "orchestrator_pressure_window_limited_tasks": [
+            "vision_agent",
+            "voice_command_agent"
+          ],
+          "orchestrator_pressure_window_protected_tasks": [
+            "safety_monitor_agent"
+          ],
+          "orchestrator_pressure_window_fallback_tasks": [
+            "voice_command_agent"
+          ],
+          "orchestrator_pressure_window_pressure_reasons": [
+            "queue_backlog_threshold_exceeded"
+          ],
+          "orchestrator_pressure_window_policy_decision_count": 2.0,
           "orchestrator_operation_timeline_affected_deadline_missed_tasks": [
             "vision_agent"
           ],
@@ -1585,7 +1726,11 @@
               "degraded": [
                 "vision_agent"
               ],
-              "constrained": []
+              "constrained": [],
+              "pressure_window": [
+                "vision_agent",
+                "voice_command_agent"
+              ]
             },
             "stale_drop": {
               "schema_version": "inferedge-orchestrator-stale-drop-summary-v1",
@@ -1670,7 +1815,8 @@
               "review_deadline_miss",
               "review_fallback_use",
               "review_stale_drop",
-              "review_worker_health_trend"
+              "review_worker_health_trend",
+              "review_sustained_pressure_window"
             ],
             "policy_pressure": {
               "schema_version": "inferedge-orchestrator-policy-pressure-summary-v1",
@@ -1708,6 +1854,52 @@
                 "scheduler_delay_present"
               ],
               "interpretation": "Policy pressure is supplemental operation evidence showing which scheduler decisions limited or protected work under backlog pressure; Lab remains the final deployment decision owner."
+            },
+            "pressure_window": {
+              "schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+              "operation_context_role": "supplemental",
+              "scheduler_owner": "orchestrator",
+              "decision_owner": "lab",
+              "not_a_deployment_decision": true,
+              "source": "queue_depth_timeline+policy_decision_log",
+              "first_read": "review_sustained_pressure_window",
+              "overload_backlog_threshold": 3,
+              "window_count": 1,
+              "longest_window_cycles": 2,
+              "peak_total_queue_depth": 7,
+              "peak_window": {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "peak_total_queue_depth": 7
+              },
+              "longest_window": {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "duration_cycles": 2
+              },
+              "windows": [
+                {
+                  "start_cycle": 1,
+                  "end_cycle": 2,
+                  "duration_cycles": 2,
+                  "peak_total_queue_depth": 7
+                }
+              ],
+              "limited_tasks": [
+                "vision_agent",
+                "voice_command_agent"
+              ],
+              "protected_tasks": [
+                "safety_monitor_agent"
+              ],
+              "fallback_tasks": [
+                "voice_command_agent"
+              ],
+              "pressure_reasons": [
+                "queue_backlog_threshold_exceeded"
+              ],
+              "policy_decision_count": 2,
+              "interpretation": "Pressure window is supplemental operation evidence; Lab remains the final deployment decision owner."
             }
           },
           "orchestrator_operation_timeline_summary_present": true,
@@ -1718,7 +1910,8 @@
             "review_deadline_miss",
             "review_fallback_use",
             "review_stale_drop",
-            "review_worker_health_trend"
+            "review_worker_health_trend",
+            "review_sustained_pressure_window"
           ],
           "orchestrator_operation_timeline_queue_pressure_state": "overloaded",
           "orchestrator_operation_timeline_queue_pressure_reason": "queue_backlog_threshold_exceeded",
@@ -1794,6 +1987,95 @@
           "orchestrator_policy_pressure_decision_owner": "lab",
           "orchestrator_policy_pressure_scheduler_owner": "orchestrator",
           "orchestrator_policy_pressure_not_a_deployment_decision": true,
+          "orchestrator_pressure_window_summary": {
+            "schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+            "operation_context_role": "supplemental",
+            "scheduler_owner": "orchestrator",
+            "decision_owner": "lab",
+            "not_a_deployment_decision": true,
+            "source": "queue_depth_timeline+policy_decision_log",
+            "first_read": "review_sustained_pressure_window",
+            "overload_backlog_threshold": 3,
+            "window_count": 1,
+            "longest_window_cycles": 2,
+            "peak_total_queue_depth": 7,
+            "peak_window": {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "peak_total_queue_depth": 7
+            },
+            "longest_window": {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "duration_cycles": 2
+            },
+            "windows": [
+              {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "duration_cycles": 2,
+                "peak_total_queue_depth": 7
+              }
+            ],
+            "limited_tasks": [
+              "vision_agent",
+              "voice_command_agent"
+            ],
+            "protected_tasks": [
+              "safety_monitor_agent"
+            ],
+            "fallback_tasks": [
+              "voice_command_agent"
+            ],
+            "pressure_reasons": [
+              "queue_backlog_threshold_exceeded"
+            ],
+            "policy_decision_count": 2,
+            "interpretation": "Pressure window is supplemental operation evidence; Lab remains the final deployment decision owner."
+          },
+          "orchestrator_pressure_window_summary_present": true,
+          "orchestrator_pressure_window_summary_schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+          "orchestrator_pressure_window_operation_context_role": "supplemental",
+          "orchestrator_pressure_window_decision_owner": "lab",
+          "orchestrator_pressure_window_scheduler_owner": "orchestrator",
+          "orchestrator_pressure_window_not_a_deployment_decision": true,
+          "orchestrator_pressure_window_first_read": "review_sustained_pressure_window",
+          "orchestrator_pressure_window_overload_backlog_threshold": 3.0,
+          "orchestrator_pressure_window_count": 1.0,
+          "orchestrator_pressure_window_longest_window_cycles": 2.0,
+          "orchestrator_pressure_window_peak_total_queue_depth": 7.0,
+          "orchestrator_pressure_window_peak_window": {
+            "start_cycle": 1,
+            "end_cycle": 2,
+            "peak_total_queue_depth": 7
+          },
+          "orchestrator_pressure_window_longest_window": {
+            "start_cycle": 1,
+            "end_cycle": 2,
+            "duration_cycles": 2
+          },
+          "orchestrator_pressure_window_windows": [
+            {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "duration_cycles": 2,
+              "peak_total_queue_depth": 7
+            }
+          ],
+          "orchestrator_pressure_window_limited_tasks": [
+            "vision_agent",
+            "voice_command_agent"
+          ],
+          "orchestrator_pressure_window_protected_tasks": [
+            "safety_monitor_agent"
+          ],
+          "orchestrator_pressure_window_fallback_tasks": [
+            "voice_command_agent"
+          ],
+          "orchestrator_pressure_window_pressure_reasons": [
+            "queue_backlog_threshold_exceeded"
+          ],
+          "orchestrator_pressure_window_policy_decision_count": 2.0,
           "orchestrator_operation_timeline_affected_deadline_missed_tasks": [
             "vision_agent"
           ],
@@ -2766,7 +3048,11 @@
               "degraded": [
                 "vision_agent"
               ],
-              "constrained": []
+              "constrained": [],
+              "pressure_window": [
+                "vision_agent",
+                "voice_command_agent"
+              ]
             },
             "stale_drop": {
               "schema_version": "inferedge-orchestrator-stale-drop-summary-v1",
@@ -2851,7 +3137,8 @@
               "review_deadline_miss",
               "review_fallback_use",
               "review_stale_drop",
-              "review_worker_health_trend"
+              "review_worker_health_trend",
+              "review_sustained_pressure_window"
             ],
             "policy_pressure": {
               "schema_version": "inferedge-orchestrator-policy-pressure-summary-v1",
@@ -2889,6 +3176,52 @@
                 "scheduler_delay_present"
               ],
               "interpretation": "Policy pressure is supplemental operation evidence showing which scheduler decisions limited or protected work under backlog pressure; Lab remains the final deployment decision owner."
+            },
+            "pressure_window": {
+              "schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+              "operation_context_role": "supplemental",
+              "scheduler_owner": "orchestrator",
+              "decision_owner": "lab",
+              "not_a_deployment_decision": true,
+              "source": "queue_depth_timeline+policy_decision_log",
+              "first_read": "review_sustained_pressure_window",
+              "overload_backlog_threshold": 3,
+              "window_count": 1,
+              "longest_window_cycles": 2,
+              "peak_total_queue_depth": 7,
+              "peak_window": {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "peak_total_queue_depth": 7
+              },
+              "longest_window": {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "duration_cycles": 2
+              },
+              "windows": [
+                {
+                  "start_cycle": 1,
+                  "end_cycle": 2,
+                  "duration_cycles": 2,
+                  "peak_total_queue_depth": 7
+                }
+              ],
+              "limited_tasks": [
+                "vision_agent",
+                "voice_command_agent"
+              ],
+              "protected_tasks": [
+                "safety_monitor_agent"
+              ],
+              "fallback_tasks": [
+                "voice_command_agent"
+              ],
+              "pressure_reasons": [
+                "queue_backlog_threshold_exceeded"
+              ],
+              "policy_decision_count": 2,
+              "interpretation": "Pressure window is supplemental operation evidence; Lab remains the final deployment decision owner."
             }
           },
           "orchestrator_operation_timeline_summary_present": true,
@@ -2899,7 +3232,8 @@
             "review_deadline_miss",
             "review_fallback_use",
             "review_stale_drop",
-            "review_worker_health_trend"
+            "review_worker_health_trend",
+            "review_sustained_pressure_window"
           ],
           "orchestrator_operation_timeline_queue_pressure_state": "overloaded",
           "orchestrator_operation_timeline_queue_pressure_reason": "queue_backlog_threshold_exceeded",
@@ -2975,6 +3309,95 @@
           "orchestrator_policy_pressure_decision_owner": "lab",
           "orchestrator_policy_pressure_scheduler_owner": "orchestrator",
           "orchestrator_policy_pressure_not_a_deployment_decision": true,
+          "orchestrator_pressure_window_summary": {
+            "schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+            "operation_context_role": "supplemental",
+            "scheduler_owner": "orchestrator",
+            "decision_owner": "lab",
+            "not_a_deployment_decision": true,
+            "source": "queue_depth_timeline+policy_decision_log",
+            "first_read": "review_sustained_pressure_window",
+            "overload_backlog_threshold": 3,
+            "window_count": 1,
+            "longest_window_cycles": 2,
+            "peak_total_queue_depth": 7,
+            "peak_window": {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "peak_total_queue_depth": 7
+            },
+            "longest_window": {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "duration_cycles": 2
+            },
+            "windows": [
+              {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "duration_cycles": 2,
+                "peak_total_queue_depth": 7
+              }
+            ],
+            "limited_tasks": [
+              "vision_agent",
+              "voice_command_agent"
+            ],
+            "protected_tasks": [
+              "safety_monitor_agent"
+            ],
+            "fallback_tasks": [
+              "voice_command_agent"
+            ],
+            "pressure_reasons": [
+              "queue_backlog_threshold_exceeded"
+            ],
+            "policy_decision_count": 2,
+            "interpretation": "Pressure window is supplemental operation evidence; Lab remains the final deployment decision owner."
+          },
+          "orchestrator_pressure_window_summary_present": true,
+          "orchestrator_pressure_window_summary_schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+          "orchestrator_pressure_window_operation_context_role": "supplemental",
+          "orchestrator_pressure_window_decision_owner": "lab",
+          "orchestrator_pressure_window_scheduler_owner": "orchestrator",
+          "orchestrator_pressure_window_not_a_deployment_decision": true,
+          "orchestrator_pressure_window_first_read": "review_sustained_pressure_window",
+          "orchestrator_pressure_window_overload_backlog_threshold": 3.0,
+          "orchestrator_pressure_window_count": 1.0,
+          "orchestrator_pressure_window_longest_window_cycles": 2.0,
+          "orchestrator_pressure_window_peak_total_queue_depth": 7.0,
+          "orchestrator_pressure_window_peak_window": {
+            "start_cycle": 1,
+            "end_cycle": 2,
+            "peak_total_queue_depth": 7
+          },
+          "orchestrator_pressure_window_longest_window": {
+            "start_cycle": 1,
+            "end_cycle": 2,
+            "duration_cycles": 2
+          },
+          "orchestrator_pressure_window_windows": [
+            {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "duration_cycles": 2,
+              "peak_total_queue_depth": 7
+            }
+          ],
+          "orchestrator_pressure_window_limited_tasks": [
+            "vision_agent",
+            "voice_command_agent"
+          ],
+          "orchestrator_pressure_window_protected_tasks": [
+            "safety_monitor_agent"
+          ],
+          "orchestrator_pressure_window_fallback_tasks": [
+            "voice_command_agent"
+          ],
+          "orchestrator_pressure_window_pressure_reasons": [
+            "queue_backlog_threshold_exceeded"
+          ],
+          "orchestrator_pressure_window_policy_decision_count": 2.0,
           "orchestrator_operation_timeline_affected_deadline_missed_tasks": [
             "vision_agent"
           ],
@@ -3903,7 +4326,11 @@
               "degraded": [
                 "vision_agent"
               ],
-              "constrained": []
+              "constrained": [],
+              "pressure_window": [
+                "vision_agent",
+                "voice_command_agent"
+              ]
             },
             "stale_drop": {
               "schema_version": "inferedge-orchestrator-stale-drop-summary-v1",
@@ -3988,7 +4415,8 @@
               "review_deadline_miss",
               "review_fallback_use",
               "review_stale_drop",
-              "review_worker_health_trend"
+              "review_worker_health_trend",
+              "review_sustained_pressure_window"
             ],
             "policy_pressure": {
               "schema_version": "inferedge-orchestrator-policy-pressure-summary-v1",
@@ -4026,6 +4454,52 @@
                 "scheduler_delay_present"
               ],
               "interpretation": "Policy pressure is supplemental operation evidence showing which scheduler decisions limited or protected work under backlog pressure; Lab remains the final deployment decision owner."
+            },
+            "pressure_window": {
+              "schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+              "operation_context_role": "supplemental",
+              "scheduler_owner": "orchestrator",
+              "decision_owner": "lab",
+              "not_a_deployment_decision": true,
+              "source": "queue_depth_timeline+policy_decision_log",
+              "first_read": "review_sustained_pressure_window",
+              "overload_backlog_threshold": 3,
+              "window_count": 1,
+              "longest_window_cycles": 2,
+              "peak_total_queue_depth": 7,
+              "peak_window": {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "peak_total_queue_depth": 7
+              },
+              "longest_window": {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "duration_cycles": 2
+              },
+              "windows": [
+                {
+                  "start_cycle": 1,
+                  "end_cycle": 2,
+                  "duration_cycles": 2,
+                  "peak_total_queue_depth": 7
+                }
+              ],
+              "limited_tasks": [
+                "vision_agent",
+                "voice_command_agent"
+              ],
+              "protected_tasks": [
+                "safety_monitor_agent"
+              ],
+              "fallback_tasks": [
+                "voice_command_agent"
+              ],
+              "pressure_reasons": [
+                "queue_backlog_threshold_exceeded"
+              ],
+              "policy_decision_count": 2,
+              "interpretation": "Pressure window is supplemental operation evidence; Lab remains the final deployment decision owner."
             }
           },
           "orchestrator_operation_timeline_summary_present": true,
@@ -4036,7 +4510,8 @@
             "review_deadline_miss",
             "review_fallback_use",
             "review_stale_drop",
-            "review_worker_health_trend"
+            "review_worker_health_trend",
+            "review_sustained_pressure_window"
           ],
           "orchestrator_operation_timeline_queue_pressure_state": "overloaded",
           "orchestrator_operation_timeline_queue_pressure_reason": "queue_backlog_threshold_exceeded",
@@ -4112,6 +4587,95 @@
           "orchestrator_policy_pressure_decision_owner": "lab",
           "orchestrator_policy_pressure_scheduler_owner": "orchestrator",
           "orchestrator_policy_pressure_not_a_deployment_decision": true,
+          "orchestrator_pressure_window_summary": {
+            "schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+            "operation_context_role": "supplemental",
+            "scheduler_owner": "orchestrator",
+            "decision_owner": "lab",
+            "not_a_deployment_decision": true,
+            "source": "queue_depth_timeline+policy_decision_log",
+            "first_read": "review_sustained_pressure_window",
+            "overload_backlog_threshold": 3,
+            "window_count": 1,
+            "longest_window_cycles": 2,
+            "peak_total_queue_depth": 7,
+            "peak_window": {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "peak_total_queue_depth": 7
+            },
+            "longest_window": {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "duration_cycles": 2
+            },
+            "windows": [
+              {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "duration_cycles": 2,
+                "peak_total_queue_depth": 7
+              }
+            ],
+            "limited_tasks": [
+              "vision_agent",
+              "voice_command_agent"
+            ],
+            "protected_tasks": [
+              "safety_monitor_agent"
+            ],
+            "fallback_tasks": [
+              "voice_command_agent"
+            ],
+            "pressure_reasons": [
+              "queue_backlog_threshold_exceeded"
+            ],
+            "policy_decision_count": 2,
+            "interpretation": "Pressure window is supplemental operation evidence; Lab remains the final deployment decision owner."
+          },
+          "orchestrator_pressure_window_summary_present": true,
+          "orchestrator_pressure_window_summary_schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+          "orchestrator_pressure_window_operation_context_role": "supplemental",
+          "orchestrator_pressure_window_decision_owner": "lab",
+          "orchestrator_pressure_window_scheduler_owner": "orchestrator",
+          "orchestrator_pressure_window_not_a_deployment_decision": true,
+          "orchestrator_pressure_window_first_read": "review_sustained_pressure_window",
+          "orchestrator_pressure_window_overload_backlog_threshold": 3.0,
+          "orchestrator_pressure_window_count": 1.0,
+          "orchestrator_pressure_window_longest_window_cycles": 2.0,
+          "orchestrator_pressure_window_peak_total_queue_depth": 7.0,
+          "orchestrator_pressure_window_peak_window": {
+            "start_cycle": 1,
+            "end_cycle": 2,
+            "peak_total_queue_depth": 7
+          },
+          "orchestrator_pressure_window_longest_window": {
+            "start_cycle": 1,
+            "end_cycle": 2,
+            "duration_cycles": 2
+          },
+          "orchestrator_pressure_window_windows": [
+            {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "duration_cycles": 2,
+              "peak_total_queue_depth": 7
+            }
+          ],
+          "orchestrator_pressure_window_limited_tasks": [
+            "vision_agent",
+            "voice_command_agent"
+          ],
+          "orchestrator_pressure_window_protected_tasks": [
+            "safety_monitor_agent"
+          ],
+          "orchestrator_pressure_window_fallback_tasks": [
+            "voice_command_agent"
+          ],
+          "orchestrator_pressure_window_pressure_reasons": [
+            "queue_backlog_threshold_exceeded"
+          ],
+          "orchestrator_pressure_window_policy_decision_count": 2.0,
           "orchestrator_operation_timeline_affected_deadline_missed_tasks": [
             "vision_agent"
           ],
@@ -5098,7 +5662,11 @@
               "degraded": [
                 "vision_agent"
               ],
-              "constrained": []
+              "constrained": [],
+              "pressure_window": [
+                "vision_agent",
+                "voice_command_agent"
+              ]
             },
             "stale_drop": {
               "schema_version": "inferedge-orchestrator-stale-drop-summary-v1",
@@ -5183,7 +5751,8 @@
               "review_deadline_miss",
               "review_fallback_use",
               "review_stale_drop",
-              "review_worker_health_trend"
+              "review_worker_health_trend",
+              "review_sustained_pressure_window"
             ],
             "policy_pressure": {
               "schema_version": "inferedge-orchestrator-policy-pressure-summary-v1",
@@ -5221,6 +5790,52 @@
                 "scheduler_delay_present"
               ],
               "interpretation": "Policy pressure is supplemental operation evidence showing which scheduler decisions limited or protected work under backlog pressure; Lab remains the final deployment decision owner."
+            },
+            "pressure_window": {
+              "schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+              "operation_context_role": "supplemental",
+              "scheduler_owner": "orchestrator",
+              "decision_owner": "lab",
+              "not_a_deployment_decision": true,
+              "source": "queue_depth_timeline+policy_decision_log",
+              "first_read": "review_sustained_pressure_window",
+              "overload_backlog_threshold": 3,
+              "window_count": 1,
+              "longest_window_cycles": 2,
+              "peak_total_queue_depth": 7,
+              "peak_window": {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "peak_total_queue_depth": 7
+              },
+              "longest_window": {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "duration_cycles": 2
+              },
+              "windows": [
+                {
+                  "start_cycle": 1,
+                  "end_cycle": 2,
+                  "duration_cycles": 2,
+                  "peak_total_queue_depth": 7
+                }
+              ],
+              "limited_tasks": [
+                "vision_agent",
+                "voice_command_agent"
+              ],
+              "protected_tasks": [
+                "safety_monitor_agent"
+              ],
+              "fallback_tasks": [
+                "voice_command_agent"
+              ],
+              "pressure_reasons": [
+                "queue_backlog_threshold_exceeded"
+              ],
+              "policy_decision_count": 2,
+              "interpretation": "Pressure window is supplemental operation evidence; Lab remains the final deployment decision owner."
             }
           },
           "orchestrator_operation_timeline_summary_present": true,
@@ -5231,7 +5846,8 @@
             "review_deadline_miss",
             "review_fallback_use",
             "review_stale_drop",
-            "review_worker_health_trend"
+            "review_worker_health_trend",
+            "review_sustained_pressure_window"
           ],
           "orchestrator_operation_timeline_queue_pressure_state": "overloaded",
           "orchestrator_operation_timeline_queue_pressure_reason": "queue_backlog_threshold_exceeded",
@@ -5307,6 +5923,95 @@
           "orchestrator_policy_pressure_decision_owner": "lab",
           "orchestrator_policy_pressure_scheduler_owner": "orchestrator",
           "orchestrator_policy_pressure_not_a_deployment_decision": true,
+          "orchestrator_pressure_window_summary": {
+            "schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+            "operation_context_role": "supplemental",
+            "scheduler_owner": "orchestrator",
+            "decision_owner": "lab",
+            "not_a_deployment_decision": true,
+            "source": "queue_depth_timeline+policy_decision_log",
+            "first_read": "review_sustained_pressure_window",
+            "overload_backlog_threshold": 3,
+            "window_count": 1,
+            "longest_window_cycles": 2,
+            "peak_total_queue_depth": 7,
+            "peak_window": {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "peak_total_queue_depth": 7
+            },
+            "longest_window": {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "duration_cycles": 2
+            },
+            "windows": [
+              {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "duration_cycles": 2,
+                "peak_total_queue_depth": 7
+              }
+            ],
+            "limited_tasks": [
+              "vision_agent",
+              "voice_command_agent"
+            ],
+            "protected_tasks": [
+              "safety_monitor_agent"
+            ],
+            "fallback_tasks": [
+              "voice_command_agent"
+            ],
+            "pressure_reasons": [
+              "queue_backlog_threshold_exceeded"
+            ],
+            "policy_decision_count": 2,
+            "interpretation": "Pressure window is supplemental operation evidence; Lab remains the final deployment decision owner."
+          },
+          "orchestrator_pressure_window_summary_present": true,
+          "orchestrator_pressure_window_summary_schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+          "orchestrator_pressure_window_operation_context_role": "supplemental",
+          "orchestrator_pressure_window_decision_owner": "lab",
+          "orchestrator_pressure_window_scheduler_owner": "orchestrator",
+          "orchestrator_pressure_window_not_a_deployment_decision": true,
+          "orchestrator_pressure_window_first_read": "review_sustained_pressure_window",
+          "orchestrator_pressure_window_overload_backlog_threshold": 3.0,
+          "orchestrator_pressure_window_count": 1.0,
+          "orchestrator_pressure_window_longest_window_cycles": 2.0,
+          "orchestrator_pressure_window_peak_total_queue_depth": 7.0,
+          "orchestrator_pressure_window_peak_window": {
+            "start_cycle": 1,
+            "end_cycle": 2,
+            "peak_total_queue_depth": 7
+          },
+          "orchestrator_pressure_window_longest_window": {
+            "start_cycle": 1,
+            "end_cycle": 2,
+            "duration_cycles": 2
+          },
+          "orchestrator_pressure_window_windows": [
+            {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "duration_cycles": 2,
+              "peak_total_queue_depth": 7
+            }
+          ],
+          "orchestrator_pressure_window_limited_tasks": [
+            "vision_agent",
+            "voice_command_agent"
+          ],
+          "orchestrator_pressure_window_protected_tasks": [
+            "safety_monitor_agent"
+          ],
+          "orchestrator_pressure_window_fallback_tasks": [
+            "voice_command_agent"
+          ],
+          "orchestrator_pressure_window_pressure_reasons": [
+            "queue_backlog_threshold_exceeded"
+          ],
+          "orchestrator_pressure_window_policy_decision_count": 2.0,
           "orchestrator_operation_timeline_affected_deadline_missed_tasks": [
             "vision_agent"
           ],
@@ -6282,7 +6987,11 @@
               "degraded": [
                 "vision_agent"
               ],
-              "constrained": []
+              "constrained": [],
+              "pressure_window": [
+                "vision_agent",
+                "voice_command_agent"
+              ]
             },
             "stale_drop": {
               "schema_version": "inferedge-orchestrator-stale-drop-summary-v1",
@@ -6367,7 +7076,8 @@
               "review_deadline_miss",
               "review_fallback_use",
               "review_stale_drop",
-              "review_worker_health_trend"
+              "review_worker_health_trend",
+              "review_sustained_pressure_window"
             ],
             "policy_pressure": {
               "schema_version": "inferedge-orchestrator-policy-pressure-summary-v1",
@@ -6405,6 +7115,52 @@
                 "scheduler_delay_present"
               ],
               "interpretation": "Policy pressure is supplemental operation evidence showing which scheduler decisions limited or protected work under backlog pressure; Lab remains the final deployment decision owner."
+            },
+            "pressure_window": {
+              "schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+              "operation_context_role": "supplemental",
+              "scheduler_owner": "orchestrator",
+              "decision_owner": "lab",
+              "not_a_deployment_decision": true,
+              "source": "queue_depth_timeline+policy_decision_log",
+              "first_read": "review_sustained_pressure_window",
+              "overload_backlog_threshold": 3,
+              "window_count": 1,
+              "longest_window_cycles": 2,
+              "peak_total_queue_depth": 7,
+              "peak_window": {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "peak_total_queue_depth": 7
+              },
+              "longest_window": {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "duration_cycles": 2
+              },
+              "windows": [
+                {
+                  "start_cycle": 1,
+                  "end_cycle": 2,
+                  "duration_cycles": 2,
+                  "peak_total_queue_depth": 7
+                }
+              ],
+              "limited_tasks": [
+                "vision_agent",
+                "voice_command_agent"
+              ],
+              "protected_tasks": [
+                "safety_monitor_agent"
+              ],
+              "fallback_tasks": [
+                "voice_command_agent"
+              ],
+              "pressure_reasons": [
+                "queue_backlog_threshold_exceeded"
+              ],
+              "policy_decision_count": 2,
+              "interpretation": "Pressure window is supplemental operation evidence; Lab remains the final deployment decision owner."
             }
           },
           "orchestrator_operation_timeline_summary_present": true,
@@ -6415,7 +7171,8 @@
             "review_deadline_miss",
             "review_fallback_use",
             "review_stale_drop",
-            "review_worker_health_trend"
+            "review_worker_health_trend",
+            "review_sustained_pressure_window"
           ],
           "orchestrator_operation_timeline_queue_pressure_state": "overloaded",
           "orchestrator_operation_timeline_queue_pressure_reason": "queue_backlog_threshold_exceeded",
@@ -6491,6 +7248,95 @@
           "orchestrator_policy_pressure_decision_owner": "lab",
           "orchestrator_policy_pressure_scheduler_owner": "orchestrator",
           "orchestrator_policy_pressure_not_a_deployment_decision": true,
+          "orchestrator_pressure_window_summary": {
+            "schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+            "operation_context_role": "supplemental",
+            "scheduler_owner": "orchestrator",
+            "decision_owner": "lab",
+            "not_a_deployment_decision": true,
+            "source": "queue_depth_timeline+policy_decision_log",
+            "first_read": "review_sustained_pressure_window",
+            "overload_backlog_threshold": 3,
+            "window_count": 1,
+            "longest_window_cycles": 2,
+            "peak_total_queue_depth": 7,
+            "peak_window": {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "peak_total_queue_depth": 7
+            },
+            "longest_window": {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "duration_cycles": 2
+            },
+            "windows": [
+              {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "duration_cycles": 2,
+                "peak_total_queue_depth": 7
+              }
+            ],
+            "limited_tasks": [
+              "vision_agent",
+              "voice_command_agent"
+            ],
+            "protected_tasks": [
+              "safety_monitor_agent"
+            ],
+            "fallback_tasks": [
+              "voice_command_agent"
+            ],
+            "pressure_reasons": [
+              "queue_backlog_threshold_exceeded"
+            ],
+            "policy_decision_count": 2,
+            "interpretation": "Pressure window is supplemental operation evidence; Lab remains the final deployment decision owner."
+          },
+          "orchestrator_pressure_window_summary_present": true,
+          "orchestrator_pressure_window_summary_schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+          "orchestrator_pressure_window_operation_context_role": "supplemental",
+          "orchestrator_pressure_window_decision_owner": "lab",
+          "orchestrator_pressure_window_scheduler_owner": "orchestrator",
+          "orchestrator_pressure_window_not_a_deployment_decision": true,
+          "orchestrator_pressure_window_first_read": "review_sustained_pressure_window",
+          "orchestrator_pressure_window_overload_backlog_threshold": 3.0,
+          "orchestrator_pressure_window_count": 1.0,
+          "orchestrator_pressure_window_longest_window_cycles": 2.0,
+          "orchestrator_pressure_window_peak_total_queue_depth": 7.0,
+          "orchestrator_pressure_window_peak_window": {
+            "start_cycle": 1,
+            "end_cycle": 2,
+            "peak_total_queue_depth": 7
+          },
+          "orchestrator_pressure_window_longest_window": {
+            "start_cycle": 1,
+            "end_cycle": 2,
+            "duration_cycles": 2
+          },
+          "orchestrator_pressure_window_windows": [
+            {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "duration_cycles": 2,
+              "peak_total_queue_depth": 7
+            }
+          ],
+          "orchestrator_pressure_window_limited_tasks": [
+            "vision_agent",
+            "voice_command_agent"
+          ],
+          "orchestrator_pressure_window_protected_tasks": [
+            "safety_monitor_agent"
+          ],
+          "orchestrator_pressure_window_fallback_tasks": [
+            "voice_command_agent"
+          ],
+          "orchestrator_pressure_window_pressure_reasons": [
+            "queue_backlog_threshold_exceeded"
+          ],
+          "orchestrator_pressure_window_policy_decision_count": 2.0,
           "orchestrator_operation_timeline_affected_deadline_missed_tasks": [
             "vision_agent"
           ],
@@ -6983,7 +7829,7 @@
     {
       "type": "edgeenv_orchestrator_operation_timeline_summary",
       "metric_name": "orchestrator_operation_timeline_review_marker_count",
-      "observed_value": 8,
+      "observed_value": 9,
       "baseline_value": 0,
       "threshold": 1,
       "delta": null,
@@ -6991,7 +7837,7 @@
       "increase_factor": null,
       "severity": "medium",
       "status": "warning",
-      "explanation": "EdgeEnv preserved Orchestrator operation_timeline_summary with 8 deterministic review marker(s).",
+      "explanation": "EdgeEnv preserved Orchestrator operation_timeline_summary with 9 deterministic review marker(s).",
       "why_it_matters": "The preserved operation timeline compactly links queue pressure, latency wait, policy decisions, and affected tasks for Lab review without making AIGuard or Orchestrator the final deployment owner.",
       "suspected_causes": [
         "scheduler_delay_context",
@@ -6999,7 +7845,8 @@
         "fallback_policy_context",
         "queue_pressure_context",
         "stale_drop_context",
-        "worker_health_trend_context"
+        "worker_health_trend_context",
+        "pressure_window_context"
       ],
       "recommendation": "Review the preserved operation_timeline_summary in Lab alongside queue, latency, runtime event, and policy evidence; Lab remains the final deployment decision owner.",
       "raw_context": {
@@ -7458,7 +8305,11 @@
               "degraded": [
                 "vision_agent"
               ],
-              "constrained": []
+              "constrained": [],
+              "pressure_window": [
+                "vision_agent",
+                "voice_command_agent"
+              ]
             },
             "stale_drop": {
               "schema_version": "inferedge-orchestrator-stale-drop-summary-v1",
@@ -7543,7 +8394,8 @@
               "review_deadline_miss",
               "review_fallback_use",
               "review_stale_drop",
-              "review_worker_health_trend"
+              "review_worker_health_trend",
+              "review_sustained_pressure_window"
             ],
             "policy_pressure": {
               "schema_version": "inferedge-orchestrator-policy-pressure-summary-v1",
@@ -7581,6 +8433,52 @@
                 "scheduler_delay_present"
               ],
               "interpretation": "Policy pressure is supplemental operation evidence showing which scheduler decisions limited or protected work under backlog pressure; Lab remains the final deployment decision owner."
+            },
+            "pressure_window": {
+              "schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+              "operation_context_role": "supplemental",
+              "scheduler_owner": "orchestrator",
+              "decision_owner": "lab",
+              "not_a_deployment_decision": true,
+              "source": "queue_depth_timeline+policy_decision_log",
+              "first_read": "review_sustained_pressure_window",
+              "overload_backlog_threshold": 3,
+              "window_count": 1,
+              "longest_window_cycles": 2,
+              "peak_total_queue_depth": 7,
+              "peak_window": {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "peak_total_queue_depth": 7
+              },
+              "longest_window": {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "duration_cycles": 2
+              },
+              "windows": [
+                {
+                  "start_cycle": 1,
+                  "end_cycle": 2,
+                  "duration_cycles": 2,
+                  "peak_total_queue_depth": 7
+                }
+              ],
+              "limited_tasks": [
+                "vision_agent",
+                "voice_command_agent"
+              ],
+              "protected_tasks": [
+                "safety_monitor_agent"
+              ],
+              "fallback_tasks": [
+                "voice_command_agent"
+              ],
+              "pressure_reasons": [
+                "queue_backlog_threshold_exceeded"
+              ],
+              "policy_decision_count": 2,
+              "interpretation": "Pressure window is supplemental operation evidence; Lab remains the final deployment decision owner."
             }
           },
           "orchestrator_operation_timeline_summary_present": true,
@@ -7591,7 +8489,8 @@
             "review_deadline_miss",
             "review_fallback_use",
             "review_stale_drop",
-            "review_worker_health_trend"
+            "review_worker_health_trend",
+            "review_sustained_pressure_window"
           ],
           "orchestrator_operation_timeline_queue_pressure_state": "overloaded",
           "orchestrator_operation_timeline_queue_pressure_reason": "queue_backlog_threshold_exceeded",
@@ -7667,6 +8566,95 @@
           "orchestrator_policy_pressure_decision_owner": "lab",
           "orchestrator_policy_pressure_scheduler_owner": "orchestrator",
           "orchestrator_policy_pressure_not_a_deployment_decision": true,
+          "orchestrator_pressure_window_summary": {
+            "schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+            "operation_context_role": "supplemental",
+            "scheduler_owner": "orchestrator",
+            "decision_owner": "lab",
+            "not_a_deployment_decision": true,
+            "source": "queue_depth_timeline+policy_decision_log",
+            "first_read": "review_sustained_pressure_window",
+            "overload_backlog_threshold": 3,
+            "window_count": 1,
+            "longest_window_cycles": 2,
+            "peak_total_queue_depth": 7,
+            "peak_window": {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "peak_total_queue_depth": 7
+            },
+            "longest_window": {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "duration_cycles": 2
+            },
+            "windows": [
+              {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "duration_cycles": 2,
+                "peak_total_queue_depth": 7
+              }
+            ],
+            "limited_tasks": [
+              "vision_agent",
+              "voice_command_agent"
+            ],
+            "protected_tasks": [
+              "safety_monitor_agent"
+            ],
+            "fallback_tasks": [
+              "voice_command_agent"
+            ],
+            "pressure_reasons": [
+              "queue_backlog_threshold_exceeded"
+            ],
+            "policy_decision_count": 2,
+            "interpretation": "Pressure window is supplemental operation evidence; Lab remains the final deployment decision owner."
+          },
+          "orchestrator_pressure_window_summary_present": true,
+          "orchestrator_pressure_window_summary_schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+          "orchestrator_pressure_window_operation_context_role": "supplemental",
+          "orchestrator_pressure_window_decision_owner": "lab",
+          "orchestrator_pressure_window_scheduler_owner": "orchestrator",
+          "orchestrator_pressure_window_not_a_deployment_decision": true,
+          "orchestrator_pressure_window_first_read": "review_sustained_pressure_window",
+          "orchestrator_pressure_window_overload_backlog_threshold": 3.0,
+          "orchestrator_pressure_window_count": 1.0,
+          "orchestrator_pressure_window_longest_window_cycles": 2.0,
+          "orchestrator_pressure_window_peak_total_queue_depth": 7.0,
+          "orchestrator_pressure_window_peak_window": {
+            "start_cycle": 1,
+            "end_cycle": 2,
+            "peak_total_queue_depth": 7
+          },
+          "orchestrator_pressure_window_longest_window": {
+            "start_cycle": 1,
+            "end_cycle": 2,
+            "duration_cycles": 2
+          },
+          "orchestrator_pressure_window_windows": [
+            {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "duration_cycles": 2,
+              "peak_total_queue_depth": 7
+            }
+          ],
+          "orchestrator_pressure_window_limited_tasks": [
+            "vision_agent",
+            "voice_command_agent"
+          ],
+          "orchestrator_pressure_window_protected_tasks": [
+            "safety_monitor_agent"
+          ],
+          "orchestrator_pressure_window_fallback_tasks": [
+            "voice_command_agent"
+          ],
+          "orchestrator_pressure_window_pressure_reasons": [
+            "queue_backlog_threshold_exceeded"
+          ],
+          "orchestrator_pressure_window_policy_decision_count": 2.0,
           "orchestrator_operation_timeline_affected_deadline_missed_tasks": [
             "vision_agent"
           ],
@@ -8146,7 +9134,11 @@
               "degraded": [
                 "vision_agent"
               ],
-              "constrained": []
+              "constrained": [],
+              "pressure_window": [
+                "vision_agent",
+                "voice_command_agent"
+              ]
             },
             "stale_drop": {
               "schema_version": "inferedge-orchestrator-stale-drop-summary-v1",
@@ -8231,7 +9223,8 @@
               "review_deadline_miss",
               "review_fallback_use",
               "review_stale_drop",
-              "review_worker_health_trend"
+              "review_worker_health_trend",
+              "review_sustained_pressure_window"
             ],
             "policy_pressure": {
               "schema_version": "inferedge-orchestrator-policy-pressure-summary-v1",
@@ -8269,6 +9262,52 @@
                 "scheduler_delay_present"
               ],
               "interpretation": "Policy pressure is supplemental operation evidence showing which scheduler decisions limited or protected work under backlog pressure; Lab remains the final deployment decision owner."
+            },
+            "pressure_window": {
+              "schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+              "operation_context_role": "supplemental",
+              "scheduler_owner": "orchestrator",
+              "decision_owner": "lab",
+              "not_a_deployment_decision": true,
+              "source": "queue_depth_timeline+policy_decision_log",
+              "first_read": "review_sustained_pressure_window",
+              "overload_backlog_threshold": 3,
+              "window_count": 1,
+              "longest_window_cycles": 2,
+              "peak_total_queue_depth": 7,
+              "peak_window": {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "peak_total_queue_depth": 7
+              },
+              "longest_window": {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "duration_cycles": 2
+              },
+              "windows": [
+                {
+                  "start_cycle": 1,
+                  "end_cycle": 2,
+                  "duration_cycles": 2,
+                  "peak_total_queue_depth": 7
+                }
+              ],
+              "limited_tasks": [
+                "vision_agent",
+                "voice_command_agent"
+              ],
+              "protected_tasks": [
+                "safety_monitor_agent"
+              ],
+              "fallback_tasks": [
+                "voice_command_agent"
+              ],
+              "pressure_reasons": [
+                "queue_backlog_threshold_exceeded"
+              ],
+              "policy_decision_count": 2,
+              "interpretation": "Pressure window is supplemental operation evidence; Lab remains the final deployment decision owner."
             }
           },
           "boundary_markers_valid": true,
@@ -8278,7 +9317,8 @@
             "review_deadline_miss",
             "review_fallback_use",
             "review_stale_drop",
-            "review_worker_health_trend"
+            "review_worker_health_trend",
+            "review_sustained_pressure_window"
           ],
           "affected_tasks": [
             "vision_agent",
@@ -8419,6 +9459,52 @@
             ],
             "interpretation": "Worker health trend is supplemental operation evidence; Lab remains the final deployment decision owner."
           },
+          "pressure_window_summary": {
+            "schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+            "operation_context_role": "supplemental",
+            "scheduler_owner": "orchestrator",
+            "decision_owner": "lab",
+            "not_a_deployment_decision": true,
+            "source": "queue_depth_timeline+policy_decision_log",
+            "first_read": "review_sustained_pressure_window",
+            "overload_backlog_threshold": 3,
+            "window_count": 1,
+            "longest_window_cycles": 2,
+            "peak_total_queue_depth": 7,
+            "peak_window": {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "peak_total_queue_depth": 7
+            },
+            "longest_window": {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "duration_cycles": 2
+            },
+            "windows": [
+              {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "duration_cycles": 2,
+                "peak_total_queue_depth": 7
+              }
+            ],
+            "limited_tasks": [
+              "vision_agent",
+              "voice_command_agent"
+            ],
+            "protected_tasks": [
+              "safety_monitor_agent"
+            ],
+            "fallback_tasks": [
+              "voice_command_agent"
+            ],
+            "pressure_reasons": [
+              "queue_backlog_threshold_exceeded"
+            ],
+            "policy_decision_count": 2,
+            "interpretation": "Pressure window is supplemental operation evidence; Lab remains the final deployment decision owner."
+          },
           "review_markers": [
             "review_queue_pressure",
             "review_scheduler_delay",
@@ -8426,6 +9512,7 @@
             "review_fallback_use",
             "review_stale_drop",
             "review_worker_health_trend",
+            "review_sustained_pressure_window",
             "affected_task_context",
             "backlog_policy_reason"
           ],
@@ -8912,7 +9999,11 @@
               "degraded": [
                 "vision_agent"
               ],
-              "constrained": []
+              "constrained": [],
+              "pressure_window": [
+                "vision_agent",
+                "voice_command_agent"
+              ]
             },
             "stale_drop": {
               "schema_version": "inferedge-orchestrator-stale-drop-summary-v1",
@@ -8997,7 +10088,8 @@
               "review_deadline_miss",
               "review_fallback_use",
               "review_stale_drop",
-              "review_worker_health_trend"
+              "review_worker_health_trend",
+              "review_sustained_pressure_window"
             ],
             "policy_pressure": {
               "schema_version": "inferedge-orchestrator-policy-pressure-summary-v1",
@@ -9035,6 +10127,52 @@
                 "scheduler_delay_present"
               ],
               "interpretation": "Policy pressure is supplemental operation evidence showing which scheduler decisions limited or protected work under backlog pressure; Lab remains the final deployment decision owner."
+            },
+            "pressure_window": {
+              "schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+              "operation_context_role": "supplemental",
+              "scheduler_owner": "orchestrator",
+              "decision_owner": "lab",
+              "not_a_deployment_decision": true,
+              "source": "queue_depth_timeline+policy_decision_log",
+              "first_read": "review_sustained_pressure_window",
+              "overload_backlog_threshold": 3,
+              "window_count": 1,
+              "longest_window_cycles": 2,
+              "peak_total_queue_depth": 7,
+              "peak_window": {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "peak_total_queue_depth": 7
+              },
+              "longest_window": {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "duration_cycles": 2
+              },
+              "windows": [
+                {
+                  "start_cycle": 1,
+                  "end_cycle": 2,
+                  "duration_cycles": 2,
+                  "peak_total_queue_depth": 7
+                }
+              ],
+              "limited_tasks": [
+                "vision_agent",
+                "voice_command_agent"
+              ],
+              "protected_tasks": [
+                "safety_monitor_agent"
+              ],
+              "fallback_tasks": [
+                "voice_command_agent"
+              ],
+              "pressure_reasons": [
+                "queue_backlog_threshold_exceeded"
+              ],
+              "policy_decision_count": 2,
+              "interpretation": "Pressure window is supplemental operation evidence; Lab remains the final deployment decision owner."
             }
           },
           "orchestrator_operation_timeline_summary_present": true,
@@ -9045,7 +10183,8 @@
             "review_deadline_miss",
             "review_fallback_use",
             "review_stale_drop",
-            "review_worker_health_trend"
+            "review_worker_health_trend",
+            "review_sustained_pressure_window"
           ],
           "orchestrator_operation_timeline_queue_pressure_state": "overloaded",
           "orchestrator_operation_timeline_queue_pressure_reason": "queue_backlog_threshold_exceeded",
@@ -9121,6 +10260,95 @@
           "orchestrator_policy_pressure_decision_owner": "lab",
           "orchestrator_policy_pressure_scheduler_owner": "orchestrator",
           "orchestrator_policy_pressure_not_a_deployment_decision": true,
+          "orchestrator_pressure_window_summary": {
+            "schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+            "operation_context_role": "supplemental",
+            "scheduler_owner": "orchestrator",
+            "decision_owner": "lab",
+            "not_a_deployment_decision": true,
+            "source": "queue_depth_timeline+policy_decision_log",
+            "first_read": "review_sustained_pressure_window",
+            "overload_backlog_threshold": 3,
+            "window_count": 1,
+            "longest_window_cycles": 2,
+            "peak_total_queue_depth": 7,
+            "peak_window": {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "peak_total_queue_depth": 7
+            },
+            "longest_window": {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "duration_cycles": 2
+            },
+            "windows": [
+              {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "duration_cycles": 2,
+                "peak_total_queue_depth": 7
+              }
+            ],
+            "limited_tasks": [
+              "vision_agent",
+              "voice_command_agent"
+            ],
+            "protected_tasks": [
+              "safety_monitor_agent"
+            ],
+            "fallback_tasks": [
+              "voice_command_agent"
+            ],
+            "pressure_reasons": [
+              "queue_backlog_threshold_exceeded"
+            ],
+            "policy_decision_count": 2,
+            "interpretation": "Pressure window is supplemental operation evidence; Lab remains the final deployment decision owner."
+          },
+          "orchestrator_pressure_window_summary_present": true,
+          "orchestrator_pressure_window_summary_schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+          "orchestrator_pressure_window_operation_context_role": "supplemental",
+          "orchestrator_pressure_window_decision_owner": "lab",
+          "orchestrator_pressure_window_scheduler_owner": "orchestrator",
+          "orchestrator_pressure_window_not_a_deployment_decision": true,
+          "orchestrator_pressure_window_first_read": "review_sustained_pressure_window",
+          "orchestrator_pressure_window_overload_backlog_threshold": 3.0,
+          "orchestrator_pressure_window_count": 1.0,
+          "orchestrator_pressure_window_longest_window_cycles": 2.0,
+          "orchestrator_pressure_window_peak_total_queue_depth": 7.0,
+          "orchestrator_pressure_window_peak_window": {
+            "start_cycle": 1,
+            "end_cycle": 2,
+            "peak_total_queue_depth": 7
+          },
+          "orchestrator_pressure_window_longest_window": {
+            "start_cycle": 1,
+            "end_cycle": 2,
+            "duration_cycles": 2
+          },
+          "orchestrator_pressure_window_windows": [
+            {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "duration_cycles": 2,
+              "peak_total_queue_depth": 7
+            }
+          ],
+          "orchestrator_pressure_window_limited_tasks": [
+            "vision_agent",
+            "voice_command_agent"
+          ],
+          "orchestrator_pressure_window_protected_tasks": [
+            "safety_monitor_agent"
+          ],
+          "orchestrator_pressure_window_fallback_tasks": [
+            "voice_command_agent"
+          ],
+          "orchestrator_pressure_window_pressure_reasons": [
+            "queue_backlog_threshold_exceeded"
+          ],
+          "orchestrator_pressure_window_policy_decision_count": 2.0,
           "orchestrator_operation_timeline_affected_deadline_missed_tasks": [
             "vision_agent"
           ],
@@ -9605,6 +10833,1350 @@
       }
     },
     {
+      "type": "edgeenv_orchestrator_pressure_window_summary",
+      "metric_name": "orchestrator_pressure_window_count",
+      "observed_value": 1,
+      "baseline_value": 0,
+      "threshold": 1,
+      "delta": null,
+      "delta_pct": null,
+      "increase_factor": null,
+      "severity": "medium",
+      "status": "warning",
+      "explanation": "EdgeEnv preserved Orchestrator pressure_window summary with 1 sustained overload window(s).",
+      "why_it_matters": "The preserved pressure-window summary identifies when backlog pressure crossed the overload threshold and which workloads were limited, protected, or sent to fallback, while Lab remains the final deployment decision owner.",
+      "suspected_causes": [
+        "sustained_pressure_window_context",
+        "queue_pressure_context",
+        "policy_pressure_context",
+        "workload_limited_by_policy",
+        "fallback_policy_context"
+      ],
+      "recommendation": "Review pressure_window in Lab alongside operation_timeline_summary, policy_pressure, stale_drop, and worker_health_trend before treating the operation profile as stable.",
+      "raw_context": {
+        "edgeenv_regression": {
+          "baseline_run_id": "edgeenv-smoke-baseline",
+          "candidate_run_id": "edgeenv-smoke-candidate",
+          "comparable": true,
+          "mode": "same-condition",
+          "regression_detected": false,
+          "regression_type": "mixed",
+          "severity": "high",
+          "recommendation": "review_required",
+          "mean_delta_pct": null,
+          "p95_delta_pct": null,
+          "p99_delta_pct": null,
+          "fps_delta_pct": null,
+          "memory_peak_delta_pct": null,
+          "triggered_thresholds": [],
+          "runtime_telemetry_context_present": true,
+          "runtime_telemetry_source": "result_artifacts+runtime_telemetry_history",
+          "runtime_telemetry_history_schema_version": "edgeenv.runtime-telemetry-history.v1",
+          "history_orchestrator_feed_runs": 1.0,
+          "history_registered_runs": 2.0,
+          "history_telemetry_runs": 2.0,
+          "history_telemetry_seed_runs": 2.0,
+          "history_telemetry_seed_run_config_runs": 2.0,
+          "baseline_runtime_telemetry_history_seed_schema_version": "inferedge-runtime-telemetry-history-seed-v1",
+          "candidate_runtime_telemetry_history_seed_schema_version": "inferedge-runtime-telemetry-history-seed-v1",
+          "baseline_runtime_telemetry_history_seed_registry_owner": "edgeenv",
+          "candidate_runtime_telemetry_history_seed_registry_owner": "edgeenv",
+          "baseline_runtime_telemetry_history_seed_decision_owner": "lab",
+          "candidate_runtime_telemetry_history_seed_decision_owner": "lab",
+          "candidate_runtime_telemetry_history_seed_production_monitoring": false,
+          "candidate_runtime_telemetry_history_seed_missing_telemetry_is_failure": false,
+          "candidate_runtime_telemetry_history_seed_point_count": 1.0,
+          "runtime_telemetry_history_seed_run_config_marker_fields": [
+            "input_mode",
+            "input_preprocess",
+            "power_mode",
+            "jetson_clocks",
+            "warmup",
+            "runs"
+          ],
+          "runtime_telemetry_history_seed_run_config_marker_labels": [
+            "baseline/candidate=shape=1x640x640, input_mode=dummy, input_preprocess=none, power_mode=unknown, jetson_clocks=unknown, warmup=1, runs=10"
+          ],
+          "baseline_runtime_telemetry_history_seed_run_config": {
+            "batch": 1,
+            "height": 640,
+            "width": 640,
+            "warmup": 1,
+            "runs": 10,
+            "timeout_ms": null,
+            "input_mode": "dummy",
+            "input_preprocess": "none",
+            "power_mode": "unknown",
+            "jetson_clocks": "unknown"
+          },
+          "baseline_runtime_telemetry_history_seed_run_config_markers": {
+            "shape": "1x640x640",
+            "input_mode": "dummy",
+            "input_preprocess": "none",
+            "power_mode": "unknown",
+            "jetson_clocks": "unknown",
+            "warmup": 1,
+            "runs": 10
+          },
+          "candidate_runtime_telemetry_history_seed_run_config": {
+            "batch": 1,
+            "height": 640,
+            "width": 640,
+            "warmup": 1,
+            "runs": 10,
+            "timeout_ms": null,
+            "input_mode": "dummy",
+            "input_preprocess": "none",
+            "power_mode": "unknown",
+            "jetson_clocks": "unknown"
+          },
+          "candidate_runtime_telemetry_history_seed_run_config_markers": {
+            "shape": "1x640x640",
+            "input_mode": "dummy",
+            "input_preprocess": "none",
+            "power_mode": "unknown",
+            "jetson_clocks": "unknown",
+            "warmup": 1,
+            "runs": 10
+          },
+          "candidate_runtime_telemetry_history_seed_run_config_present": true,
+          "history_missing_telemetry_runs": 0.0,
+          "history_missing_orchestrator_context_count": 0.0,
+          "history_missing_orchestrator_context_run_ids": [],
+          "history_missing_orchestrator_contexts": [],
+          "history_missing_orchestrator_source_repository": null,
+          "history_missing_orchestrator_artifact_role": null,
+          "history_missing_orchestrator_producer_contract": null,
+          "history_missing_orchestrator_candidate_context_telemetry_source": null,
+          "history_missing_orchestrator_candidate_context_producer": {},
+          "history_missing_orchestrator_candidate_producer_sources": [],
+          "history_missing_orchestrator_candidate_device_local_producer_sources": [],
+          "history_missing_orchestrator_candidate_producer_sources_by_task": {},
+          "history_missing_orchestrator_candidate_producer_stage_by_task": {},
+          "history_missing_orchestrator_candidate_producer_event_count": null,
+          "history_missing_orchestrator_candidate_device_local_event_count": null,
+          "history_missing_orchestrator_candidate_device_local_task_count": null,
+          "history_missing_orchestrator_candidate_operation_context_role": null,
+          "history_missing_orchestrator_remote_runtime_event_summary": {},
+          "history_missing_orchestrator_remote_runtime_event_summary_present": false,
+          "history_missing_orchestrator_remote_runtime_event_summary_evidence_role": null,
+          "history_missing_orchestrator_remote_runtime_event_summary_operation_boundary": null,
+          "history_missing_orchestrator_remote_runtime_event_summary_production_remote_execution": null,
+          "history_missing_orchestrator_operation_risk_summary": {},
+          "history_missing_orchestrator_operation_risk_summary_present": false,
+          "history_missing_orchestrator_operation_risk_summary_evidence_role": null,
+          "history_missing_orchestrator_operation_risk_summary_decision_owner": null,
+          "history_missing_orchestrator_operation_risk_summary_scheduler_owner": null,
+          "history_missing_orchestrator_operation_risk_summary_not_a_deployment_decision": null,
+          "history_missing_orchestrator_edgeenv_mapping_hint": {},
+          "history_missing_orchestrator_mapping_hint_aiguard_evidence_candidates": [],
+          "history_missing_orchestrator_downstream_guard_alignment": {},
+          "history_missing_orchestrator_guard_alignment_declared_by": null,
+          "history_missing_orchestrator_guard_alignment_producer_lineage_evidence_type": null,
+          "history_missing_orchestrator_guard_alignment_operation_evidence_candidates": [],
+          "history_missing_orchestrator_guard_alignment_orchestrator_is_final_decision_owner": null,
+          "history_missing_orchestrator_guard_alignment_lab_is_final_decision_owner": null,
+          "telemetry_coverage_source": "history_telemetry_coverage",
+          "history_telemetry_coverage_missing_field_run_count": 1.0,
+          "history_telemetry_coverage_missing_field_runs": [
+            {
+              "run_id": "edgeenv-smoke-candidate",
+              "missing_fields": [
+                "queue_depth"
+              ],
+              "missing_field_count": 1,
+              "missing_telemetry_is_failure": false
+            }
+          ],
+          "history_telemetry_coverage_run_summaries_present": true,
+          "baseline_telemetry_present": true,
+          "candidate_telemetry_present": true,
+          "baseline_history_entry_present": true,
+          "candidate_history_entry_present": true,
+          "baseline_telemetry_coverage_ratio": 1.0,
+          "candidate_telemetry_coverage_ratio": 0.666667,
+          "baseline_telemetry_coverage_missing_fields": [],
+          "candidate_telemetry_coverage_missing_fields": [
+            "queue_depth"
+          ],
+          "telemetry_coverage_missing_field_count": 1.0,
+          "baseline_missing_telemetry_is_failure": false,
+          "candidate_missing_telemetry_is_failure": false,
+          "baseline_execution_sequence_id": 1.0,
+          "candidate_execution_sequence_id": 2.0,
+          "execution_sequence_order_valid": true,
+          "baseline_orchestrator_context_present": false,
+          "candidate_orchestrator_context_present": true,
+          "orchestrator_source_repository": "InferEdgeOrchestrator",
+          "orchestrator_artifact_role": "orchestrator-supplemental-operation-context",
+          "orchestrator_producer_contract": "inferedge-orchestrator-edgeenv-runtime-telemetry-feed-v1",
+          "orchestrator_candidate_context_telemetry_source": "inferedge_orchestrator_operation_summary",
+          "orchestrator_candidate_context_producer": {
+            "operation_context_role": "supplemental",
+            "producer_sources": [
+              "device_local_cli_override",
+              "orchestration_summary"
+            ],
+            "device_local_producer_sources": [
+              "device_local_cli_override"
+            ],
+            "producer_sources_by_task": {
+              "vision_agent": [
+                "device_local_cli_override"
+              ]
+            },
+            "producer_stage_by_task": {
+              "vision_agent": "device_local_starter"
+            },
+            "producer_event_count": 4,
+            "device_local_event_count": 2,
+            "device_local_task_count": 1
+          },
+          "orchestrator_candidate_producer_sources": [
+            "device_local_cli_override",
+            "orchestration_summary"
+          ],
+          "orchestrator_candidate_device_local_producer_sources": [
+            "device_local_cli_override"
+          ],
+          "orchestrator_candidate_producer_sources_by_task": {
+            "vision_agent": [
+              "device_local_cli_override"
+            ]
+          },
+          "orchestrator_candidate_producer_stage_by_task": {
+            "vision_agent": "device_local_starter"
+          },
+          "orchestrator_candidate_producer_event_count": 4.0,
+          "orchestrator_candidate_device_local_event_count": 2.0,
+          "orchestrator_candidate_device_local_task_count": 1.0,
+          "orchestrator_candidate_operation_context_role": "supplemental",
+          "orchestrator_remote_runtime_event_summary": {
+            "event_count": 4,
+            "runtime_event_count": 4,
+            "production_remote_execution": false,
+            "evidence_role": "remote_dispatch_runtime_event_compact_summary",
+            "operation_boundary": "remote dispatch starter evidence only"
+          },
+          "orchestrator_remote_runtime_event_summary_present": true,
+          "orchestrator_remote_runtime_event_summary_evidence_role": "remote_dispatch_runtime_event_compact_summary",
+          "orchestrator_remote_runtime_event_summary_operation_boundary": "remote dispatch starter evidence only",
+          "orchestrator_remote_runtime_event_summary_production_remote_execution": false,
+          "orchestrator_operation_risk_summary": {
+            "schema_version": "inferedge-entrypoint-operation-risk-summary-v1",
+            "evidence_role": "derived_navigation_context",
+            "decision_owner": "lab",
+            "scheduler_owner": "orchestrator",
+            "not_a_deployment_decision": true,
+            "queue_pressure_reason": "queue_backlog_threshold_exceeded",
+            "max_pressure_task": "vision_agent",
+            "primary_health_reason": "worker_queue_pressure",
+            "degraded_worker_ids": [
+              "worker-jetson-01"
+            ],
+            "device_local_event_count": 2,
+            "producer_event_count": 4
+          },
+          "orchestrator_operation_risk_summary_present": true,
+          "orchestrator_operation_risk_summary_schema_version": "inferedge-entrypoint-operation-risk-summary-v1",
+          "orchestrator_operation_risk_summary_evidence_role": "derived_navigation_context",
+          "orchestrator_operation_risk_summary_decision_owner": "lab",
+          "orchestrator_operation_risk_summary_scheduler_owner": "orchestrator",
+          "orchestrator_operation_risk_summary_not_a_deployment_decision": true,
+          "orchestrator_operation_risk_summary_queue_pressure_reason": "queue_backlog_threshold_exceeded",
+          "orchestrator_operation_risk_summary_max_pressure_task": "vision_agent",
+          "orchestrator_operation_risk_summary_primary_health_reason": "worker_queue_pressure",
+          "orchestrator_operation_risk_summary_degraded_worker_ids": [
+            "worker-jetson-01"
+          ],
+          "orchestrator_operation_risk_summary_device_local_event_count": 2.0,
+          "orchestrator_operation_risk_summary_producer_event_count": 4.0,
+          "orchestrator_operation_risk_rollup": {
+            "schema_version": "inferedge-orchestrator-operation-risk-rollup-v1",
+            "operation_context_role": "supplemental",
+            "decision_owner": "lab",
+            "scheduler_owner": "orchestrator",
+            "not_a_deployment_decision": true,
+            "risk_level": "review",
+            "first_read": "review_operation_risk_context",
+            "primary_reasons": [
+              "queue_pressure_overloaded",
+              "scheduler_delay_present",
+              "deadline_missed_present",
+              "fallback_used"
+            ],
+            "affected_tasks": {
+              "deadline_missed": [
+                "vision_agent"
+              ],
+              "fallback": [
+                "voice_command_agent"
+              ],
+              "scheduler_delay": [
+                "vision_agent"
+              ],
+              "degraded": [
+                "vision_agent"
+              ],
+              "constrained": []
+            },
+            "max_total_queue_depth": 7,
+            "overload_backlog_threshold": 3,
+            "queue_pressure_state": "overloaded",
+            "queue_pressure_reason": "queue_backlog_threshold_exceeded",
+            "deadline_missed_count": 2,
+            "fallback_count": 1,
+            "dropped_count": 1,
+            "policy_decision_count": 2,
+            "scheduler_delay_event_count": 1,
+            "resource_snapshot_count": 0
+          },
+          "orchestrator_operation_risk_rollup_present": true,
+          "orchestrator_operation_risk_rollup_schema_version": "inferedge-orchestrator-operation-risk-rollup-v1",
+          "orchestrator_operation_risk_rollup_operation_context_role": "supplemental",
+          "orchestrator_operation_risk_rollup_decision_owner": "lab",
+          "orchestrator_operation_risk_rollup_scheduler_owner": "orchestrator",
+          "orchestrator_operation_risk_rollup_not_a_deployment_decision": true,
+          "orchestrator_operation_risk_rollup_risk_level": "review",
+          "orchestrator_operation_risk_rollup_first_read": "review_operation_risk_context",
+          "orchestrator_operation_risk_rollup_primary_reasons": [
+            "queue_pressure_overloaded",
+            "scheduler_delay_present",
+            "deadline_missed_present",
+            "fallback_used"
+          ],
+          "orchestrator_operation_risk_rollup_affected_tasks": {
+            "deadline_missed": [
+              "vision_agent"
+            ],
+            "fallback": [
+              "voice_command_agent"
+            ],
+            "scheduler_delay": [
+              "vision_agent"
+            ],
+            "degraded": [
+              "vision_agent"
+            ],
+            "constrained": []
+          },
+          "orchestrator_operation_risk_rollup_affected_deadline_missed_tasks": [
+            "vision_agent"
+          ],
+          "orchestrator_operation_risk_rollup_affected_fallback_tasks": [
+            "voice_command_agent"
+          ],
+          "orchestrator_operation_risk_rollup_affected_scheduler_delay_tasks": [
+            "vision_agent"
+          ],
+          "orchestrator_operation_risk_rollup_affected_degraded_tasks": [
+            "vision_agent"
+          ],
+          "orchestrator_operation_risk_rollup_affected_constrained_tasks": [],
+          "orchestrator_operation_risk_rollup_queue_pressure_state": "overloaded",
+          "orchestrator_operation_risk_rollup_queue_pressure_reason": "queue_backlog_threshold_exceeded",
+          "orchestrator_operation_risk_rollup_max_total_queue_depth": 7.0,
+          "orchestrator_operation_risk_rollup_deadline_missed_count": 2.0,
+          "orchestrator_operation_risk_rollup_fallback_count": 1.0,
+          "orchestrator_operation_risk_rollup_drop_count": 1.0,
+          "orchestrator_operation_risk_rollup_scheduler_delay_event_count": 1.0,
+          "orchestrator_operation_risk_rollup_policy_decision_count": 2.0,
+          "orchestrator_operation_risk_rollup_resource_snapshot_count": 0.0,
+          "orchestrator_latency_budget_protection": {
+            "schema_version": "inferedge-orchestrator-latency-budget-protection-v1",
+            "evidence_role": "latency_budget_protection_context",
+            "decision_owner": "lab",
+            "scheduler_owner": "orchestrator",
+            "regression_owner": "edgeenv",
+            "not_a_deployment_decision": true,
+            "protected_high_priority_task_candidates": [
+              "safety_monitor_agent"
+            ],
+            "tasks_with_latency_budget_risk": [
+              "vision_agent"
+            ],
+            "risk_reasons": [
+              "deadline_missed",
+              "scheduler_delay_observed",
+              "queue_backlog_threshold_exceeded"
+            ],
+            "per_task_budget_context": {
+              "safety_monitor_agent": {
+                "latency_budget_ms": 20.0,
+                "deadline_missed_count": 0,
+                "scheduler_delay_event_count": 0,
+                "protected_priority": true
+              },
+              "vision_agent": {
+                "latency_budget_ms": 33.0,
+                "deadline_missed_count": 1,
+                "scheduler_delay_event_count": 1,
+                "max_scheduler_delay_cycles": 3
+              }
+            }
+          },
+          "orchestrator_latency_budget_protection_present": true,
+          "orchestrator_latency_budget_protection_schema_version": "inferedge-orchestrator-latency-budget-protection-v1",
+          "orchestrator_latency_budget_protection_evidence_role": "latency_budget_protection_context",
+          "orchestrator_latency_budget_protection_decision_owner": "lab",
+          "orchestrator_latency_budget_protection_scheduler_owner": "orchestrator",
+          "orchestrator_latency_budget_protection_regression_owner": "edgeenv",
+          "orchestrator_latency_budget_protection_not_a_deployment_decision": true,
+          "orchestrator_latency_budget_protection_protected_tasks": [
+            "safety_monitor_agent"
+          ],
+          "orchestrator_latency_budget_protection_risk_tasks": [
+            "vision_agent"
+          ],
+          "orchestrator_latency_budget_protection_risk_reasons": [
+            "deadline_missed",
+            "scheduler_delay_observed",
+            "queue_backlog_threshold_exceeded"
+          ],
+          "orchestrator_latency_budget_protection_per_task_budget_context": {
+            "safety_monitor_agent": {
+              "latency_budget_ms": 20.0,
+              "deadline_missed_count": 0,
+              "scheduler_delay_event_count": 0,
+              "protected_priority": true
+            },
+            "vision_agent": {
+              "latency_budget_ms": 33.0,
+              "deadline_missed_count": 1,
+              "scheduler_delay_event_count": 1,
+              "max_scheduler_delay_cycles": 3
+            }
+          },
+          "orchestrator_operation_timeline_summary": {
+            "schema_version": "inferedge-orchestrator-operation-timeline-summary-v1",
+            "source": "queue_depth_timeline+latency_timeline+policy_decision_log+runtime_event_summary",
+            "sample_counts": {
+              "queue_depth": 2,
+              "latency": 2,
+              "policy_decision": 2,
+              "runtime_event": 15
+            },
+            "queue": {
+              "max_total_queue_depth": 7,
+              "average_total_queue_depth": 5.5,
+              "overload_backlog_threshold": 3,
+              "pressure_state": "overloaded",
+              "pressure_reason": "queue_backlog_threshold_exceeded",
+              "max_pressure_task": "vision_agent",
+              "max_queue_depth_by_task": {
+                "vision_agent": 5,
+                "voice_command_agent": 2
+              }
+            },
+            "latency": {
+              "sample_count": 2,
+              "max_latency_ms": 72.0,
+              "max_queue_wait_ms": 15.0,
+              "max_queue_wait_ms_by_task": {
+                "vision_agent": 15.0
+              },
+              "tasks_with_deadline_miss": [
+                "vision_agent"
+              ]
+            },
+            "policy": {
+              "decision_count": 2,
+              "decision_reasons": [
+                "queue_backlog_threshold_exceeded"
+              ],
+              "first_decision": {
+                "task": "vision_agent",
+                "decision_reason": "queue_backlog_threshold_exceeded"
+              },
+              "latest_decision": {
+                "task": "voice_command_agent",
+                "decision_reason": "queue_backlog_threshold_exceeded"
+              }
+            },
+            "affected_tasks": {
+              "deadline_missed": [
+                "vision_agent"
+              ],
+              "fallback": [
+                "voice_command_agent"
+              ],
+              "scheduler_delay": [
+                "vision_agent"
+              ],
+              "stale_drop": [
+                "voice_command_agent"
+              ],
+              "degraded": [
+                "vision_agent"
+              ],
+              "constrained": [],
+              "pressure_window": [
+                "vision_agent",
+                "voice_command_agent"
+              ]
+            },
+            "stale_drop": {
+              "schema_version": "inferedge-orchestrator-stale-drop-summary-v1",
+              "operation_context_role": "supplemental",
+              "scheduler_owner": "orchestrator",
+              "decision_owner": "lab",
+              "not_a_deployment_decision": true,
+              "source": "drop_events",
+              "first_read": "review_stale_drop_context",
+              "stale_drop_count": 1,
+              "total_drop_count": 4,
+              "stale_drop_rate": 0.25,
+              "stale_drop_reasons": {
+                "queue_overflow_drop_oldest": 1
+              },
+              "stale_drop_reason_classes": [
+                "stale_queue_overflow"
+              ],
+              "tasks_with_stale_drop": [
+                "voice_command_agent"
+              ],
+              "task_counts": {
+                "voice_command_agent": 1
+              },
+              "latest_stale_drop_event": {
+                "task": "voice_command_agent",
+                "agent_id": "voice_command_agent",
+                "reason": "queue_overflow_drop_oldest",
+                "stale_drop_class": "stale_queue_overflow"
+              }
+            },
+            "worker_health_trend": {
+              "schema_version": "inferedge-orchestrator-worker-health-trend-v1",
+              "operation_context_role": "supplemental",
+              "scheduler_owner": "orchestrator",
+              "decision_owner": "lab",
+              "not_a_deployment_decision": true,
+              "source": "worker_health_snapshot+runtime_event_summary",
+              "health_state_counts": {
+                "healthy": 1,
+                "degraded": 1,
+                "constrained": 1
+              },
+              "tasks_by_health_state": {
+                "healthy": [
+                  "safety_monitor_agent"
+                ],
+                "degraded": [
+                  "vision_agent"
+                ],
+                "constrained": [
+                  "voice_command_agent"
+                ]
+              },
+              "task_health_context": {
+                "vision_agent": {
+                  "worker_id": "worker-jetson-01",
+                  "health_state": "degraded",
+                  "primary_health_reason": "worker_queue_pressure"
+                },
+                "voice_command_agent": {
+                  "worker_id": "worker-jetson-02",
+                  "health_state": "constrained",
+                  "primary_health_reason": "fallback_overuse"
+                }
+              },
+              "degraded_workers": [
+                "worker-jetson-01"
+              ],
+              "constrained_workers": [
+                "worker-jetson-02"
+              ],
+              "review_hints": [
+                "review_worker_health_degradation",
+                "review_worker_health_constraints"
+              ],
+              "interpretation": "Worker health trend is supplemental operation evidence; Lab remains the final deployment decision owner."
+            },
+            "review_hints": [
+              "review_queue_pressure",
+              "review_scheduler_delay",
+              "review_deadline_miss",
+              "review_fallback_use",
+              "review_stale_drop",
+              "review_worker_health_trend",
+              "review_sustained_pressure_window"
+            ],
+            "policy_pressure": {
+              "schema_version": "inferedge-orchestrator-policy-pressure-summary-v1",
+              "operation_context_role": "supplemental",
+              "scheduler_owner": "orchestrator",
+              "decision_owner": "lab",
+              "not_a_deployment_decision": true,
+              "source": "policy_decision_log+runtime_event_summary",
+              "first_read": "review_policy_pressure_context",
+              "decision_count": 2,
+              "decision_reason_counts": {
+                "queue_backlog_threshold_exceeded": 2
+              },
+              "limited_tasks": [
+                "vision_agent",
+                "voice_command_agent"
+              ],
+              "protected_tasks": [
+                "safety_monitor_agent"
+              ],
+              "fallback_tasks": [
+                "voice_command_agent"
+              ],
+              "fallback_decision_count": 1,
+              "backlog_thresholds": [
+                3
+              ],
+              "max_total_backlog_before": 7,
+              "max_backlog_over_threshold": 4,
+              "pressure_markers": [
+                "policy_decision_present",
+                "backlog_exceeded_threshold",
+                "fallback_policy_used",
+                "workload_limited_by_policy",
+                "scheduler_delay_present"
+              ],
+              "interpretation": "Policy pressure is supplemental operation evidence showing which scheduler decisions limited or protected work under backlog pressure; Lab remains the final deployment decision owner."
+            },
+            "pressure_window": {
+              "schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+              "operation_context_role": "supplemental",
+              "scheduler_owner": "orchestrator",
+              "decision_owner": "lab",
+              "not_a_deployment_decision": true,
+              "source": "queue_depth_timeline+policy_decision_log",
+              "first_read": "review_sustained_pressure_window",
+              "overload_backlog_threshold": 3,
+              "window_count": 1,
+              "longest_window_cycles": 2,
+              "peak_total_queue_depth": 7,
+              "peak_window": {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "peak_total_queue_depth": 7
+              },
+              "longest_window": {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "duration_cycles": 2
+              },
+              "windows": [
+                {
+                  "start_cycle": 1,
+                  "end_cycle": 2,
+                  "duration_cycles": 2,
+                  "peak_total_queue_depth": 7
+                }
+              ],
+              "limited_tasks": [
+                "vision_agent",
+                "voice_command_agent"
+              ],
+              "protected_tasks": [
+                "safety_monitor_agent"
+              ],
+              "fallback_tasks": [
+                "voice_command_agent"
+              ],
+              "pressure_reasons": [
+                "queue_backlog_threshold_exceeded"
+              ],
+              "policy_decision_count": 2,
+              "interpretation": "Pressure window is supplemental operation evidence; Lab remains the final deployment decision owner."
+            }
+          },
+          "orchestrator_operation_timeline_summary_present": true,
+          "orchestrator_operation_timeline_summary_schema_version": "inferedge-orchestrator-operation-timeline-summary-v1",
+          "orchestrator_operation_timeline_review_hints": [
+            "review_queue_pressure",
+            "review_scheduler_delay",
+            "review_deadline_miss",
+            "review_fallback_use",
+            "review_stale_drop",
+            "review_worker_health_trend",
+            "review_sustained_pressure_window"
+          ],
+          "orchestrator_operation_timeline_queue_pressure_state": "overloaded",
+          "orchestrator_operation_timeline_queue_pressure_reason": "queue_backlog_threshold_exceeded",
+          "orchestrator_operation_timeline_max_pressure_task": "vision_agent",
+          "orchestrator_operation_timeline_max_queue_wait_ms": 15.0,
+          "orchestrator_operation_timeline_max_latency_ms": 72.0,
+          "orchestrator_operation_timeline_policy_decision_count": 2.0,
+          "orchestrator_operation_timeline_policy_decision_reasons": [
+            "queue_backlog_threshold_exceeded"
+          ],
+          "orchestrator_policy_pressure_summary": {
+            "schema_version": "inferedge-orchestrator-policy-pressure-summary-v1",
+            "operation_context_role": "supplemental",
+            "scheduler_owner": "orchestrator",
+            "decision_owner": "lab",
+            "not_a_deployment_decision": true,
+            "source": "policy_decision_log+runtime_event_summary",
+            "first_read": "review_policy_pressure_context",
+            "decision_count": 2,
+            "decision_reason_counts": {
+              "queue_backlog_threshold_exceeded": 2
+            },
+            "limited_tasks": [
+              "vision_agent",
+              "voice_command_agent"
+            ],
+            "protected_tasks": [
+              "safety_monitor_agent"
+            ],
+            "fallback_tasks": [
+              "voice_command_agent"
+            ],
+            "fallback_decision_count": 1,
+            "backlog_thresholds": [
+              3
+            ],
+            "max_total_backlog_before": 7,
+            "max_backlog_over_threshold": 4,
+            "pressure_markers": [
+              "policy_decision_present",
+              "backlog_exceeded_threshold",
+              "fallback_policy_used",
+              "workload_limited_by_policy",
+              "scheduler_delay_present"
+            ],
+            "interpretation": "Policy pressure is supplemental operation evidence showing which scheduler decisions limited or protected work under backlog pressure; Lab remains the final deployment decision owner."
+          },
+          "orchestrator_policy_pressure_summary_present": true,
+          "orchestrator_policy_pressure_summary_schema_version": "inferedge-orchestrator-policy-pressure-summary-v1",
+          "orchestrator_policy_pressure_decision_count": 2.0,
+          "orchestrator_policy_pressure_decision_reason_counts": {
+            "queue_backlog_threshold_exceeded": 2
+          },
+          "orchestrator_policy_pressure_limited_tasks": [
+            "vision_agent",
+            "voice_command_agent"
+          ],
+          "orchestrator_policy_pressure_protected_tasks": [
+            "safety_monitor_agent"
+          ],
+          "orchestrator_policy_pressure_fallback_tasks": [
+            "voice_command_agent"
+          ],
+          "orchestrator_policy_pressure_markers": [
+            "policy_decision_present",
+            "backlog_exceeded_threshold",
+            "fallback_policy_used",
+            "workload_limited_by_policy",
+            "scheduler_delay_present"
+          ],
+          "orchestrator_policy_pressure_marker_count": 5.0,
+          "orchestrator_policy_pressure_max_backlog_over_threshold": 4.0,
+          "orchestrator_policy_pressure_decision_owner": "lab",
+          "orchestrator_policy_pressure_scheduler_owner": "orchestrator",
+          "orchestrator_policy_pressure_not_a_deployment_decision": true,
+          "orchestrator_pressure_window_summary": {
+            "schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+            "operation_context_role": "supplemental",
+            "scheduler_owner": "orchestrator",
+            "decision_owner": "lab",
+            "not_a_deployment_decision": true,
+            "source": "queue_depth_timeline+policy_decision_log",
+            "first_read": "review_sustained_pressure_window",
+            "overload_backlog_threshold": 3,
+            "window_count": 1,
+            "longest_window_cycles": 2,
+            "peak_total_queue_depth": 7,
+            "peak_window": {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "peak_total_queue_depth": 7
+            },
+            "longest_window": {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "duration_cycles": 2
+            },
+            "windows": [
+              {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "duration_cycles": 2,
+                "peak_total_queue_depth": 7
+              }
+            ],
+            "limited_tasks": [
+              "vision_agent",
+              "voice_command_agent"
+            ],
+            "protected_tasks": [
+              "safety_monitor_agent"
+            ],
+            "fallback_tasks": [
+              "voice_command_agent"
+            ],
+            "pressure_reasons": [
+              "queue_backlog_threshold_exceeded"
+            ],
+            "policy_decision_count": 2,
+            "interpretation": "Pressure window is supplemental operation evidence; Lab remains the final deployment decision owner."
+          },
+          "orchestrator_pressure_window_summary_present": true,
+          "orchestrator_pressure_window_summary_schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+          "orchestrator_pressure_window_operation_context_role": "supplemental",
+          "orchestrator_pressure_window_decision_owner": "lab",
+          "orchestrator_pressure_window_scheduler_owner": "orchestrator",
+          "orchestrator_pressure_window_not_a_deployment_decision": true,
+          "orchestrator_pressure_window_first_read": "review_sustained_pressure_window",
+          "orchestrator_pressure_window_overload_backlog_threshold": 3.0,
+          "orchestrator_pressure_window_count": 1.0,
+          "orchestrator_pressure_window_longest_window_cycles": 2.0,
+          "orchestrator_pressure_window_peak_total_queue_depth": 7.0,
+          "orchestrator_pressure_window_peak_window": {
+            "start_cycle": 1,
+            "end_cycle": 2,
+            "peak_total_queue_depth": 7
+          },
+          "orchestrator_pressure_window_longest_window": {
+            "start_cycle": 1,
+            "end_cycle": 2,
+            "duration_cycles": 2
+          },
+          "orchestrator_pressure_window_windows": [
+            {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "duration_cycles": 2,
+              "peak_total_queue_depth": 7
+            }
+          ],
+          "orchestrator_pressure_window_limited_tasks": [
+            "vision_agent",
+            "voice_command_agent"
+          ],
+          "orchestrator_pressure_window_protected_tasks": [
+            "safety_monitor_agent"
+          ],
+          "orchestrator_pressure_window_fallback_tasks": [
+            "voice_command_agent"
+          ],
+          "orchestrator_pressure_window_pressure_reasons": [
+            "queue_backlog_threshold_exceeded"
+          ],
+          "orchestrator_pressure_window_policy_decision_count": 2.0,
+          "orchestrator_operation_timeline_affected_deadline_missed_tasks": [
+            "vision_agent"
+          ],
+          "orchestrator_operation_timeline_affected_fallback_tasks": [
+            "voice_command_agent"
+          ],
+          "orchestrator_operation_timeline_affected_scheduler_delay_tasks": [
+            "vision_agent"
+          ],
+          "orchestrator_operation_timeline_affected_degraded_tasks": [
+            "vision_agent"
+          ],
+          "orchestrator_operation_timeline_affected_constrained_tasks": [],
+          "orchestrator_scheduler_fairness_summary": {
+            "schema_version": "inferedge-orchestrator-scheduler-fairness-summary-v1",
+            "operation_context_role": "supplemental",
+            "scheduler_owner": "orchestrator",
+            "decision_owner": "lab",
+            "not_a_deployment_decision": true,
+            "protected_high_priority_tasks": [
+              "safety_monitor_agent"
+            ],
+            "tasks_with_starvation_risk": [
+              "vision_agent",
+              "voice_command_agent"
+            ],
+            "tasks_with_scheduler_delay": [
+              "vision_agent"
+            ],
+            "tasks_with_degradation": [
+              "vision_agent",
+              "voice_command_agent"
+            ],
+            "task_fairness": {
+              "safety_monitor_agent": {
+                "priority": 100,
+                "executed_count": 20,
+                "dropped_count": 0,
+                "fallback_count": 0,
+                "scheduler_delay_event_count": 0,
+                "health_state": "healthy",
+                "starvation_risk": false,
+                "starvation_reasons": []
+              },
+              "vision_agent": {
+                "priority": 80,
+                "executed_count": 18,
+                "dropped_count": 4,
+                "fallback_count": 0,
+                "scheduler_delay_event_count": 1,
+                "max_scheduler_delay_cycles": 3,
+                "health_state": "degraded",
+                "starvation_risk": true,
+                "starvation_reasons": [
+                  "scheduler_delay_present",
+                  "worker_degraded"
+                ]
+              },
+              "voice_command_agent": {
+                "priority": 50,
+                "executed_count": 4,
+                "dropped_count": 1,
+                "fallback_count": 1,
+                "scheduler_delay_event_count": 0,
+                "health_state": "degraded",
+                "starvation_risk": true,
+                "starvation_reasons": [
+                  "fallback_policy_used",
+                  "worker_degraded"
+                ]
+              }
+            },
+            "interpretation": "Scheduler fairness is supplemental operation evidence; Lab remains the final deployment decision owner."
+          },
+          "orchestrator_scheduler_fairness_summary_present": true,
+          "orchestrator_scheduler_fairness_summary_schema_version": "inferedge-orchestrator-scheduler-fairness-summary-v1",
+          "orchestrator_scheduler_fairness_protected_high_priority_tasks": [
+            "safety_monitor_agent"
+          ],
+          "orchestrator_scheduler_fairness_starvation_risk_tasks": [
+            "vision_agent",
+            "voice_command_agent"
+          ],
+          "orchestrator_scheduler_fairness_scheduler_delay_tasks": [
+            "vision_agent"
+          ],
+          "orchestrator_scheduler_fairness_degraded_tasks": [
+            "vision_agent",
+            "voice_command_agent"
+          ],
+          "orchestrator_scheduler_fairness_task_context": {
+            "safety_monitor_agent": {
+              "priority": 100,
+              "executed_count": 20,
+              "dropped_count": 0,
+              "fallback_count": 0,
+              "scheduler_delay_event_count": 0,
+              "health_state": "healthy",
+              "starvation_risk": false,
+              "starvation_reasons": []
+            },
+            "vision_agent": {
+              "priority": 80,
+              "executed_count": 18,
+              "dropped_count": 4,
+              "fallback_count": 0,
+              "scheduler_delay_event_count": 1,
+              "max_scheduler_delay_cycles": 3,
+              "health_state": "degraded",
+              "starvation_risk": true,
+              "starvation_reasons": [
+                "scheduler_delay_present",
+                "worker_degraded"
+              ]
+            },
+            "voice_command_agent": {
+              "priority": 50,
+              "executed_count": 4,
+              "dropped_count": 1,
+              "fallback_count": 1,
+              "scheduler_delay_event_count": 0,
+              "health_state": "degraded",
+              "starvation_risk": true,
+              "starvation_reasons": [
+                "fallback_policy_used",
+                "worker_degraded"
+              ]
+            }
+          },
+          "orchestrator_scheduler_fairness_starvation_risk_count": 2.0,
+          "orchestrator_scheduler_fairness_decision_owner": "lab",
+          "orchestrator_scheduler_fairness_scheduler_owner": "orchestrator",
+          "orchestrator_scheduler_fairness_not_a_deployment_decision": true,
+          "orchestrator_worker_health_trend": {
+            "schema_version": "inferedge-orchestrator-worker-health-trend-v1",
+            "operation_context_role": "supplemental",
+            "scheduler_owner": "orchestrator",
+            "decision_owner": "lab",
+            "not_a_deployment_decision": true,
+            "source": "worker_health_snapshot+runtime_event_summary",
+            "health_state_counts": {
+              "healthy": 1,
+              "degraded": 1,
+              "constrained": 1
+            },
+            "tasks_by_health_state": {
+              "healthy": [
+                "safety_monitor_agent"
+              ],
+              "degraded": [
+                "vision_agent"
+              ],
+              "constrained": [
+                "voice_command_agent"
+              ]
+            },
+            "task_health_context": {
+              "vision_agent": {
+                "worker_id": "worker-jetson-01",
+                "health_state": "degraded",
+                "primary_health_reason": "worker_queue_pressure"
+              },
+              "voice_command_agent": {
+                "worker_id": "worker-jetson-02",
+                "health_state": "constrained",
+                "primary_health_reason": "fallback_overuse"
+              }
+            },
+            "degraded_workers": [
+              "worker-jetson-01"
+            ],
+            "constrained_workers": [
+              "worker-jetson-02"
+            ],
+            "review_hints": [
+              "review_worker_health_degradation",
+              "review_worker_health_constraints"
+            ],
+            "interpretation": "Worker health trend is supplemental operation evidence; Lab remains the final deployment decision owner."
+          },
+          "orchestrator_worker_health_trend_present": true,
+          "orchestrator_worker_health_trend_schema_version": "inferedge-orchestrator-worker-health-trend-v1",
+          "orchestrator_worker_health_trend_operation_context_role": "supplemental",
+          "orchestrator_worker_health_trend_scheduler_owner": "orchestrator",
+          "orchestrator_worker_health_trend_decision_owner": "lab",
+          "orchestrator_worker_health_trend_not_a_deployment_decision": true,
+          "orchestrator_worker_health_trend_health_state_counts": {
+            "healthy": 1,
+            "degraded": 1,
+            "constrained": 1
+          },
+          "orchestrator_worker_health_trend_tasks_by_health_state": {
+            "healthy": [
+              "safety_monitor_agent"
+            ],
+            "degraded": [
+              "vision_agent"
+            ],
+            "constrained": [
+              "voice_command_agent"
+            ]
+          },
+          "orchestrator_worker_health_trend_task_health_context": {
+            "vision_agent": {
+              "worker_id": "worker-jetson-01",
+              "health_state": "degraded",
+              "primary_health_reason": "worker_queue_pressure"
+            },
+            "voice_command_agent": {
+              "worker_id": "worker-jetson-02",
+              "health_state": "constrained",
+              "primary_health_reason": "fallback_overuse"
+            }
+          },
+          "orchestrator_worker_health_trend_degraded_workers": [
+            "worker-jetson-01"
+          ],
+          "orchestrator_worker_health_trend_constrained_workers": [
+            "worker-jetson-02"
+          ],
+          "orchestrator_worker_health_trend_review_hints": [
+            "review_worker_health_degradation",
+            "review_worker_health_constraints"
+          ],
+          "orchestrator_operation_timeline_affected_stale_drop_tasks": [
+            "voice_command_agent"
+          ],
+          "orchestrator_stale_drop_summary": {
+            "schema_version": "inferedge-orchestrator-stale-drop-summary-v1",
+            "operation_context_role": "supplemental",
+            "scheduler_owner": "orchestrator",
+            "decision_owner": "lab",
+            "not_a_deployment_decision": true,
+            "source": "drop_events",
+            "first_read": "review_stale_drop_context",
+            "stale_drop_count": 1,
+            "total_drop_count": 4,
+            "stale_drop_rate": 0.25,
+            "stale_drop_reasons": {
+              "queue_overflow_drop_oldest": 1
+            },
+            "stale_drop_reason_classes": [
+              "stale_queue_overflow"
+            ],
+            "tasks_with_stale_drop": [
+              "voice_command_agent"
+            ],
+            "task_counts": {
+              "voice_command_agent": 1
+            },
+            "latest_stale_drop_event": {
+              "task": "voice_command_agent",
+              "agent_id": "voice_command_agent",
+              "reason": "queue_overflow_drop_oldest",
+              "stale_drop_class": "stale_queue_overflow"
+            }
+          },
+          "orchestrator_stale_drop_summary_present": true,
+          "orchestrator_stale_drop_summary_schema_version": "inferedge-orchestrator-stale-drop-summary-v1",
+          "orchestrator_stale_drop_count": 1.0,
+          "orchestrator_stale_drop_total_count": 4.0,
+          "orchestrator_stale_drop_rate": 0.25,
+          "orchestrator_stale_drop_reasons": {
+            "queue_overflow_drop_oldest": 1
+          },
+          "orchestrator_stale_drop_reason_classes": [
+            "stale_queue_overflow"
+          ],
+          "orchestrator_tasks_with_stale_drop": [
+            "voice_command_agent"
+          ],
+          "orchestrator_latest_stale_drop_event": {
+            "task": "voice_command_agent",
+            "agent_id": "voice_command_agent",
+            "reason": "queue_overflow_drop_oldest",
+            "stale_drop_class": "stale_queue_overflow"
+          },
+          "orchestrator_stale_drop_decision_owner": "lab",
+          "orchestrator_stale_drop_scheduler_owner": "orchestrator",
+          "orchestrator_stale_drop_not_a_deployment_decision": true,
+          "orchestrator_runtime_task_event_summary": {
+            "vision_agent": {
+              "event_count": 9,
+              "event_type_counts": {
+                "schedule": 3,
+                "execution": 3,
+                "policy_decision": 3
+              },
+              "reason_counts": {
+                "deadline_missed": 1,
+                "queue_backlog_threshold_exceeded": 1
+              },
+              "policy_decision_reason_counts": {
+                "queue_backlog_threshold_exceeded": 1
+              },
+              "drop_reason_counts": {},
+              "deadline_missed_count": 1,
+              "fallback_decision_count": 0,
+              "scheduler_delay_event_count": 1,
+              "max_scheduler_delay_cycles": 3,
+              "max_queue_wait_ms": 15.0,
+              "latest_event_index": 42,
+              "latest_event_type": "execution"
+            },
+            "voice_command_agent": {
+              "event_count": 6,
+              "event_type_counts": {
+                "drop": 1,
+                "policy_decision": 1,
+                "schedule": 2,
+                "execution": 2
+              },
+              "reason_counts": {
+                "queue_backlog_threshold_exceeded": 1,
+                "load_shedding_backlog_threshold_exceeded": 1
+              },
+              "policy_decision_reason_counts": {
+                "queue_backlog_threshold_exceeded": 1
+              },
+              "drop_reason_counts": {
+                "load_shedding_backlog_threshold_exceeded": 1
+              },
+              "deadline_missed_count": 0,
+              "fallback_decision_count": 1,
+              "scheduler_delay_event_count": 0,
+              "max_scheduler_delay_cycles": 0,
+              "max_queue_wait_ms": 0.0,
+              "latest_event_index": 39,
+              "latest_event_type": "policy_decision"
+            }
+          },
+          "orchestrator_runtime_task_event_summary_present": true,
+          "orchestrator_tasks_with_deadline_miss": [
+            "vision_agent"
+          ],
+          "orchestrator_tasks_with_fallback": [
+            "voice_command_agent"
+          ],
+          "orchestrator_tasks_with_scheduler_delay": [
+            "vision_agent"
+          ],
+          "orchestrator_edgeenv_mapping_hint": {
+            "copy_candidate_context_to": "runtime_telemetry_context.candidate",
+            "operation_context_role": "supplemental",
+            "coverage_summary_owner": "edgeenv",
+            "coverage_summary_path": "runtime_telemetry_context.history.telemetry_coverage",
+            "candidate_context_required_fields": [
+              "run_id",
+              "telemetry_source",
+              "operation",
+              "resource"
+            ],
+            "aiguard_evidence_candidates": [
+              "runtime_queue_overload",
+              "runtime_thermal_instability",
+              "edgeenv_orchestrator_latency_budget_protection",
+              "edgeenv_orchestrator_scheduler_fairness_summary",
+              "edgeenv_orchestrator_worker_health_trend"
+            ]
+          },
+          "orchestrator_mapping_hint_copy_candidate_context_to": "runtime_telemetry_context.candidate",
+          "orchestrator_mapping_hint_operation_context_role": "supplemental",
+          "orchestrator_mapping_hint_coverage_summary_owner": "edgeenv",
+          "orchestrator_mapping_hint_coverage_summary_path": "runtime_telemetry_context.history.telemetry_coverage",
+          "orchestrator_mapping_hint_candidate_context_required_fields": [
+            "run_id",
+            "telemetry_source",
+            "operation",
+            "resource"
+          ],
+          "orchestrator_mapping_hint_aiguard_evidence_candidates": [
+            "runtime_queue_overload",
+            "runtime_thermal_instability",
+            "edgeenv_orchestrator_latency_budget_protection",
+            "edgeenv_orchestrator_scheduler_fairness_summary",
+            "edgeenv_orchestrator_worker_health_trend"
+          ],
+          "orchestrator_downstream_guard_alignment": {
+            "declared_by": "orchestrator",
+            "producer_lineage_evidence_type": "edgeenv_orchestrator_producer_lineage",
+            "operation_evidence_candidates": [
+              "runtime_queue_overload",
+              "runtime_thermal_instability",
+              "edgeenv_orchestrator_latency_budget_protection",
+              "edgeenv_orchestrator_scheduler_fairness_summary",
+              "edgeenv_orchestrator_worker_health_trend"
+            ],
+            "validated_by": [
+              "edgeenv runs telemetry inspect-history",
+              "inferedge-aiguard reason-edgeenv-regression",
+              "inferedgelab runtime-intelligence bundle manifest gate"
+            ],
+            "orchestrator_is_final_decision_owner": false,
+            "lab_is_final_decision_owner": true
+          },
+          "orchestrator_guard_alignment_declared_by": "orchestrator",
+          "orchestrator_guard_alignment_producer_lineage_evidence_type": "edgeenv_orchestrator_producer_lineage",
+          "orchestrator_guard_alignment_operation_evidence_candidates": [
+            "runtime_queue_overload",
+            "runtime_thermal_instability",
+            "edgeenv_orchestrator_latency_budget_protection",
+            "edgeenv_orchestrator_scheduler_fairness_summary",
+            "edgeenv_orchestrator_worker_health_trend"
+          ],
+          "orchestrator_guard_alignment_orchestrator_is_final_decision_owner": false,
+          "orchestrator_guard_alignment_lab_is_final_decision_owner": true,
+          "baseline_max_temperature_c": null,
+          "candidate_max_temperature_c": 78.5,
+          "baseline_throttling_detected": null,
+          "candidate_throttling_detected": true,
+          "baseline_queue_depth": null,
+          "candidate_queue_depth": 7.0,
+          "orchestrator_candidate_operation_max_total_queue_depth": 7.0,
+          "evidence_gap_count": 1.0,
+          "evidence_gaps": []
+        },
+        "pressure_window_summary": {
+          "summary": {
+            "schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+            "operation_context_role": "supplemental",
+            "scheduler_owner": "orchestrator",
+            "decision_owner": "lab",
+            "not_a_deployment_decision": true,
+            "source": "queue_depth_timeline+policy_decision_log",
+            "first_read": "review_sustained_pressure_window",
+            "overload_backlog_threshold": 3,
+            "window_count": 1,
+            "longest_window_cycles": 2,
+            "peak_total_queue_depth": 7,
+            "peak_window": {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "peak_total_queue_depth": 7
+            },
+            "longest_window": {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "duration_cycles": 2
+            },
+            "windows": [
+              {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "duration_cycles": 2,
+                "peak_total_queue_depth": 7
+              }
+            ],
+            "limited_tasks": [
+              "vision_agent",
+              "voice_command_agent"
+            ],
+            "protected_tasks": [
+              "safety_monitor_agent"
+            ],
+            "fallback_tasks": [
+              "voice_command_agent"
+            ],
+            "pressure_reasons": [
+              "queue_backlog_threshold_exceeded"
+            ],
+            "policy_decision_count": 2,
+            "interpretation": "Pressure window is supplemental operation evidence; Lab remains the final deployment decision owner."
+          },
+          "boundary_markers_valid": true,
+          "first_read": "review_sustained_pressure_window",
+          "window_count": 1.0,
+          "longest_window_cycles": 2.0,
+          "peak_total_queue_depth": 7.0,
+          "overload_backlog_threshold": 3.0,
+          "peak_window": {
+            "start_cycle": 1,
+            "end_cycle": 2,
+            "peak_total_queue_depth": 7
+          },
+          "longest_window": {
+            "start_cycle": 1,
+            "end_cycle": 2,
+            "duration_cycles": 2
+          },
+          "windows": [
+            {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "duration_cycles": 2,
+              "peak_total_queue_depth": 7
+            }
+          ],
+          "limited_tasks": [
+            "vision_agent",
+            "voice_command_agent"
+          ],
+          "protected_tasks": [
+            "safety_monitor_agent"
+          ],
+          "fallback_tasks": [
+            "voice_command_agent"
+          ],
+          "pressure_reasons": [
+            "queue_backlog_threshold_exceeded"
+          ],
+          "policy_decision_count": 2.0,
+          "review_markers": [
+            "pressure_window_present",
+            "peak_queue_depth_context",
+            "longest_window_context",
+            "pressure_reason_context",
+            "limited_task_context",
+            "protected_task_context",
+            "fallback_task_context",
+            "review_sustained_pressure_window"
+          ],
+          "decision_owner": "lab",
+          "scheduler_owner": "orchestrator",
+          "not_a_deployment_decision": true
+        }
+      }
+    },
+    {
       "type": "edgeenv_orchestrator_scheduler_fairness_summary",
       "metric_name": "orchestrator_scheduler_fairness_marker_count",
       "observed_value": 4,
@@ -10080,7 +12652,11 @@
               "degraded": [
                 "vision_agent"
               ],
-              "constrained": []
+              "constrained": [],
+              "pressure_window": [
+                "vision_agent",
+                "voice_command_agent"
+              ]
             },
             "stale_drop": {
               "schema_version": "inferedge-orchestrator-stale-drop-summary-v1",
@@ -10165,7 +12741,8 @@
               "review_deadline_miss",
               "review_fallback_use",
               "review_stale_drop",
-              "review_worker_health_trend"
+              "review_worker_health_trend",
+              "review_sustained_pressure_window"
             ],
             "policy_pressure": {
               "schema_version": "inferedge-orchestrator-policy-pressure-summary-v1",
@@ -10203,6 +12780,52 @@
                 "scheduler_delay_present"
               ],
               "interpretation": "Policy pressure is supplemental operation evidence showing which scheduler decisions limited or protected work under backlog pressure; Lab remains the final deployment decision owner."
+            },
+            "pressure_window": {
+              "schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+              "operation_context_role": "supplemental",
+              "scheduler_owner": "orchestrator",
+              "decision_owner": "lab",
+              "not_a_deployment_decision": true,
+              "source": "queue_depth_timeline+policy_decision_log",
+              "first_read": "review_sustained_pressure_window",
+              "overload_backlog_threshold": 3,
+              "window_count": 1,
+              "longest_window_cycles": 2,
+              "peak_total_queue_depth": 7,
+              "peak_window": {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "peak_total_queue_depth": 7
+              },
+              "longest_window": {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "duration_cycles": 2
+              },
+              "windows": [
+                {
+                  "start_cycle": 1,
+                  "end_cycle": 2,
+                  "duration_cycles": 2,
+                  "peak_total_queue_depth": 7
+                }
+              ],
+              "limited_tasks": [
+                "vision_agent",
+                "voice_command_agent"
+              ],
+              "protected_tasks": [
+                "safety_monitor_agent"
+              ],
+              "fallback_tasks": [
+                "voice_command_agent"
+              ],
+              "pressure_reasons": [
+                "queue_backlog_threshold_exceeded"
+              ],
+              "policy_decision_count": 2,
+              "interpretation": "Pressure window is supplemental operation evidence; Lab remains the final deployment decision owner."
             }
           },
           "orchestrator_operation_timeline_summary_present": true,
@@ -10213,7 +12836,8 @@
             "review_deadline_miss",
             "review_fallback_use",
             "review_stale_drop",
-            "review_worker_health_trend"
+            "review_worker_health_trend",
+            "review_sustained_pressure_window"
           ],
           "orchestrator_operation_timeline_queue_pressure_state": "overloaded",
           "orchestrator_operation_timeline_queue_pressure_reason": "queue_backlog_threshold_exceeded",
@@ -10289,6 +12913,95 @@
           "orchestrator_policy_pressure_decision_owner": "lab",
           "orchestrator_policy_pressure_scheduler_owner": "orchestrator",
           "orchestrator_policy_pressure_not_a_deployment_decision": true,
+          "orchestrator_pressure_window_summary": {
+            "schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+            "operation_context_role": "supplemental",
+            "scheduler_owner": "orchestrator",
+            "decision_owner": "lab",
+            "not_a_deployment_decision": true,
+            "source": "queue_depth_timeline+policy_decision_log",
+            "first_read": "review_sustained_pressure_window",
+            "overload_backlog_threshold": 3,
+            "window_count": 1,
+            "longest_window_cycles": 2,
+            "peak_total_queue_depth": 7,
+            "peak_window": {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "peak_total_queue_depth": 7
+            },
+            "longest_window": {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "duration_cycles": 2
+            },
+            "windows": [
+              {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "duration_cycles": 2,
+                "peak_total_queue_depth": 7
+              }
+            ],
+            "limited_tasks": [
+              "vision_agent",
+              "voice_command_agent"
+            ],
+            "protected_tasks": [
+              "safety_monitor_agent"
+            ],
+            "fallback_tasks": [
+              "voice_command_agent"
+            ],
+            "pressure_reasons": [
+              "queue_backlog_threshold_exceeded"
+            ],
+            "policy_decision_count": 2,
+            "interpretation": "Pressure window is supplemental operation evidence; Lab remains the final deployment decision owner."
+          },
+          "orchestrator_pressure_window_summary_present": true,
+          "orchestrator_pressure_window_summary_schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+          "orchestrator_pressure_window_operation_context_role": "supplemental",
+          "orchestrator_pressure_window_decision_owner": "lab",
+          "orchestrator_pressure_window_scheduler_owner": "orchestrator",
+          "orchestrator_pressure_window_not_a_deployment_decision": true,
+          "orchestrator_pressure_window_first_read": "review_sustained_pressure_window",
+          "orchestrator_pressure_window_overload_backlog_threshold": 3.0,
+          "orchestrator_pressure_window_count": 1.0,
+          "orchestrator_pressure_window_longest_window_cycles": 2.0,
+          "orchestrator_pressure_window_peak_total_queue_depth": 7.0,
+          "orchestrator_pressure_window_peak_window": {
+            "start_cycle": 1,
+            "end_cycle": 2,
+            "peak_total_queue_depth": 7
+          },
+          "orchestrator_pressure_window_longest_window": {
+            "start_cycle": 1,
+            "end_cycle": 2,
+            "duration_cycles": 2
+          },
+          "orchestrator_pressure_window_windows": [
+            {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "duration_cycles": 2,
+              "peak_total_queue_depth": 7
+            }
+          ],
+          "orchestrator_pressure_window_limited_tasks": [
+            "vision_agent",
+            "voice_command_agent"
+          ],
+          "orchestrator_pressure_window_protected_tasks": [
+            "safety_monitor_agent"
+          ],
+          "orchestrator_pressure_window_fallback_tasks": [
+            "voice_command_agent"
+          ],
+          "orchestrator_pressure_window_pressure_reasons": [
+            "queue_backlog_threshold_exceeded"
+          ],
+          "orchestrator_pressure_window_policy_decision_count": 2.0,
           "orchestrator_operation_timeline_affected_deadline_missed_tasks": [
             "vision_agent"
           ],
@@ -11308,7 +14021,11 @@
               "degraded": [
                 "vision_agent"
               ],
-              "constrained": []
+              "constrained": [],
+              "pressure_window": [
+                "vision_agent",
+                "voice_command_agent"
+              ]
             },
             "stale_drop": {
               "schema_version": "inferedge-orchestrator-stale-drop-summary-v1",
@@ -11393,7 +14110,8 @@
               "review_deadline_miss",
               "review_fallback_use",
               "review_stale_drop",
-              "review_worker_health_trend"
+              "review_worker_health_trend",
+              "review_sustained_pressure_window"
             ],
             "policy_pressure": {
               "schema_version": "inferedge-orchestrator-policy-pressure-summary-v1",
@@ -11431,6 +14149,52 @@
                 "scheduler_delay_present"
               ],
               "interpretation": "Policy pressure is supplemental operation evidence showing which scheduler decisions limited or protected work under backlog pressure; Lab remains the final deployment decision owner."
+            },
+            "pressure_window": {
+              "schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+              "operation_context_role": "supplemental",
+              "scheduler_owner": "orchestrator",
+              "decision_owner": "lab",
+              "not_a_deployment_decision": true,
+              "source": "queue_depth_timeline+policy_decision_log",
+              "first_read": "review_sustained_pressure_window",
+              "overload_backlog_threshold": 3,
+              "window_count": 1,
+              "longest_window_cycles": 2,
+              "peak_total_queue_depth": 7,
+              "peak_window": {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "peak_total_queue_depth": 7
+              },
+              "longest_window": {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "duration_cycles": 2
+              },
+              "windows": [
+                {
+                  "start_cycle": 1,
+                  "end_cycle": 2,
+                  "duration_cycles": 2,
+                  "peak_total_queue_depth": 7
+                }
+              ],
+              "limited_tasks": [
+                "vision_agent",
+                "voice_command_agent"
+              ],
+              "protected_tasks": [
+                "safety_monitor_agent"
+              ],
+              "fallback_tasks": [
+                "voice_command_agent"
+              ],
+              "pressure_reasons": [
+                "queue_backlog_threshold_exceeded"
+              ],
+              "policy_decision_count": 2,
+              "interpretation": "Pressure window is supplemental operation evidence; Lab remains the final deployment decision owner."
             }
           },
           "orchestrator_operation_timeline_summary_present": true,
@@ -11441,7 +14205,8 @@
             "review_deadline_miss",
             "review_fallback_use",
             "review_stale_drop",
-            "review_worker_health_trend"
+            "review_worker_health_trend",
+            "review_sustained_pressure_window"
           ],
           "orchestrator_operation_timeline_queue_pressure_state": "overloaded",
           "orchestrator_operation_timeline_queue_pressure_reason": "queue_backlog_threshold_exceeded",
@@ -11517,6 +14282,95 @@
           "orchestrator_policy_pressure_decision_owner": "lab",
           "orchestrator_policy_pressure_scheduler_owner": "orchestrator",
           "orchestrator_policy_pressure_not_a_deployment_decision": true,
+          "orchestrator_pressure_window_summary": {
+            "schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+            "operation_context_role": "supplemental",
+            "scheduler_owner": "orchestrator",
+            "decision_owner": "lab",
+            "not_a_deployment_decision": true,
+            "source": "queue_depth_timeline+policy_decision_log",
+            "first_read": "review_sustained_pressure_window",
+            "overload_backlog_threshold": 3,
+            "window_count": 1,
+            "longest_window_cycles": 2,
+            "peak_total_queue_depth": 7,
+            "peak_window": {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "peak_total_queue_depth": 7
+            },
+            "longest_window": {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "duration_cycles": 2
+            },
+            "windows": [
+              {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "duration_cycles": 2,
+                "peak_total_queue_depth": 7
+              }
+            ],
+            "limited_tasks": [
+              "vision_agent",
+              "voice_command_agent"
+            ],
+            "protected_tasks": [
+              "safety_monitor_agent"
+            ],
+            "fallback_tasks": [
+              "voice_command_agent"
+            ],
+            "pressure_reasons": [
+              "queue_backlog_threshold_exceeded"
+            ],
+            "policy_decision_count": 2,
+            "interpretation": "Pressure window is supplemental operation evidence; Lab remains the final deployment decision owner."
+          },
+          "orchestrator_pressure_window_summary_present": true,
+          "orchestrator_pressure_window_summary_schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+          "orchestrator_pressure_window_operation_context_role": "supplemental",
+          "orchestrator_pressure_window_decision_owner": "lab",
+          "orchestrator_pressure_window_scheduler_owner": "orchestrator",
+          "orchestrator_pressure_window_not_a_deployment_decision": true,
+          "orchestrator_pressure_window_first_read": "review_sustained_pressure_window",
+          "orchestrator_pressure_window_overload_backlog_threshold": 3.0,
+          "orchestrator_pressure_window_count": 1.0,
+          "orchestrator_pressure_window_longest_window_cycles": 2.0,
+          "orchestrator_pressure_window_peak_total_queue_depth": 7.0,
+          "orchestrator_pressure_window_peak_window": {
+            "start_cycle": 1,
+            "end_cycle": 2,
+            "peak_total_queue_depth": 7
+          },
+          "orchestrator_pressure_window_longest_window": {
+            "start_cycle": 1,
+            "end_cycle": 2,
+            "duration_cycles": 2
+          },
+          "orchestrator_pressure_window_windows": [
+            {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "duration_cycles": 2,
+              "peak_total_queue_depth": 7
+            }
+          ],
+          "orchestrator_pressure_window_limited_tasks": [
+            "vision_agent",
+            "voice_command_agent"
+          ],
+          "orchestrator_pressure_window_protected_tasks": [
+            "safety_monitor_agent"
+          ],
+          "orchestrator_pressure_window_fallback_tasks": [
+            "voice_command_agent"
+          ],
+          "orchestrator_pressure_window_pressure_reasons": [
+            "queue_backlog_threshold_exceeded"
+          ],
+          "orchestrator_pressure_window_policy_decision_count": 2.0,
           "orchestrator_operation_timeline_affected_deadline_missed_tasks": [
             "vision_agent"
           ],
@@ -12506,7 +15360,11 @@
               "degraded": [
                 "vision_agent"
               ],
-              "constrained": []
+              "constrained": [],
+              "pressure_window": [
+                "vision_agent",
+                "voice_command_agent"
+              ]
             },
             "stale_drop": {
               "schema_version": "inferedge-orchestrator-stale-drop-summary-v1",
@@ -12591,7 +15449,8 @@
               "review_deadline_miss",
               "review_fallback_use",
               "review_stale_drop",
-              "review_worker_health_trend"
+              "review_worker_health_trend",
+              "review_sustained_pressure_window"
             ],
             "policy_pressure": {
               "schema_version": "inferedge-orchestrator-policy-pressure-summary-v1",
@@ -12629,6 +15488,52 @@
                 "scheduler_delay_present"
               ],
               "interpretation": "Policy pressure is supplemental operation evidence showing which scheduler decisions limited or protected work under backlog pressure; Lab remains the final deployment decision owner."
+            },
+            "pressure_window": {
+              "schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+              "operation_context_role": "supplemental",
+              "scheduler_owner": "orchestrator",
+              "decision_owner": "lab",
+              "not_a_deployment_decision": true,
+              "source": "queue_depth_timeline+policy_decision_log",
+              "first_read": "review_sustained_pressure_window",
+              "overload_backlog_threshold": 3,
+              "window_count": 1,
+              "longest_window_cycles": 2,
+              "peak_total_queue_depth": 7,
+              "peak_window": {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "peak_total_queue_depth": 7
+              },
+              "longest_window": {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "duration_cycles": 2
+              },
+              "windows": [
+                {
+                  "start_cycle": 1,
+                  "end_cycle": 2,
+                  "duration_cycles": 2,
+                  "peak_total_queue_depth": 7
+                }
+              ],
+              "limited_tasks": [
+                "vision_agent",
+                "voice_command_agent"
+              ],
+              "protected_tasks": [
+                "safety_monitor_agent"
+              ],
+              "fallback_tasks": [
+                "voice_command_agent"
+              ],
+              "pressure_reasons": [
+                "queue_backlog_threshold_exceeded"
+              ],
+              "policy_decision_count": 2,
+              "interpretation": "Pressure window is supplemental operation evidence; Lab remains the final deployment decision owner."
             }
           },
           "orchestrator_operation_timeline_summary_present": true,
@@ -12639,7 +15544,8 @@
             "review_deadline_miss",
             "review_fallback_use",
             "review_stale_drop",
-            "review_worker_health_trend"
+            "review_worker_health_trend",
+            "review_sustained_pressure_window"
           ],
           "orchestrator_operation_timeline_queue_pressure_state": "overloaded",
           "orchestrator_operation_timeline_queue_pressure_reason": "queue_backlog_threshold_exceeded",
@@ -12715,6 +15621,95 @@
           "orchestrator_policy_pressure_decision_owner": "lab",
           "orchestrator_policy_pressure_scheduler_owner": "orchestrator",
           "orchestrator_policy_pressure_not_a_deployment_decision": true,
+          "orchestrator_pressure_window_summary": {
+            "schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+            "operation_context_role": "supplemental",
+            "scheduler_owner": "orchestrator",
+            "decision_owner": "lab",
+            "not_a_deployment_decision": true,
+            "source": "queue_depth_timeline+policy_decision_log",
+            "first_read": "review_sustained_pressure_window",
+            "overload_backlog_threshold": 3,
+            "window_count": 1,
+            "longest_window_cycles": 2,
+            "peak_total_queue_depth": 7,
+            "peak_window": {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "peak_total_queue_depth": 7
+            },
+            "longest_window": {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "duration_cycles": 2
+            },
+            "windows": [
+              {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "duration_cycles": 2,
+                "peak_total_queue_depth": 7
+              }
+            ],
+            "limited_tasks": [
+              "vision_agent",
+              "voice_command_agent"
+            ],
+            "protected_tasks": [
+              "safety_monitor_agent"
+            ],
+            "fallback_tasks": [
+              "voice_command_agent"
+            ],
+            "pressure_reasons": [
+              "queue_backlog_threshold_exceeded"
+            ],
+            "policy_decision_count": 2,
+            "interpretation": "Pressure window is supplemental operation evidence; Lab remains the final deployment decision owner."
+          },
+          "orchestrator_pressure_window_summary_present": true,
+          "orchestrator_pressure_window_summary_schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+          "orchestrator_pressure_window_operation_context_role": "supplemental",
+          "orchestrator_pressure_window_decision_owner": "lab",
+          "orchestrator_pressure_window_scheduler_owner": "orchestrator",
+          "orchestrator_pressure_window_not_a_deployment_decision": true,
+          "orchestrator_pressure_window_first_read": "review_sustained_pressure_window",
+          "orchestrator_pressure_window_overload_backlog_threshold": 3.0,
+          "orchestrator_pressure_window_count": 1.0,
+          "orchestrator_pressure_window_longest_window_cycles": 2.0,
+          "orchestrator_pressure_window_peak_total_queue_depth": 7.0,
+          "orchestrator_pressure_window_peak_window": {
+            "start_cycle": 1,
+            "end_cycle": 2,
+            "peak_total_queue_depth": 7
+          },
+          "orchestrator_pressure_window_longest_window": {
+            "start_cycle": 1,
+            "end_cycle": 2,
+            "duration_cycles": 2
+          },
+          "orchestrator_pressure_window_windows": [
+            {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "duration_cycles": 2,
+              "peak_total_queue_depth": 7
+            }
+          ],
+          "orchestrator_pressure_window_limited_tasks": [
+            "vision_agent",
+            "voice_command_agent"
+          ],
+          "orchestrator_pressure_window_protected_tasks": [
+            "safety_monitor_agent"
+          ],
+          "orchestrator_pressure_window_fallback_tasks": [
+            "voice_command_agent"
+          ],
+          "orchestrator_pressure_window_pressure_reasons": [
+            "queue_backlog_threshold_exceeded"
+          ],
+          "orchestrator_pressure_window_policy_decision_count": 2.0,
           "orchestrator_operation_timeline_affected_deadline_missed_tasks": [
             "vision_agent"
           ],
@@ -13658,7 +16653,11 @@
               "degraded": [
                 "vision_agent"
               ],
-              "constrained": []
+              "constrained": [],
+              "pressure_window": [
+                "vision_agent",
+                "voice_command_agent"
+              ]
             },
             "stale_drop": {
               "schema_version": "inferedge-orchestrator-stale-drop-summary-v1",
@@ -13743,7 +16742,8 @@
               "review_deadline_miss",
               "review_fallback_use",
               "review_stale_drop",
-              "review_worker_health_trend"
+              "review_worker_health_trend",
+              "review_sustained_pressure_window"
             ],
             "policy_pressure": {
               "schema_version": "inferedge-orchestrator-policy-pressure-summary-v1",
@@ -13781,6 +16781,52 @@
                 "scheduler_delay_present"
               ],
               "interpretation": "Policy pressure is supplemental operation evidence showing which scheduler decisions limited or protected work under backlog pressure; Lab remains the final deployment decision owner."
+            },
+            "pressure_window": {
+              "schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+              "operation_context_role": "supplemental",
+              "scheduler_owner": "orchestrator",
+              "decision_owner": "lab",
+              "not_a_deployment_decision": true,
+              "source": "queue_depth_timeline+policy_decision_log",
+              "first_read": "review_sustained_pressure_window",
+              "overload_backlog_threshold": 3,
+              "window_count": 1,
+              "longest_window_cycles": 2,
+              "peak_total_queue_depth": 7,
+              "peak_window": {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "peak_total_queue_depth": 7
+              },
+              "longest_window": {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "duration_cycles": 2
+              },
+              "windows": [
+                {
+                  "start_cycle": 1,
+                  "end_cycle": 2,
+                  "duration_cycles": 2,
+                  "peak_total_queue_depth": 7
+                }
+              ],
+              "limited_tasks": [
+                "vision_agent",
+                "voice_command_agent"
+              ],
+              "protected_tasks": [
+                "safety_monitor_agent"
+              ],
+              "fallback_tasks": [
+                "voice_command_agent"
+              ],
+              "pressure_reasons": [
+                "queue_backlog_threshold_exceeded"
+              ],
+              "policy_decision_count": 2,
+              "interpretation": "Pressure window is supplemental operation evidence; Lab remains the final deployment decision owner."
             }
           },
           "orchestrator_operation_timeline_summary_present": true,
@@ -13791,7 +16837,8 @@
             "review_deadline_miss",
             "review_fallback_use",
             "review_stale_drop",
-            "review_worker_health_trend"
+            "review_worker_health_trend",
+            "review_sustained_pressure_window"
           ],
           "orchestrator_operation_timeline_queue_pressure_state": "overloaded",
           "orchestrator_operation_timeline_queue_pressure_reason": "queue_backlog_threshold_exceeded",
@@ -13867,6 +16914,95 @@
           "orchestrator_policy_pressure_decision_owner": "lab",
           "orchestrator_policy_pressure_scheduler_owner": "orchestrator",
           "orchestrator_policy_pressure_not_a_deployment_decision": true,
+          "orchestrator_pressure_window_summary": {
+            "schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+            "operation_context_role": "supplemental",
+            "scheduler_owner": "orchestrator",
+            "decision_owner": "lab",
+            "not_a_deployment_decision": true,
+            "source": "queue_depth_timeline+policy_decision_log",
+            "first_read": "review_sustained_pressure_window",
+            "overload_backlog_threshold": 3,
+            "window_count": 1,
+            "longest_window_cycles": 2,
+            "peak_total_queue_depth": 7,
+            "peak_window": {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "peak_total_queue_depth": 7
+            },
+            "longest_window": {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "duration_cycles": 2
+            },
+            "windows": [
+              {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "duration_cycles": 2,
+                "peak_total_queue_depth": 7
+              }
+            ],
+            "limited_tasks": [
+              "vision_agent",
+              "voice_command_agent"
+            ],
+            "protected_tasks": [
+              "safety_monitor_agent"
+            ],
+            "fallback_tasks": [
+              "voice_command_agent"
+            ],
+            "pressure_reasons": [
+              "queue_backlog_threshold_exceeded"
+            ],
+            "policy_decision_count": 2,
+            "interpretation": "Pressure window is supplemental operation evidence; Lab remains the final deployment decision owner."
+          },
+          "orchestrator_pressure_window_summary_present": true,
+          "orchestrator_pressure_window_summary_schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+          "orchestrator_pressure_window_operation_context_role": "supplemental",
+          "orchestrator_pressure_window_decision_owner": "lab",
+          "orchestrator_pressure_window_scheduler_owner": "orchestrator",
+          "orchestrator_pressure_window_not_a_deployment_decision": true,
+          "orchestrator_pressure_window_first_read": "review_sustained_pressure_window",
+          "orchestrator_pressure_window_overload_backlog_threshold": 3.0,
+          "orchestrator_pressure_window_count": 1.0,
+          "orchestrator_pressure_window_longest_window_cycles": 2.0,
+          "orchestrator_pressure_window_peak_total_queue_depth": 7.0,
+          "orchestrator_pressure_window_peak_window": {
+            "start_cycle": 1,
+            "end_cycle": 2,
+            "peak_total_queue_depth": 7
+          },
+          "orchestrator_pressure_window_longest_window": {
+            "start_cycle": 1,
+            "end_cycle": 2,
+            "duration_cycles": 2
+          },
+          "orchestrator_pressure_window_windows": [
+            {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "duration_cycles": 2,
+              "peak_total_queue_depth": 7
+            }
+          ],
+          "orchestrator_pressure_window_limited_tasks": [
+            "vision_agent",
+            "voice_command_agent"
+          ],
+          "orchestrator_pressure_window_protected_tasks": [
+            "safety_monitor_agent"
+          ],
+          "orchestrator_pressure_window_fallback_tasks": [
+            "voice_command_agent"
+          ],
+          "orchestrator_pressure_window_pressure_reasons": [
+            "queue_backlog_threshold_exceeded"
+          ],
+          "orchestrator_pressure_window_policy_decision_count": 2.0,
           "orchestrator_operation_timeline_affected_deadline_missed_tasks": [
             "vision_agent"
           ],
@@ -14775,7 +17911,11 @@
               "degraded": [
                 "vision_agent"
               ],
-              "constrained": []
+              "constrained": [],
+              "pressure_window": [
+                "vision_agent",
+                "voice_command_agent"
+              ]
             },
             "stale_drop": {
               "schema_version": "inferedge-orchestrator-stale-drop-summary-v1",
@@ -14860,7 +18000,8 @@
               "review_deadline_miss",
               "review_fallback_use",
               "review_stale_drop",
-              "review_worker_health_trend"
+              "review_worker_health_trend",
+              "review_sustained_pressure_window"
             ],
             "policy_pressure": {
               "schema_version": "inferedge-orchestrator-policy-pressure-summary-v1",
@@ -14898,6 +18039,52 @@
                 "scheduler_delay_present"
               ],
               "interpretation": "Policy pressure is supplemental operation evidence showing which scheduler decisions limited or protected work under backlog pressure; Lab remains the final deployment decision owner."
+            },
+            "pressure_window": {
+              "schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+              "operation_context_role": "supplemental",
+              "scheduler_owner": "orchestrator",
+              "decision_owner": "lab",
+              "not_a_deployment_decision": true,
+              "source": "queue_depth_timeline+policy_decision_log",
+              "first_read": "review_sustained_pressure_window",
+              "overload_backlog_threshold": 3,
+              "window_count": 1,
+              "longest_window_cycles": 2,
+              "peak_total_queue_depth": 7,
+              "peak_window": {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "peak_total_queue_depth": 7
+              },
+              "longest_window": {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "duration_cycles": 2
+              },
+              "windows": [
+                {
+                  "start_cycle": 1,
+                  "end_cycle": 2,
+                  "duration_cycles": 2,
+                  "peak_total_queue_depth": 7
+                }
+              ],
+              "limited_tasks": [
+                "vision_agent",
+                "voice_command_agent"
+              ],
+              "protected_tasks": [
+                "safety_monitor_agent"
+              ],
+              "fallback_tasks": [
+                "voice_command_agent"
+              ],
+              "pressure_reasons": [
+                "queue_backlog_threshold_exceeded"
+              ],
+              "policy_decision_count": 2,
+              "interpretation": "Pressure window is supplemental operation evidence; Lab remains the final deployment decision owner."
             }
           },
           "orchestrator_operation_timeline_summary_present": true,
@@ -14908,7 +18095,8 @@
             "review_deadline_miss",
             "review_fallback_use",
             "review_stale_drop",
-            "review_worker_health_trend"
+            "review_worker_health_trend",
+            "review_sustained_pressure_window"
           ],
           "orchestrator_operation_timeline_queue_pressure_state": "overloaded",
           "orchestrator_operation_timeline_queue_pressure_reason": "queue_backlog_threshold_exceeded",
@@ -14984,6 +18172,95 @@
           "orchestrator_policy_pressure_decision_owner": "lab",
           "orchestrator_policy_pressure_scheduler_owner": "orchestrator",
           "orchestrator_policy_pressure_not_a_deployment_decision": true,
+          "orchestrator_pressure_window_summary": {
+            "schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+            "operation_context_role": "supplemental",
+            "scheduler_owner": "orchestrator",
+            "decision_owner": "lab",
+            "not_a_deployment_decision": true,
+            "source": "queue_depth_timeline+policy_decision_log",
+            "first_read": "review_sustained_pressure_window",
+            "overload_backlog_threshold": 3,
+            "window_count": 1,
+            "longest_window_cycles": 2,
+            "peak_total_queue_depth": 7,
+            "peak_window": {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "peak_total_queue_depth": 7
+            },
+            "longest_window": {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "duration_cycles": 2
+            },
+            "windows": [
+              {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "duration_cycles": 2,
+                "peak_total_queue_depth": 7
+              }
+            ],
+            "limited_tasks": [
+              "vision_agent",
+              "voice_command_agent"
+            ],
+            "protected_tasks": [
+              "safety_monitor_agent"
+            ],
+            "fallback_tasks": [
+              "voice_command_agent"
+            ],
+            "pressure_reasons": [
+              "queue_backlog_threshold_exceeded"
+            ],
+            "policy_decision_count": 2,
+            "interpretation": "Pressure window is supplemental operation evidence; Lab remains the final deployment decision owner."
+          },
+          "orchestrator_pressure_window_summary_present": true,
+          "orchestrator_pressure_window_summary_schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+          "orchestrator_pressure_window_operation_context_role": "supplemental",
+          "orchestrator_pressure_window_decision_owner": "lab",
+          "orchestrator_pressure_window_scheduler_owner": "orchestrator",
+          "orchestrator_pressure_window_not_a_deployment_decision": true,
+          "orchestrator_pressure_window_first_read": "review_sustained_pressure_window",
+          "orchestrator_pressure_window_overload_backlog_threshold": 3.0,
+          "orchestrator_pressure_window_count": 1.0,
+          "orchestrator_pressure_window_longest_window_cycles": 2.0,
+          "orchestrator_pressure_window_peak_total_queue_depth": 7.0,
+          "orchestrator_pressure_window_peak_window": {
+            "start_cycle": 1,
+            "end_cycle": 2,
+            "peak_total_queue_depth": 7
+          },
+          "orchestrator_pressure_window_longest_window": {
+            "start_cycle": 1,
+            "end_cycle": 2,
+            "duration_cycles": 2
+          },
+          "orchestrator_pressure_window_windows": [
+            {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "duration_cycles": 2,
+              "peak_total_queue_depth": 7
+            }
+          ],
+          "orchestrator_pressure_window_limited_tasks": [
+            "vision_agent",
+            "voice_command_agent"
+          ],
+          "orchestrator_pressure_window_protected_tasks": [
+            "safety_monitor_agent"
+          ],
+          "orchestrator_pressure_window_fallback_tasks": [
+            "voice_command_agent"
+          ],
+          "orchestrator_pressure_window_pressure_reasons": [
+            "queue_backlog_threshold_exceeded"
+          ],
+          "orchestrator_pressure_window_policy_decision_count": 2.0,
           "orchestrator_operation_timeline_affected_deadline_missed_tasks": [
             "vision_agent"
           ],
@@ -15877,7 +19154,11 @@
               "degraded": [
                 "vision_agent"
               ],
-              "constrained": []
+              "constrained": [],
+              "pressure_window": [
+                "vision_agent",
+                "voice_command_agent"
+              ]
             },
             "stale_drop": {
               "schema_version": "inferedge-orchestrator-stale-drop-summary-v1",
@@ -15962,7 +19243,8 @@
               "review_deadline_miss",
               "review_fallback_use",
               "review_stale_drop",
-              "review_worker_health_trend"
+              "review_worker_health_trend",
+              "review_sustained_pressure_window"
             ],
             "policy_pressure": {
               "schema_version": "inferedge-orchestrator-policy-pressure-summary-v1",
@@ -16000,6 +19282,52 @@
                 "scheduler_delay_present"
               ],
               "interpretation": "Policy pressure is supplemental operation evidence showing which scheduler decisions limited or protected work under backlog pressure; Lab remains the final deployment decision owner."
+            },
+            "pressure_window": {
+              "schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+              "operation_context_role": "supplemental",
+              "scheduler_owner": "orchestrator",
+              "decision_owner": "lab",
+              "not_a_deployment_decision": true,
+              "source": "queue_depth_timeline+policy_decision_log",
+              "first_read": "review_sustained_pressure_window",
+              "overload_backlog_threshold": 3,
+              "window_count": 1,
+              "longest_window_cycles": 2,
+              "peak_total_queue_depth": 7,
+              "peak_window": {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "peak_total_queue_depth": 7
+              },
+              "longest_window": {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "duration_cycles": 2
+              },
+              "windows": [
+                {
+                  "start_cycle": 1,
+                  "end_cycle": 2,
+                  "duration_cycles": 2,
+                  "peak_total_queue_depth": 7
+                }
+              ],
+              "limited_tasks": [
+                "vision_agent",
+                "voice_command_agent"
+              ],
+              "protected_tasks": [
+                "safety_monitor_agent"
+              ],
+              "fallback_tasks": [
+                "voice_command_agent"
+              ],
+              "pressure_reasons": [
+                "queue_backlog_threshold_exceeded"
+              ],
+              "policy_decision_count": 2,
+              "interpretation": "Pressure window is supplemental operation evidence; Lab remains the final deployment decision owner."
             }
           },
           "orchestrator_operation_timeline_summary_present": true,
@@ -16010,7 +19338,8 @@
             "review_deadline_miss",
             "review_fallback_use",
             "review_stale_drop",
-            "review_worker_health_trend"
+            "review_worker_health_trend",
+            "review_sustained_pressure_window"
           ],
           "orchestrator_operation_timeline_queue_pressure_state": "overloaded",
           "orchestrator_operation_timeline_queue_pressure_reason": "queue_backlog_threshold_exceeded",
@@ -16086,6 +19415,95 @@
           "orchestrator_policy_pressure_decision_owner": "lab",
           "orchestrator_policy_pressure_scheduler_owner": "orchestrator",
           "orchestrator_policy_pressure_not_a_deployment_decision": true,
+          "orchestrator_pressure_window_summary": {
+            "schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+            "operation_context_role": "supplemental",
+            "scheduler_owner": "orchestrator",
+            "decision_owner": "lab",
+            "not_a_deployment_decision": true,
+            "source": "queue_depth_timeline+policy_decision_log",
+            "first_read": "review_sustained_pressure_window",
+            "overload_backlog_threshold": 3,
+            "window_count": 1,
+            "longest_window_cycles": 2,
+            "peak_total_queue_depth": 7,
+            "peak_window": {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "peak_total_queue_depth": 7
+            },
+            "longest_window": {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "duration_cycles": 2
+            },
+            "windows": [
+              {
+                "start_cycle": 1,
+                "end_cycle": 2,
+                "duration_cycles": 2,
+                "peak_total_queue_depth": 7
+              }
+            ],
+            "limited_tasks": [
+              "vision_agent",
+              "voice_command_agent"
+            ],
+            "protected_tasks": [
+              "safety_monitor_agent"
+            ],
+            "fallback_tasks": [
+              "voice_command_agent"
+            ],
+            "pressure_reasons": [
+              "queue_backlog_threshold_exceeded"
+            ],
+            "policy_decision_count": 2,
+            "interpretation": "Pressure window is supplemental operation evidence; Lab remains the final deployment decision owner."
+          },
+          "orchestrator_pressure_window_summary_present": true,
+          "orchestrator_pressure_window_summary_schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+          "orchestrator_pressure_window_operation_context_role": "supplemental",
+          "orchestrator_pressure_window_decision_owner": "lab",
+          "orchestrator_pressure_window_scheduler_owner": "orchestrator",
+          "orchestrator_pressure_window_not_a_deployment_decision": true,
+          "orchestrator_pressure_window_first_read": "review_sustained_pressure_window",
+          "orchestrator_pressure_window_overload_backlog_threshold": 3.0,
+          "orchestrator_pressure_window_count": 1.0,
+          "orchestrator_pressure_window_longest_window_cycles": 2.0,
+          "orchestrator_pressure_window_peak_total_queue_depth": 7.0,
+          "orchestrator_pressure_window_peak_window": {
+            "start_cycle": 1,
+            "end_cycle": 2,
+            "peak_total_queue_depth": 7
+          },
+          "orchestrator_pressure_window_longest_window": {
+            "start_cycle": 1,
+            "end_cycle": 2,
+            "duration_cycles": 2
+          },
+          "orchestrator_pressure_window_windows": [
+            {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "duration_cycles": 2,
+              "peak_total_queue_depth": 7
+            }
+          ],
+          "orchestrator_pressure_window_limited_tasks": [
+            "vision_agent",
+            "voice_command_agent"
+          ],
+          "orchestrator_pressure_window_protected_tasks": [
+            "safety_monitor_agent"
+          ],
+          "orchestrator_pressure_window_fallback_tasks": [
+            "voice_command_agent"
+          ],
+          "orchestrator_pressure_window_pressure_reasons": [
+            "queue_backlog_threshold_exceeded"
+          ],
+          "orchestrator_pressure_window_policy_decision_count": 2.0,
           "orchestrator_operation_timeline_affected_deadline_missed_tasks": [
             "vision_agent"
           ],
@@ -16698,7 +20116,11 @@
     "latency_budget_pressure_context",
     "stale_drop_context",
     "worker_health_trend_context",
+    "pressure_window_context",
     "policy_decision_context",
+    "sustained_pressure_window_context",
+    "policy_pressure_context",
+    "workload_limited_by_policy",
     "scheduler_starvation_context",
     "worker_degradation_context",
     "high_priority_protection_context",
@@ -16725,6 +20147,7 @@
     "Review protected tasks, latency-budget risk tasks, deadline/scheduler reasons, and per-task budget context in the Lab report before deployment.",
     "Review the preserved operation_timeline_summary in Lab alongside queue, latency, runtime event, and policy evidence; Lab remains the final deployment decision owner.",
     "Review policy_pressure in Lab alongside operation_timeline_summary, scheduler_fairness_summary, stale_drop_summary, and queue pressure before treating the operation profile as stable.",
+    "Review pressure_window in Lab alongside operation_timeline_summary, policy_pressure, stale_drop, and worker_health_trend before treating the operation profile as stable.",
     "Review scheduler_fairness_summary in Lab alongside queue pressure, policy decisions, and worker health before treating the operation profile as stable.",
     "Review worker_health_trend in Lab alongside scheduler fairness, queue pressure, and stale-drop evidence before treating the operation profile as stable.",
     "Review stale_drop_summary with Orchestrator queue, latency, drop, and fallback evidence before treating the preserved operation feed as stable. Lab remains the final deployment decision owner.",
@@ -16768,6 +20191,7 @@
     "scheduler_starvation_risk_count_review": 1,
     "scheduler_starvation_risk_count_blocked": 3,
     "policy_pressure_marker_count_review": 1,
+    "pressure_window_count_review": 1,
     "device_local_event_count_review": 1,
     "edgeenv_mean_delta_pct_review": 15.0,
     "edgeenv_p99_delta_pct_review": 25.0,
@@ -17236,7 +20660,11 @@
           "degraded": [
             "vision_agent"
           ],
-          "constrained": []
+          "constrained": [],
+          "pressure_window": [
+            "vision_agent",
+            "voice_command_agent"
+          ]
         },
         "stale_drop": {
           "schema_version": "inferedge-orchestrator-stale-drop-summary-v1",
@@ -17321,7 +20749,8 @@
           "review_deadline_miss",
           "review_fallback_use",
           "review_stale_drop",
-          "review_worker_health_trend"
+          "review_worker_health_trend",
+          "review_sustained_pressure_window"
         ],
         "policy_pressure": {
           "schema_version": "inferedge-orchestrator-policy-pressure-summary-v1",
@@ -17359,6 +20788,52 @@
             "scheduler_delay_present"
           ],
           "interpretation": "Policy pressure is supplemental operation evidence showing which scheduler decisions limited or protected work under backlog pressure; Lab remains the final deployment decision owner."
+        },
+        "pressure_window": {
+          "schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+          "operation_context_role": "supplemental",
+          "scheduler_owner": "orchestrator",
+          "decision_owner": "lab",
+          "not_a_deployment_decision": true,
+          "source": "queue_depth_timeline+policy_decision_log",
+          "first_read": "review_sustained_pressure_window",
+          "overload_backlog_threshold": 3,
+          "window_count": 1,
+          "longest_window_cycles": 2,
+          "peak_total_queue_depth": 7,
+          "peak_window": {
+            "start_cycle": 1,
+            "end_cycle": 2,
+            "peak_total_queue_depth": 7
+          },
+          "longest_window": {
+            "start_cycle": 1,
+            "end_cycle": 2,
+            "duration_cycles": 2
+          },
+          "windows": [
+            {
+              "start_cycle": 1,
+              "end_cycle": 2,
+              "duration_cycles": 2,
+              "peak_total_queue_depth": 7
+            }
+          ],
+          "limited_tasks": [
+            "vision_agent",
+            "voice_command_agent"
+          ],
+          "protected_tasks": [
+            "safety_monitor_agent"
+          ],
+          "fallback_tasks": [
+            "voice_command_agent"
+          ],
+          "pressure_reasons": [
+            "queue_backlog_threshold_exceeded"
+          ],
+          "policy_decision_count": 2,
+          "interpretation": "Pressure window is supplemental operation evidence; Lab remains the final deployment decision owner."
         }
       },
       "orchestrator_operation_timeline_summary_present": true,
@@ -17369,7 +20844,8 @@
         "review_deadline_miss",
         "review_fallback_use",
         "review_stale_drop",
-        "review_worker_health_trend"
+        "review_worker_health_trend",
+        "review_sustained_pressure_window"
       ],
       "orchestrator_operation_timeline_queue_pressure_state": "overloaded",
       "orchestrator_operation_timeline_queue_pressure_reason": "queue_backlog_threshold_exceeded",
@@ -17445,6 +20921,95 @@
       "orchestrator_policy_pressure_decision_owner": "lab",
       "orchestrator_policy_pressure_scheduler_owner": "orchestrator",
       "orchestrator_policy_pressure_not_a_deployment_decision": true,
+      "orchestrator_pressure_window_summary": {
+        "schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+        "operation_context_role": "supplemental",
+        "scheduler_owner": "orchestrator",
+        "decision_owner": "lab",
+        "not_a_deployment_decision": true,
+        "source": "queue_depth_timeline+policy_decision_log",
+        "first_read": "review_sustained_pressure_window",
+        "overload_backlog_threshold": 3,
+        "window_count": 1,
+        "longest_window_cycles": 2,
+        "peak_total_queue_depth": 7,
+        "peak_window": {
+          "start_cycle": 1,
+          "end_cycle": 2,
+          "peak_total_queue_depth": 7
+        },
+        "longest_window": {
+          "start_cycle": 1,
+          "end_cycle": 2,
+          "duration_cycles": 2
+        },
+        "windows": [
+          {
+            "start_cycle": 1,
+            "end_cycle": 2,
+            "duration_cycles": 2,
+            "peak_total_queue_depth": 7
+          }
+        ],
+        "limited_tasks": [
+          "vision_agent",
+          "voice_command_agent"
+        ],
+        "protected_tasks": [
+          "safety_monitor_agent"
+        ],
+        "fallback_tasks": [
+          "voice_command_agent"
+        ],
+        "pressure_reasons": [
+          "queue_backlog_threshold_exceeded"
+        ],
+        "policy_decision_count": 2,
+        "interpretation": "Pressure window is supplemental operation evidence; Lab remains the final deployment decision owner."
+      },
+      "orchestrator_pressure_window_summary_present": true,
+      "orchestrator_pressure_window_summary_schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+      "orchestrator_pressure_window_operation_context_role": "supplemental",
+      "orchestrator_pressure_window_decision_owner": "lab",
+      "orchestrator_pressure_window_scheduler_owner": "orchestrator",
+      "orchestrator_pressure_window_not_a_deployment_decision": true,
+      "orchestrator_pressure_window_first_read": "review_sustained_pressure_window",
+      "orchestrator_pressure_window_overload_backlog_threshold": 3.0,
+      "orchestrator_pressure_window_count": 1.0,
+      "orchestrator_pressure_window_longest_window_cycles": 2.0,
+      "orchestrator_pressure_window_peak_total_queue_depth": 7.0,
+      "orchestrator_pressure_window_peak_window": {
+        "start_cycle": 1,
+        "end_cycle": 2,
+        "peak_total_queue_depth": 7
+      },
+      "orchestrator_pressure_window_longest_window": {
+        "start_cycle": 1,
+        "end_cycle": 2,
+        "duration_cycles": 2
+      },
+      "orchestrator_pressure_window_windows": [
+        {
+          "start_cycle": 1,
+          "end_cycle": 2,
+          "duration_cycles": 2,
+          "peak_total_queue_depth": 7
+        }
+      ],
+      "orchestrator_pressure_window_limited_tasks": [
+        "vision_agent",
+        "voice_command_agent"
+      ],
+      "orchestrator_pressure_window_protected_tasks": [
+        "safety_monitor_agent"
+      ],
+      "orchestrator_pressure_window_fallback_tasks": [
+        "voice_command_agent"
+      ],
+      "orchestrator_pressure_window_pressure_reasons": [
+        "queue_backlog_threshold_exceeded"
+      ],
+      "orchestrator_pressure_window_policy_decision_count": 2.0,
       "orchestrator_operation_timeline_affected_deadline_missed_tasks": [
         "vision_agent"
       ],
@@ -18166,7 +21731,11 @@
                   "degraded": [
                     "vision_agent"
                   ],
-                  "constrained": []
+                  "constrained": [],
+                  "pressure_window": [
+                    "vision_agent",
+                    "voice_command_agent"
+                  ]
                 },
                 "stale_drop": {
                   "schema_version": "inferedge-orchestrator-stale-drop-summary-v1",
@@ -18251,7 +21820,8 @@
                   "review_deadline_miss",
                   "review_fallback_use",
                   "review_stale_drop",
-                  "review_worker_health_trend"
+                  "review_worker_health_trend",
+                  "review_sustained_pressure_window"
                 ],
                 "policy_pressure": {
                   "schema_version": "inferedge-orchestrator-policy-pressure-summary-v1",
@@ -18289,6 +21859,52 @@
                     "scheduler_delay_present"
                   ],
                   "interpretation": "Policy pressure is supplemental operation evidence showing which scheduler decisions limited or protected work under backlog pressure; Lab remains the final deployment decision owner."
+                },
+                "pressure_window": {
+                  "schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+                  "operation_context_role": "supplemental",
+                  "scheduler_owner": "orchestrator",
+                  "decision_owner": "lab",
+                  "not_a_deployment_decision": true,
+                  "source": "queue_depth_timeline+policy_decision_log",
+                  "first_read": "review_sustained_pressure_window",
+                  "overload_backlog_threshold": 3,
+                  "window_count": 1,
+                  "longest_window_cycles": 2,
+                  "peak_total_queue_depth": 7,
+                  "peak_window": {
+                    "start_cycle": 1,
+                    "end_cycle": 2,
+                    "peak_total_queue_depth": 7
+                  },
+                  "longest_window": {
+                    "start_cycle": 1,
+                    "end_cycle": 2,
+                    "duration_cycles": 2
+                  },
+                  "windows": [
+                    {
+                      "start_cycle": 1,
+                      "end_cycle": 2,
+                      "duration_cycles": 2,
+                      "peak_total_queue_depth": 7
+                    }
+                  ],
+                  "limited_tasks": [
+                    "vision_agent",
+                    "voice_command_agent"
+                  ],
+                  "protected_tasks": [
+                    "safety_monitor_agent"
+                  ],
+                  "fallback_tasks": [
+                    "voice_command_agent"
+                  ],
+                  "pressure_reasons": [
+                    "queue_backlog_threshold_exceeded"
+                  ],
+                  "policy_decision_count": 2,
+                  "interpretation": "Pressure window is supplemental operation evidence; Lab remains the final deployment decision owner."
                 }
               },
               "stale_drop_summary": {
@@ -18689,7 +22305,11 @@
             "vision_agent",
             "voice_command_agent"
           ],
-          "constrained": []
+          "constrained": [],
+          "pressure_window": [
+            "vision_agent",
+            "voice_command_agent"
+          ]
         },
         "stale_drop": {
           "schema_version": "inferedge-orchestrator-stale-drop-summary-v1",
@@ -18785,7 +22405,8 @@
           "review_scheduler_delay",
           "review_deadline_miss",
           "review_fallback_use",
-          "review_stale_drop"
+          "review_stale_drop",
+          "review_sustained_pressure_window"
         ],
         "policy_pressure": {
           "schema_version": "inferedge-orchestrator-policy-pressure-summary-v1",
@@ -18822,6 +22443,51 @@
             "scheduler_delay_present"
           ],
           "interpretation": "Policy pressure is supplemental operation evidence showing which scheduler decisions limited or protected work under backlog pressure; Lab remains the final deployment decision owner."
+        },
+        "pressure_window": {
+          "schema_version": "inferedge-orchestrator-pressure-window-summary-v1",
+          "operation_context_role": "supplemental",
+          "scheduler_owner": "orchestrator",
+          "decision_owner": "lab",
+          "not_a_deployment_decision": true,
+          "source": "queue_depth_timeline+policy_decision_log",
+          "first_read": "review_sustained_pressure_window",
+          "overload_backlog_threshold": 3,
+          "window_count": 1,
+          "longest_window_cycles": 2,
+          "peak_total_queue_depth": 11,
+          "peak_window": {
+            "start_cycle": 2,
+            "end_cycle": 3,
+            "peak_total_queue_depth": 11
+          },
+          "longest_window": {
+            "start_cycle": 2,
+            "end_cycle": 3,
+            "duration_cycles": 2
+          },
+          "windows": [
+            {
+              "start_cycle": 2,
+              "end_cycle": 3,
+              "duration_cycles": 2,
+              "peak_total_queue_depth": 11
+            }
+          ],
+          "limited_tasks": [
+            "voice_command_agent"
+          ],
+          "protected_tasks": [
+            "safety_monitor_agent"
+          ],
+          "fallback_tasks": [
+            "voice_command_agent"
+          ],
+          "pressure_reasons": [
+            "queue_backlog_threshold_exceeded"
+          ],
+          "policy_decision_count": 1,
+          "interpretation": "Pressure window is supplemental operation evidence; Lab remains the final deployment decision owner."
         }
       },
       "operation_timeline_summary_present": true,
@@ -18831,7 +22497,8 @@
         "review_scheduler_delay",
         "review_deadline_miss",
         "review_fallback_use",
-        "review_stale_drop"
+        "review_stale_drop",
+        "review_sustained_pressure_window"
       ],
       "operation_timeline_queue_pressure_state": "overloaded",
       "operation_timeline_queue_pressure_reason": "queue_backlog_threshold_exceeded",

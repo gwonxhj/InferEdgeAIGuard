@@ -337,8 +337,51 @@ def multi_workload_sustained_summary() -> dict:
                 "fallback": ["voice_command_agent"],
                 "scheduler_delay": ["voice_command_agent"],
                 "stale_drop": ["vision_agent", "voice_command_agent"],
+                "pressure_window": ["vision_agent", "voice_command_agent"],
                 "degraded": ["vision_agent", "voice_command_agent"],
                 "constrained": [],
+            },
+            "pressure_window": {
+                "schema_version": (
+                    "inferedge-orchestrator-pressure-window-summary-v1"
+                ),
+                "operation_context_role": "supplemental",
+                "scheduler_owner": "orchestrator",
+                "decision_owner": "lab",
+                "not_a_deployment_decision": True,
+                "source": "queue_depth_timeline+policy_decision_log",
+                "first_read": "review_sustained_pressure_window",
+                "overload_backlog_threshold": 3,
+                "window_count": 1,
+                "longest_window_cycles": 2,
+                "peak_total_queue_depth": 11,
+                "peak_window": {
+                    "start_cycle": 2,
+                    "end_cycle": 3,
+                    "peak_total_queue_depth": 11,
+                },
+                "longest_window": {
+                    "start_cycle": 2,
+                    "end_cycle": 3,
+                    "duration_cycles": 2,
+                },
+                "windows": [
+                    {
+                        "start_cycle": 2,
+                        "end_cycle": 3,
+                        "duration_cycles": 2,
+                        "peak_total_queue_depth": 11,
+                    }
+                ],
+                "limited_tasks": ["voice_command_agent"],
+                "protected_tasks": ["safety_monitor_agent"],
+                "fallback_tasks": ["voice_command_agent"],
+                "pressure_reasons": ["queue_backlog_threshold_exceeded"],
+                "policy_decision_count": 1,
+                "interpretation": (
+                    "Pressure window is supplemental operation evidence; Lab "
+                    "remains the final deployment decision owner."
+                ),
             },
             "stale_drop": {
                 "schema_version": "inferedge-orchestrator-stale-drop-summary-v1",
@@ -439,6 +482,7 @@ def multi_workload_sustained_summary() -> dict:
                 "review_deadline_miss",
                 "review_fallback_use",
                 "review_stale_drop",
+                "review_sustained_pressure_window",
             ],
         },
     }
@@ -892,6 +936,9 @@ def edgeenv_runtime_intelligence_lab_handoff() -> dict:
             "orchestrator_policy_pressure_summary_run_ids": [
                 "edgeenv-smoke-candidate"
             ],
+            "orchestrator_pressure_window_summary_run_ids": [
+                "edgeenv-smoke-candidate"
+            ],
         },
         "lab_bundle_alignment": {
             "external_aiguard_required_evidence_types": [
@@ -907,6 +954,7 @@ def edgeenv_runtime_intelligence_lab_handoff() -> dict:
             "optional_aiguard_evidence_types": [
                 "stale_frame_risk",
                 "edgeenv_orchestrator_stale_drop_summary",
+                "edgeenv_orchestrator_pressure_window_summary",
             ],
             "expected_report_markers": LAB_EXPECTED_REPORT_MARKERS,
             "boundary_flags": {
@@ -1333,8 +1381,60 @@ def edgeenv_regression_report_with_orchestrator_feed_context() -> dict:
                         "fallback": ["voice_command_agent"],
                         "scheduler_delay": ["vision_agent"],
                         "stale_drop": ["voice_command_agent"],
+                        "pressure_window": [
+                            "vision_agent",
+                            "voice_command_agent",
+                        ],
                         "degraded": ["vision_agent"],
                         "constrained": [],
+                    },
+                    "pressure_window": {
+                        "schema_version": (
+                            "inferedge-orchestrator-pressure-window-summary-v1"
+                        ),
+                        "operation_context_role": "supplemental",
+                        "scheduler_owner": "orchestrator",
+                        "decision_owner": "lab",
+                        "not_a_deployment_decision": True,
+                        "source": "queue_depth_timeline+policy_decision_log",
+                        "first_read": "review_sustained_pressure_window",
+                        "overload_backlog_threshold": 3,
+                        "window_count": 1,
+                        "longest_window_cycles": 2,
+                        "peak_total_queue_depth": 7,
+                        "peak_window": {
+                            "start_cycle": 1,
+                            "end_cycle": 2,
+                            "peak_total_queue_depth": 7,
+                        },
+                        "longest_window": {
+                            "start_cycle": 1,
+                            "end_cycle": 2,
+                            "duration_cycles": 2,
+                        },
+                        "windows": [
+                            {
+                                "start_cycle": 1,
+                                "end_cycle": 2,
+                                "duration_cycles": 2,
+                                "peak_total_queue_depth": 7,
+                            }
+                        ],
+                        "limited_tasks": [
+                            "vision_agent",
+                            "voice_command_agent",
+                        ],
+                        "protected_tasks": ["safety_monitor_agent"],
+                        "fallback_tasks": ["voice_command_agent"],
+                        "pressure_reasons": [
+                            "queue_backlog_threshold_exceeded"
+                        ],
+                        "policy_decision_count": 2,
+                        "interpretation": (
+                            "Pressure window is supplemental operation "
+                            "evidence; Lab remains the final deployment "
+                            "decision owner."
+                        ),
                     },
                     "stale_drop": {
                         "schema_version": (
@@ -1418,6 +1518,7 @@ def edgeenv_regression_report_with_orchestrator_feed_context() -> dict:
                         "review_fallback_use",
                         "review_stale_drop",
                         "review_worker_health_trend",
+                        "review_sustained_pressure_window",
                     ],
                 },
                 "stale_drop_summary": {
@@ -1971,6 +2072,7 @@ def test_multi_workload_sustained_summary_adds_profile_and_thermal_metrics():
         "review_deadline_miss",
         "review_fallback_use",
         "review_stale_drop",
+        "review_sustained_pressure_window",
     ]
     assert metrics["operation_timeline_max_queue_wait_ms"] == 32.5
     assert metrics["operation_timeline_policy_decision_count"] == 1.0
@@ -2463,6 +2565,7 @@ def test_compute_edgeenv_regression_metrics_extracts_orchestrator_feed_context()
         "review_fallback_use",
         "review_stale_drop",
         "review_worker_health_trend",
+        "review_sustained_pressure_window",
     ]
     assert metrics["orchestrator_operation_timeline_queue_pressure_state"] == (
         "overloaded"
@@ -2498,6 +2601,32 @@ def test_compute_edgeenv_regression_metrics_extracts_orchestrator_feed_context()
     assert metrics["orchestrator_policy_pressure_decision_owner"] == "lab"
     assert metrics["orchestrator_policy_pressure_scheduler_owner"] == "orchestrator"
     assert metrics["orchestrator_policy_pressure_not_a_deployment_decision"] is True
+    assert metrics["orchestrator_pressure_window_summary_present"] is True
+    assert metrics["orchestrator_pressure_window_summary_schema_version"] == (
+        "inferedge-orchestrator-pressure-window-summary-v1"
+    )
+    assert metrics["orchestrator_pressure_window_count"] == 1.0
+    assert metrics["orchestrator_pressure_window_longest_window_cycles"] == 2.0
+    assert metrics["orchestrator_pressure_window_peak_total_queue_depth"] == 7.0
+    assert metrics["orchestrator_pressure_window_first_read"] == (
+        "review_sustained_pressure_window"
+    )
+    assert metrics["orchestrator_pressure_window_limited_tasks"] == [
+        "vision_agent",
+        "voice_command_agent",
+    ]
+    assert metrics["orchestrator_pressure_window_protected_tasks"] == [
+        "safety_monitor_agent"
+    ]
+    assert metrics["orchestrator_pressure_window_fallback_tasks"] == [
+        "voice_command_agent"
+    ]
+    assert metrics["orchestrator_pressure_window_pressure_reasons"] == [
+        "queue_backlog_threshold_exceeded"
+    ]
+    assert metrics["orchestrator_pressure_window_decision_owner"] == "lab"
+    assert metrics["orchestrator_pressure_window_scheduler_owner"] == "orchestrator"
+    assert metrics["orchestrator_pressure_window_not_a_deployment_decision"] is True
     assert metrics[
         "orchestrator_operation_timeline_affected_scheduler_delay_tasks"
     ] == ["vision_agent"]
@@ -2882,6 +3011,7 @@ def test_analyze_edgeenv_regression_report_warns_on_orchestrator_feed_context():
     assert "edgeenv_orchestrator_latency_budget_protection" in evidence_types
     assert "edgeenv_orchestrator_operation_timeline_summary" in evidence_types
     assert "edgeenv_orchestrator_policy_pressure_summary" in evidence_types
+    assert "edgeenv_orchestrator_pressure_window_summary" in evidence_types
     assert "edgeenv_orchestrator_scheduler_fairness_summary" in evidence_types
     assert "edgeenv_orchestrator_worker_health_trend" in evidence_types
     assert "edgeenv_orchestrator_stale_drop_summary" in evidence_types
@@ -3126,7 +3256,7 @@ def test_analyze_edgeenv_regression_report_warns_on_orchestrator_feed_context():
         if item["type"] == "edgeenv_orchestrator_operation_timeline_summary"
     )
     assert operation_timeline["status"] == "warning"
-    assert operation_timeline["observed_value"] == 8
+    assert operation_timeline["observed_value"] == 9
     assert operation_timeline["threshold"] == 1
     assert "scheduler_delay_context" in operation_timeline["suspected_causes"]
     assert "deadline_miss_context" in operation_timeline["suspected_causes"]
@@ -3134,6 +3264,7 @@ def test_analyze_edgeenv_regression_report_warns_on_orchestrator_feed_context():
     assert "queue_pressure_context" in operation_timeline["suspected_causes"]
     assert "stale_drop_context" in operation_timeline["suspected_causes"]
     assert "worker_health_trend_context" in operation_timeline["suspected_causes"]
+    assert "pressure_window_context" in operation_timeline["suspected_causes"]
     timeline_context = operation_timeline["raw_context"][
         "operation_timeline_summary"
     ]
@@ -3181,6 +3312,35 @@ def test_analyze_edgeenv_regression_report_warns_on_orchestrator_feed_context():
     assert policy_pressure_context["decision_owner"] == "lab"
     assert policy_pressure_context["scheduler_owner"] == "orchestrator"
     assert policy_pressure_context["not_a_deployment_decision"] is True
+    pressure_window = next(
+        item
+        for item in report["evidence"]
+        if item["type"] == "edgeenv_orchestrator_pressure_window_summary"
+    )
+    assert pressure_window["status"] == "warning"
+    assert pressure_window["observed_value"] == 1
+    assert pressure_window["threshold"] == 1
+    assert "sustained_pressure_window_context" in (
+        pressure_window["suspected_causes"]
+    )
+    assert "queue_pressure_context" in pressure_window["suspected_causes"]
+    assert "fallback_policy_context" in pressure_window["suspected_causes"]
+    pressure_window_context = pressure_window["raw_context"][
+        "pressure_window_summary"
+    ]
+    assert pressure_window_context["boundary_markers_valid"] is True
+    assert pressure_window_context["first_read"] == "review_sustained_pressure_window"
+    assert pressure_window_context["window_count"] == 1.0
+    assert pressure_window_context["peak_total_queue_depth"] == 7.0
+    assert pressure_window_context["limited_tasks"] == [
+        "vision_agent",
+        "voice_command_agent",
+    ]
+    assert pressure_window_context["protected_tasks"] == ["safety_monitor_agent"]
+    assert pressure_window_context["fallback_tasks"] == ["voice_command_agent"]
+    assert pressure_window_context["decision_owner"] == "lab"
+    assert pressure_window_context["scheduler_owner"] == "orchestrator"
+    assert pressure_window_context["not_a_deployment_decision"] is True
     scheduler_fairness = next(
         item
         for item in report["evidence"]
@@ -3617,7 +3777,7 @@ def test_analyze_multi_workload_sustained_summary_adds_runtime_evidence():
         if item["type"] == "operation_timeline_summary"
     )
     assert timeline_evidence["status"] == "warning"
-    assert timeline_evidence["observed_value"] == 7
+    assert timeline_evidence["observed_value"] == 8
     assert "scheduler_delay_context" in timeline_evidence["suspected_causes"]
     assert "deadline_miss_context" in timeline_evidence["suspected_causes"]
     assert "fallback_policy_context" in timeline_evidence["suspected_causes"]
@@ -4506,6 +4666,7 @@ def test_runtime_intelligence_example_exports_lab_ready_guard_analysis(tmp_path)
             "edgeenv_orchestrator_latency_budget_protection",
             "edgeenv_orchestrator_operation_timeline_summary",
             "edgeenv_orchestrator_policy_pressure_summary",
+            "edgeenv_orchestrator_pressure_window_summary",
             "edgeenv_orchestrator_scheduler_fairness_summary",
             "runtime_history_seed_run_config_traceability",
         "runtime_thermal_instability",
@@ -4640,7 +4801,7 @@ def test_runtime_intelligence_example_exports_lab_ready_guard_analysis(tmp_path)
         if item["type"] == "edgeenv_orchestrator_operation_timeline_summary"
     )
     assert operation_timeline["status"] == "warning"
-    assert operation_timeline["observed_value"] == 6
+    assert operation_timeline["observed_value"] == 7
     assert operation_timeline["raw_context"]["operation_timeline_summary"][
         "affected_tasks"
     ] == ["vision_agent", "voice_command_agent"]
@@ -4716,6 +4877,7 @@ def test_runtime_intelligence_optional_stale_drop_example_preserves_full_evidenc
     assert alignment["status"] == "passed"
     assert alignment["missing_required_evidence_types"] == []
     assert alignment["optional_guard_evidence_types_present"] == [
+        "edgeenv_orchestrator_pressure_window_summary",
         "edgeenv_orchestrator_stale_drop_summary",
         "stale_frame_risk",
     ]
@@ -4871,6 +5033,13 @@ def test_validate_edgeenv_handoff_guard_evidence_alignment_passes():
         "edgeenv-smoke-candidate"
     ]
     assert alignment["policy_pressure_summary_errors"] == []
+    assert alignment["handoff_pressure_window_summary_run_ids"] == [
+        "edgeenv-smoke-candidate"
+    ]
+    assert alignment["guard_analysis_pressure_window_summary_run_ids"] == [
+        "edgeenv-smoke-candidate"
+    ]
+    assert alignment["pressure_window_summary_errors"] == []
     assert alignment["lab_expected_report_markers"] == LAB_EXPECTED_REPORT_MARKERS
     assert alignment["lab_expected_report_marker_count"] == len(
         LAB_EXPECTED_REPORT_MARKERS
@@ -4888,12 +5057,14 @@ def test_validate_edgeenv_handoff_guard_evidence_alignment_passes():
         "read_only_optional_guard_context"
     )
     assert alignment["aiguard_validates_optional_evidence_as_required"] is False
-    assert alignment["optional_evidence_type_count"] == 2
+    assert alignment["optional_evidence_type_count"] == 3
     assert alignment["optional_aiguard_evidence_types"] == [
         "stale_frame_risk",
         "edgeenv_orchestrator_stale_drop_summary",
+        "edgeenv_orchestrator_pressure_window_summary",
     ]
     assert alignment["optional_guard_evidence_types_present"] == [
+        "edgeenv_orchestrator_pressure_window_summary",
         "edgeenv_orchestrator_stale_drop_summary",
     ]
     assert alignment["missing_optional_evidence_types"] == [
@@ -4962,7 +5133,9 @@ def test_validate_edgeenv_handoff_guard_evidence_alignment_keeps_optional_read_o
     )
 
     assert alignment["status"] == "passed"
-    assert alignment["optional_guard_evidence_types_present"] == []
+    assert alignment["optional_guard_evidence_types_present"] == [
+        "edgeenv_orchestrator_pressure_window_summary"
+    ]
     assert alignment["missing_optional_evidence_types"] == [
         "edgeenv_orchestrator_stale_drop_summary",
         "stale_frame_risk",
@@ -5105,8 +5278,10 @@ def test_check_edgeenv_handoff_alignment_cli_exports_gate_summary(tmp_path):
     assert saved["optional_aiguard_evidence_types"] == [
         "stale_frame_risk",
         "edgeenv_orchestrator_stale_drop_summary",
+        "edgeenv_orchestrator_pressure_window_summary",
     ]
     assert saved["optional_guard_evidence_types_present"] == [
+        "edgeenv_orchestrator_pressure_window_summary",
         "edgeenv_orchestrator_stale_drop_summary",
     ]
     assert saved["missing_optional_evidence_types"] == ["stale_frame_risk"]
@@ -5123,11 +5298,20 @@ def test_check_edgeenv_handoff_alignment_cli_exports_gate_summary(tmp_path):
         "edgeenv-smoke-candidate"
     ]
     assert saved["policy_pressure_summary_errors"] == []
+    assert saved["handoff_pressure_window_summary_run_ids"] == [
+        "edgeenv-smoke-candidate"
+    ]
+    assert saved["guard_analysis_pressure_window_summary_run_ids"] == [
+        "edgeenv-smoke-candidate"
+    ]
+    assert saved["pressure_window_summary_errors"] == []
     assert "handoff_duration_scope_labels" in result.stdout
     assert "optional_aiguard_evidence_types" in result.stdout
     assert "read_only_optional_guard_context" in result.stdout
     assert "handoff_policy_pressure_summary_run_ids" in result.stdout
     assert "guard_analysis_policy_pressure_summary_run_ids" in result.stdout
+    assert "handoff_pressure_window_summary_run_ids" in result.stdout
+    assert "guard_analysis_pressure_window_summary_run_ids" in result.stdout
     assert "EdgeEnv fixture matrix coverage" in result.stdout
     assert "Reviewer operation quick scan" in result.stdout
 
