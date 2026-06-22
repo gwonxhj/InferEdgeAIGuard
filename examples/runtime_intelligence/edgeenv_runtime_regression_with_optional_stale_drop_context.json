@@ -345,12 +345,60 @@
                   "stale_drop_class": "stale_queue_overflow"
                 }
               },
+              "worker_health_trend": {
+                "schema_version": "inferedge-orchestrator-worker-health-trend-v1",
+                "operation_context_role": "supplemental",
+                "scheduler_owner": "orchestrator",
+                "decision_owner": "lab",
+                "not_a_deployment_decision": true,
+                "source": "worker_health_snapshot+runtime_event_summary",
+                "health_state_counts": {
+                  "healthy": 1,
+                  "degraded": 1,
+                  "constrained": 1
+                },
+                "tasks_by_health_state": {
+                  "healthy": [
+                    "safety_monitor_agent"
+                  ],
+                  "degraded": [
+                    "vision_agent"
+                  ],
+                  "constrained": [
+                    "voice_command_agent"
+                  ]
+                },
+                "task_health_context": {
+                  "vision_agent": {
+                    "worker_id": "worker-jetson-01",
+                    "health_state": "degraded",
+                    "primary_health_reason": "worker_queue_pressure"
+                  },
+                  "voice_command_agent": {
+                    "worker_id": "worker-jetson-02",
+                    "health_state": "constrained",
+                    "primary_health_reason": "fallback_overuse"
+                  }
+                },
+                "degraded_workers": [
+                  "worker-jetson-01"
+                ],
+                "constrained_workers": [
+                  "worker-jetson-02"
+                ],
+                "review_hints": [
+                  "review_worker_health_degradation",
+                  "review_worker_health_constraints"
+                ],
+                "interpretation": "Worker health trend is supplemental operation evidence; Lab remains the final deployment decision owner."
+              },
               "review_hints": [
                 "review_queue_pressure",
                 "review_scheduler_delay",
                 "review_deadline_miss",
                 "review_fallback_use",
-                "review_stale_drop"
+                "review_stale_drop",
+                "review_worker_health_trend"
               ],
               "policy_pressure": {
                 "schema_version": "inferedge-orchestrator-policy-pressure-summary-v1",
@@ -465,7 +513,8 @@
             "runtime_queue_overload",
             "runtime_thermal_instability",
             "edgeenv_orchestrator_latency_budget_protection",
-            "edgeenv_orchestrator_scheduler_fairness_summary"
+            "edgeenv_orchestrator_scheduler_fairness_summary",
+            "edgeenv_orchestrator_worker_health_trend"
           ]
         },
         "downstream_guard_alignment": {
@@ -475,7 +524,8 @@
             "runtime_queue_overload",
             "runtime_thermal_instability",
             "edgeenv_orchestrator_latency_budget_protection",
-            "edgeenv_orchestrator_scheduler_fairness_summary"
+            "edgeenv_orchestrator_scheduler_fairness_summary",
+            "edgeenv_orchestrator_worker_health_trend"
           ],
           "validated_by": [
             "edgeenv runs telemetry inspect-history",
